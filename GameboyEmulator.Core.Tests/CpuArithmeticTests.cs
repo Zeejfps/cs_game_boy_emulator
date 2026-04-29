@@ -971,20 +971,6 @@ public class CpuArithmeticTests : CpuTestBase
         Assert.Throws<InvalidOperationException>(() => Cpu.Step());
     }
 
-    [Theory]
-    [InlineData(0x10)] // STOP — wired in step 5
-    [InlineData(0xD9)] // RETI — wired in step 5
-    public void TestDeferredOpcodeThrowsUntilNextStep(byte opcode)
-    {
-        var initialState = new CpuState { Pc = 0x10 };
-
-        Mmu.Write(initialState.Pc, opcode);
-
-        Cpu.WriteState(initialState);
-
-        Assert.Throws<NotImplementedException>(() => Cpu.Step());
-    }
-
     [Fact]
     public void TestSubExitCriteria()
     {

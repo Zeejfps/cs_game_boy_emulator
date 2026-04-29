@@ -19,8 +19,9 @@ public sealed partial class Cpu
     public byte Re { get; set; }
     public byte Rh { get; set; }
     public byte Rl { get; set; }
-    public bool InterruptEnabled { get; set; }
-    public bool Halted { get; private set; }
+    public bool InterruptMasterEnable { get; set; }
+    public bool Halted { get; internal set; }
+    public bool Stopped { get; private set; }
     
     private ushort Rbc
     {
@@ -41,6 +42,7 @@ public sealed partial class Cpu
     }
 
     private int _enableInterruptsTimer;
+    internal bool _haltBugPending;
     private readonly IMemoryBus _mmu;
 
     public Cpu(IMemoryBus mmu)
@@ -54,24 +56,52 @@ public sealed partial class Cpu
         Pc = 0;
         Sp = 0;
         Ra = Rb = Rc = Rd = Re = Rh = Rl = 0;
-        InterruptEnabled = true;
+        // Post-boot DMG state per `8080-to-LR35902.md` §6.1.
+        InterruptMasterEnable = false;
         Halted = false;
+        Stopped = false;
         _enableInterruptsTimer = 0;
+        _haltBugPending = false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public int Step()
     {
-        if (Halted)
+        if (Stopped)
         {
+            // Joypad interrupt request wakes from STOP. The wake step itself
+            // does not dispatch and does not fetch — the next Step() prologue
+            // handles dispatch (if IME=1) or normal fetch.
+            if (IsInterruptRequested(InterruptType.Joypad))
+                Stopped = false;
             UpdateInterruptTimer();
             return 4;
         }
 
+        var pending = GetPendingInterrupts();
+
+        if (Halted)
+        {
+            if (pending != InterruptType.None)
+                Halted = false;
+            else
+            {
+                UpdateInterruptTimer();
+                return 4;
+            }
+        }
+
+        if (InterruptMasterEnable && pending != InterruptType.None)
+        {
+            var cycles = ServicePendingInterrupt(pending);
+            UpdateInterruptTimer();
+            return cycles;
+        }
+
         var opcode = Fetch();
-        var cycles = Execute(opcode);
+        var executed = Execute(opcode);
         UpdateInterruptTimer();
-        return cycles;
+        return executed;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,7 +112,7 @@ public sealed partial class Cpu
 
         _enableInterruptsTimer--;
         if (_enableInterruptsTimer == 0)
-            InterruptEnabled = true;
+            InterruptMasterEnable = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -440,15 +470,13 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Hlt()
-    {
-        Halted = true;
-        return 4;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Fetch()
     {
+        if (_haltBugPending)
+        {
+            _haltBugPending = false;
+            return _mmu.Read(Pc);
+        }
         return _mmu.Read(Pc++);
     }
 

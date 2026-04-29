@@ -47,37 +47,63 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
 
 ### Rename + reset
 
-- [ ] Rename `InterruptEnabled` → `InterruptMasterEnable` (public property on `Cpu`).
+- [x] Rename `InterruptEnabled` → `InterruptMasterEnable` (public property on `Cpu`).
       Update every reference in `Cpu.Interrupts.cs`, `Cpu.cs`, and any test
       that reads/writes the flag. The new name matches the spec language
       ("Interrupt Master Enable") and avoids confusion with `IE` (the
       register at `0xFFFF`).
-- [ ] Change `Reset()` so `InterruptMasterEnable = false` (post-boot DMG state). Add a brief
+- [x] Change `Reset()` so `InterruptMasterEnable = false` (post-boot DMG state). Add a brief
       comment that this matches `8080-to-LR35902.md` §6.1.
 
 ### IE / IF as memory-mapped registers
 
-- [ ] Treat `0xFFFF` (IE) and `0xFF0F` (IF) as **plain bus reads** from the
+- [x] Treat `0xFFFF` (IE) and `0xFF0F` (IF) as **plain bus reads** from the
       CPU's perspective — the CPU never holds its own copies. Every
       poll/clear goes through `_mmu.Read` / `_mmu.Write`.
-- [ ] Define a small `InterruptType` enum in `GameboyEmulator.Core/LR35902/`
+      **Addition:** the literal addresses are exposed as named constants
+      on a new `IoRegisters` static class (`InterruptEnableAddress = 0xFFFF`,
+      `InterruptFlagAddress = 0xFF0F`) so call sites read in English. Future
+      MMIO addresses (timer, LCD, joypad, …) can land alongside them.
+- [x] Define a small `InterruptType` enum in `GameboyEmulator.Core/LR35902/`
       mirroring the 5 sources (VBlank=0, LcdStat=1, Timer=2, Serial=3,
       Joypad=4). Used by both the dispatch logic and any future
       `IRequestInterrupt` helper.
-- [ ] Do **not** add an `IRequestInterrupt(InterruptType)` method on `Cpu`
+      **Deviation:** implemented as `[Flags] enum : byte` with bit-mask
+      values (`VBlank = 1 << 0`, `LcdStat = 1 << 1`, … `Joypad = 1 << 4`)
+      plus `None = 0` and `All = 0x1F` aliases, instead of plain bit
+      indices. The flag form composes naturally with `IE`/`IF` register
+      reads (which *are* bit masks), eliminates the `1 << bit` shifting
+      at every call site, and lets the helpers below take/return
+      `InterruptType` directly. A future `IRequestInterrupt` would write
+      `IF |= source` rather than `IF |= 1 << (int)source` — the cast is
+      gone.
+- [x] Do **not** add an `IRequestInterrupt(InterruptType)` method on `Cpu`
       in this step. Peripherals are out of scope; whoever owns the bus can
       OR into `IF` directly when the time comes. (Keeping the CPU surface
       small avoids a stub method nobody calls.)
 
 ### Interrupt dispatch in Step()
 
-- [ ] Add a `ServicePendingInterrupt()` helper. When invoked it:
+- [x] Add a `ServicePendingInterrupt()` helper. When invoked it:
       reads `IE` and `IF`, computes `pending = IE & IF & 0x1F`, picks the
       lowest set bit (highest priority — VBlank wins over Joypad), clears
       that bit in `IF` (read-modify-write through the bus), clears `InterruptMasterEnable`,
       pushes `Pc` (high byte first via `_mmu.Write`, matching the rest of
       the stack handlers), sets `Pc = 0x40 + bit*8`, and returns `20`.
-- [ ] Restructure the top of `Step()` so the prologue runs in this order:
+      **Addition — interrupt helpers in `Cpu.Interrupts.cs`:**
+      `GetPendingInterrupts()` returns `(IE & IF & All)` cast to
+      `InterruptType`. `IsInterruptRequested(InterruptType)` checks a
+      single bit in `IF`. `ClearInterruptRequest(InterruptType)` does the
+      read-modify-write that clears the bit in `IF`.
+      `GetHighestPriority(InterruptType)` resolves priority via an explicit
+      VBlank → LcdStat → Timer → Serial → Joypad chain (no bit-index
+      arithmetic). `GetInterruptVector(InterruptType)` is a switch
+      expression returning `0x40`/`0x48`/`0x50`/`0x58`/`0x60`. Call sites
+      now read `if (pending != InterruptType.None)`,
+      `if (IsInterruptRequested(InterruptType.Joypad))`,
+      `Pc = GetInterruptVector(serviced)` etc., with no `1 << bit` or
+      `& 0x10` masks at the call sites.
+- [x] Restructure the top of `Step()` so the prologue runs in this order:
       1. If `Halted`, check `(IE & IF & 0x1F) != 0`. If yes: clear `Halted`
          and fall through to step 2. If no: `UpdateInterruptTimer()` and
          return 4 (CPU keeps idling at 4 T per step).
@@ -92,25 +118,25 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
 
 ### EI / DI / RETI
 
-- [ ] `Di()`: clear `InterruptMasterEnable` immediately, **also clear `_enableInterruptsTimer`**
+- [x] `Di()`: clear `InterruptMasterEnable` immediately, **also clear `_enableInterruptsTimer`**
       (a pending EI is cancelled by an immediate DI). Return 4.
-- [ ] `Ei()`: keep `_enableInterruptsTimer = 2` per the snapshot note above.
+- [x] `Ei()`: keep `_enableInterruptsTimer = 2` per the snapshot note above.
       Return 4.
-- [ ] `Reti()` (`0xD9`): pop PC (mirror the existing `Ret()` handler in
+- [x] `Reti()` (`0xD9`): pop PC (mirror the existing `Ret()` handler in
       `Cpu.Branch.cs`), set `InterruptMasterEnable = true` *immediately* (no timer). Return
       16. Do **not** also set `_enableInterruptsTimer` — RETI is the
       no-delay path.
 
 ### HALT
 
-- [ ] Move `Hlt()` from `Cpu.cs` into `Cpu.Interrupts.cs`. Make `Halted`'s
+- [x] Move `Hlt()` from `Cpu.cs` into `Cpu.Interrupts.cs`. Make `Halted`'s
       setter `internal` (or keep `private set` and assign through a private
       backing field — the partial class can reach it either way).
-- [ ] Add a `bool _haltBugPending` field. The next `Fetch()` after it's
+- [x] Add a `bool _haltBugPending` field. The next `Fetch()` after it's
       set reads `_mmu.Read(Pc)` *without* incrementing `Pc`, and clears
       the flag. The byte that follows HALT is therefore read twice — once
       with the bug fetch, once on the subsequent normal fetch.
-- [ ] In `Hlt()`:
+- [x] In `Hlt()`:
       - If `InterruptMasterEnable`: set `Halted = true`. (Wake-and-dispatch is handled by the
         `Step()` prologue.)
       - If `!InterruptMasterEnable` and `(IE & IF & 0x1F) != 0`: do **not** halt. Set
@@ -119,21 +145,21 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
       - If `!InterruptMasterEnable` and no interrupt pending: set `Halted = true`. The
         prologue's wake-without-dispatch path handles resume.
       - Always return 4.
-- [ ] Modify `Fetch()` to honour `_haltBugPending`: if set, read at `Pc`
+- [x] Modify `Fetch()` to honour `_haltBugPending`: if set, read at `Pc`
       without incrementing, then clear the flag. (The hot path adds one
       branch — keep `[MethodImpl(AggressiveInlining)]`.)
 
 ### STOP
 
-- [ ] Implement `Stop()` (`0x10`): consume the second byte via `Fetch()`
+- [x] Implement `Stop()` (`0x10`): consume the second byte via `Fetch()`
       and discard it (per spec the encoder writes `10 00`, but real
       hardware ignores whatever byte follows — don't assert it's `0x00`).
       Set a new `bool Stopped { get; private set; }` flag on `Cpu`.
       Return 4.
-- [ ] Add a `Stopped` short-circuit in `Step()` (above the `Halted`
+- [x] Add a `Stopped` short-circuit in `Step()` (above the `Halted`
       check): if stopped, `UpdateInterruptTimer()` and return 4. CPU
       stays parked.
-- [ ] Wake from STOP is driven by the joypad. Since joypad MMIO isn't
+- [x] Wake from STOP is driven by the joypad. Since joypad MMIO isn't
       wired yet, expose a single internal escape hatch — either
       `internal void WakeFromStop()` on `Cpu` or have the prologue check
       "joypad bit (4) of IF set" and clear `Stopped` if so. Pick the
@@ -142,7 +168,7 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
       another change to the CPU. **Do not** dispatch the joypad
       interrupt as part of waking — clearing `Stopped` is enough; the
       normal prologue will dispatch on the next step if `InterruptMasterEnable` is set.
-- [ ] CGB speed-switch path is explicitly out of scope for DMG.
+- [x] CGB speed-switch path is explicitly out of scope for DMG.
 
 ## Tests
 
@@ -150,58 +176,80 @@ Add a new `CpuInterruptTests.cs` next to the other `Cpu*Tests.cs` files
 (same `CpuTestBase` plumbing). Coverage to hit the load-bearing parts of
 the model — not exhaustive multiplication of (IME × IF bits × HALT state).
 
-- [ ] **Dispatch basics**: with `InterruptMasterEnable=true`, `Mmu.Write(0xFFFF, 0x01)` (IE
+- [x] **Dispatch basics**: with `InterruptMasterEnable=true`, `Mmu.Write(0xFFFF, 0x01)` (IE
       VBlank), `Mmu.Write(0xFF0F, 0x01)` (IF VBlank), and any opcode at
       `Pc`, `Step()` returns 20, `Pc == 0x0040`, `InterruptMasterEnable == false`,
       `Mmu.Read(0xFF0F) == 0x00` (bit cleared), and the SP-stacked word
       equals the original `Pc`. Repeat the same shape for STAT/Timer/
       Serial/Joypad to confirm vectors `0x48`/`0x50`/`0x58`/`0x60`.
-- [ ] **Priority**: with VBlank and Timer both pending, the lower bit
+      *(Implemented as a single `[Theory]` `DispatchJumpsToVectorAndClearsBit`
+      parametrized over all 5 vectors.)*
+- [x] **Priority**: with VBlank and Timer both pending, the lower bit
       (VBlank) wins; only its `IF` bit is cleared, Timer stays asserted.
-- [ ] **No dispatch when InterruptMasterEnable=false**: `InterruptMasterEnable=false`, both IE and IF set →
+- [x] **No dispatch when InterruptMasterEnable=false**: `InterruptMasterEnable=false`, both IE and IF set →
       `Step()` runs the opcode at `Pc` normally, `IF` is unchanged.
-- [ ] **No dispatch when (IE & IF) == 0**: `InterruptMasterEnable=true` but no overlap →
+- [x] **No dispatch when (IE & IF) == 0**: `InterruptMasterEnable=true` but no overlap →
       runs the opcode normally.
-- [ ] **EI delay**: program `EI; NOP; NOP` at `Pc`. After step 1 (EI),
+- [x] **EI delay**: program `EI; NOP; NOP` at `Pc`. After step 1 (EI),
       `InterruptMasterEnable` is still false. After step 2 (NOP), `InterruptMasterEnable` is still false
       (the timer ticks but doesn't fire until end-of-step). After step
       3 (NOP), `InterruptMasterEnable` is true. Pin this exact ordering — it's the spec.
-- [ ] **DI cancels pending EI**: `EI; DI; NOP` → after step 3, `InterruptMasterEnable`
+      **Deviation:** the snapshot above pins "third *fetch* is the first
+      that sees IME=1" — with our Execute → UpdateInterruptTimer ordering,
+      that means the timer hits 0 at the end of step 2, so observing the
+      flag *after* `Step()` returns yields IME=true at end of step 2. The
+      "still false" in this bullet is internally inconsistent with the
+      snapshot. Implemented as `EiHasOneInstructionDelay` (asserts
+      IME=false after step 1, IME=true after step 2 — matching the
+      snapshot semantics), plus a separate
+      `InstructionAfterEiIsNotPreempted` test that pins the externally
+      observable property: with `EI; INC A; NOP` and IE/IF pre-asserted,
+      the `INC A` runs (not pre-empted by dispatch); dispatch only fires
+      on the *third* step.
+- [x] **DI cancels pending EI**: `EI; DI; NOP` → after step 3, `InterruptMasterEnable`
       stays false.
-- [ ] **RETI**: push a target address, set `Pc` at a `0xD9` opcode,
+- [x] **RETI**: push a target address, set `Pc` at a `0xD9` opcode,
       `InterruptMasterEnable=false`. After `Step()`, `Pc` equals the popped address, `InterruptMasterEnable`
       is true *immediately* (without an instruction delay), step returns
       16.
-- [ ] **HALT, IME=1, interrupt pending**: `Pc` at `0x76`, IE=IF=0x01,
+- [x] **HALT, IME=1, interrupt pending**: `Pc` at `0x76`, IE=IF=0x01,
       `InterruptMasterEnable=true`. First `Step()` is the HALT itself (returns 4, sets
       `Halted`). Second `Step()` services the interrupt: returns 20,
       `Pc == 0x0040`, `Halted == false`. (We don't combine HALT and
       dispatch into a single step — the snapshot's prologue clears
       `Halted` first, then dispatches.)
-- [ ] **HALT, IME=0, interrupt pending → HALT bug**: `Pc=0x100`, IE=IF=
+      **Deviation:** as written, this setup makes the prologue dispatch
+      *before* the HALT runs (IME=1 + pending overlap is checked before
+      `Fetch()`), so the HALT instruction never executes. The realistic
+      sequence — and the one that matches real hardware — is HALT runs
+      with IF=0, then a peripheral asserts IF later. The implemented
+      `HaltImeOnePendingInterrupt` test follows that flow: IF=0 at HALT
+      time (step 1: HALT, returns 4, Halted=true), then `Mmu.Write(0xFF0F,
+      0x01)` (step 2: prologue clears Halted and dispatches, returns 20).
+- [x] **HALT, IME=0, interrupt pending → HALT bug**: `Pc=0x100`, IE=IF=
       `0x01`, `InterruptMasterEnable=false`. Place `0x76` at 0x100 and `0x3C` (INC A) at
       0x101. After `Step()` (HALT itself): `Halted == false`, `Pc ==
       0x101`, A unchanged. After next `Step()`: A incremented and `Pc
       == 0x101` *still* (the bug fetch didn't advance). After third
       `Step()`: A incremented again, `Pc == 0x102`. (Two INCs from one
       written byte is the canonical halt_bug.gb signature.)
-- [ ] **HALT, IME=0, no interrupt**: `Pc` at `0x76`, IE=IF=0. First
+- [x] **HALT, IME=0, no interrupt**: `Pc` at `0x76`, IE=IF=0. First
       `Step()` halts (returns 4). Subsequent `Step()`s return 4 without
       advancing `Pc`. Set `IF=0x01` with IE=0x01 → next `Step()` clears
       `Halted` and runs the opcode after HALT (does *not* dispatch,
       because IME=0). Step returns whatever that opcode normally costs,
       not 20.
-- [ ] **STOP**: `Pc` at `0x10 0x00 0x3C` (STOP, padding, INC A). First
+- [x] **STOP**: `Pc` at `0x10 0x00 0x3C` (STOP, padding, INC A). First
       `Step()` returns 4, `Stopped == true`, `Pc` advanced past both
       bytes. Subsequent `Step()`s return 4 without advancing `Pc`. Set
       IF bit 4 (joypad) → next `Step()` clears `Stopped`; the step
       after runs `INC A`.
-- [ ] **DI clears IME**: `InterruptMasterEnable=true`, run `DI` → `InterruptMasterEnable=false`, returns 4.
-- [ ] **Reset post-boot**: `Reset()` leaves `InterruptMasterEnable == false`.
-- [ ] Delete `TestDeferredOpcodeThrowsUntilNextStep` from
+- [x] **DI clears IME**: `InterruptMasterEnable=true`, run `DI` → `InterruptMasterEnable=false`, returns 4.
+- [x] **Reset post-boot**: `Reset()` leaves `InterruptMasterEnable == false`.
+- [x] Delete `TestDeferredOpcodeThrowsUntilNextStep` from
       `CpuArithmeticTests.cs` — both `0x10` and `0xD9` now have real
       handlers and the theory is empty.
-- [ ] Add rows to `CpuTStateCoverageTests.cs`:
+- [x] Add rows to `CpuTStateCoverageTests.cs`:
       - `DI` → 4 T (`0xF3`)
       - `EI` → 4 T (`0xFB`)
       - `HALT` → 4 T (`0x76`)
@@ -213,6 +261,10 @@ the model — not exhaustive multiplication of (IME × IF bits × HALT state).
         `InterruptMasterEnable=true, IE=IF=0x01` row that asserts `Step()` returns 20, or
         add a dedicated `Fact`. A dedicated `Fact` is cleaner — the
         existing `[InlineData]` shape doesn't carry IE/IF/IME setup.
+      *(DI/EI/HALT added as `[InlineData]` rows; RETI and interrupt
+      dispatch added as dedicated `[Fact]`s — `RetiReturns16TStates` and
+      `InterruptDispatchReturns20TStates` — since both need state setup
+      the existing theory shape doesn't carry.)*
 
 ## Out of scope (explicitly)
 

@@ -41,6 +41,9 @@ public class CpuTStateCoverageTests : CpuTestBase
     [InlineData("CB op r",              8,  new byte[] { 0xCB, 0x00 },       CpuFlags.None)] // RLC B
     [InlineData("CB op (HL)",           16, new byte[] { 0xCB, 0x06 },       CpuFlags.None)] // RLC (HL)
     [InlineData("CB BIT n,(HL)",        12, new byte[] { 0xCB, 0x46 },       CpuFlags.None)] // BIT 0,(HL)
+    [InlineData("DI",                   4,  new byte[] { 0xF3 },             CpuFlags.None)]
+    [InlineData("EI",                   4,  new byte[] { 0xFB },             CpuFlags.None)]
+    [InlineData("HALT",                 4,  new byte[] { 0x76 },             CpuFlags.None)]
     public void StepReturnsExpectedTStates(string label, int expected, byte[] program, CpuFlags flags)
     {
         _ = label;
@@ -53,5 +56,36 @@ public class CpuTStateCoverageTests : CpuTestBase
         var cycles = Cpu.Step();
 
         Assert.Equal(expected, cycles);
+    }
+
+    [Fact]
+    public void RetiReturns16TStates()
+    {
+        ushort start = 0x0100;
+        ushort sp = 0x4000;
+        Mmu.Write(start, 0xD9);
+        Mmu.WriteWord(sp, 0x1234);
+
+        Cpu.WriteState(new CpuState { Pc = start, Sp = sp });
+
+        var cycles = Cpu.Step();
+
+        Assert.Equal(16, cycles);
+    }
+
+    [Fact]
+    public void InterruptDispatchReturns20TStates()
+    {
+        ushort start = 0x0100;
+        Mmu.Write(start, 0x00); // NOP under PC — unreached if dispatch fires
+        Mmu.Write(IoRegisters.InterruptEnableAddress, 0x01); // IE: VBlank
+        Mmu.Write(IoRegisters.InterruptFlagAddress, 0x01); // IF: VBlank
+
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
+        Cpu.InterruptMasterEnable = true;
+
+        var cycles = Cpu.Step();
+
+        Assert.Equal(20, cycles);
     }
 }
