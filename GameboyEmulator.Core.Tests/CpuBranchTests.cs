@@ -90,7 +90,7 @@ public class CpuBranchTests : CpuTestBase
     }
 
     [Fact]
-    public void TestJmp()
+    public void TestJp()
     {
         byte opcode = 0xC3;
         var initialState = new CpuState
@@ -221,7 +221,7 @@ public class CpuBranchTests : CpuTestBase
     }
 
     [Fact]
-    public void TestPchl()
+    public void TestJpHl()
     {
         var initialState = new CpuState { Pc = 0x10 };
         initialState.WriteRegPair(Reg.H, 0x2030);
@@ -325,8 +325,8 @@ public class CpuBranchTests : CpuTestBase
         Assert.Equal(0x00, Mmu.Read((ushort)(stackAddr - 1)));
     }
 
-    // Regression guard for the pre-step-3.1 bug where Jnz/Jz/Jnc/Jc returned the
-    // same cycle count regardless of taken-vs-not-taken. LR35902 returns 16 taken,
+    // Regression guard for the pre-step-3.1 bug where conditional JP NZ/Z/NC/C returned
+    // the same cycle count regardless of taken-vs-not-taken. LR35902 returns 16 taken,
     // 12 not-taken — these must differ.
     [Theory]
     [InlineData(0xC2, CpuFlags.None, CpuFlags.All)]   // JNZ taken when Z=0, not-taken when Z=1

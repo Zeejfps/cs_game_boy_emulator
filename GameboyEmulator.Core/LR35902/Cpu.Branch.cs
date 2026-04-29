@@ -5,7 +5,7 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rnz()
+    private int RetNz()
     {
         if ((Flags & CpuFlags.Z) != 0)
             return 8;
@@ -16,7 +16,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rnc()
+    private int RetNc()
     {
         if ((Flags & CpuFlags.C) != 0)
             return 8;
@@ -27,7 +27,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rz()
+    private int RetZ()
     {
         if ((Flags & CpuFlags.Z) == 0)
             return 8;
@@ -49,7 +49,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jnz()
+    private int JpNz()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) != 0)
@@ -59,7 +59,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jnc()
+    private int JpNc()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.C) != 0)
@@ -69,7 +69,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jz()
+    private int JpZ()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) == 0)
@@ -79,7 +79,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jc()
+    private int JpC()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.C) == 0)
@@ -97,7 +97,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Pchl()
+    private int JpHl()
     {
         Pc = Rhl;
         return 4;
@@ -114,14 +114,14 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jmp()
+    private int Jp()
     {
         Pc = FetchWord();
         return 16;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cnz()
+    private int CallNz()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) != 0)
@@ -133,7 +133,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cnc()
+    private int CallNc()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.C) != 0)
@@ -145,7 +145,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cz()
+    private int CallZ()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) == 0)
@@ -157,7 +157,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cc()
+    private int CallC()
     {
         var address = FetchWord();
         if ((Flags & CpuFlags.C) == 0)

@@ -12,7 +12,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0xA4, Reg.H, 0x15, 0x15)] // ANA H
     [InlineData(0xA5, Reg.L, 0x15, 0x15)] // ANA L
     [InlineData(0xA7, Reg.A, 0x15, 0x15)] // ANA A
-    public void TestAnaRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA)
+    public void TestAndRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = 0x15 };
         initialState.WriteReg(srcReg, srcVal);
@@ -32,7 +32,7 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Fact]
-    public void TestAnaM()
+    public void TestAndM()
     {
         ushort addr = 0x2000;
         var initialState = new CpuState { Pc = 0x00, Ra = 0x15 };
@@ -59,7 +59,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0xFF, 0x80, 0x80, CpuFlags.H)]
     [InlineData(0x0F, 0x0F, 0x0F, CpuFlags.H)]
     [InlineData(0x08, 0x08, 0x08, CpuFlags.H)]
-    public void TestAnaFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
+    public void TestAndFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
 
@@ -84,7 +84,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0xAB, Reg.E, 0x07, 0x08)] // XRA E
     [InlineData(0xAC, Reg.H, 0x07, 0x08)] // XRA H
     [InlineData(0xAD, Reg.L, 0x07, 0x08)] // XRA L
-    public void TestXraRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA)
+    public void TestXorRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = 0x0F };
         initialState.WriteReg(srcReg, srcVal);
@@ -104,7 +104,7 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Fact]
-    public void TestXraA()
+    public void TestXorA()
     {
         var initialState = new CpuState { Pc = 0x00, Ra = 0x10 };
 
@@ -123,7 +123,7 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Fact]
-    public void TestXraM()
+    public void TestXorM()
     {
         ushort addr = 0x2000;
         var initialState = new CpuState { Pc = 0x00, Ra = 0x0F };
@@ -150,7 +150,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0xFF, 0x7F, 0x80, CpuFlags.None)]
     [InlineData(0x3C, 0x0F, 0x33, CpuFlags.None)]
     [InlineData(0x00, 0xFF, 0xFF, CpuFlags.None)]
-    public void TestXraFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
+    public void TestXorFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
 
@@ -176,7 +176,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0xB4, Reg.H, 0x10, 0x10)] // ORA H
     [InlineData(0xB5, Reg.L, 0x10, 0x10)] // ORA L
     [InlineData(0xB7, Reg.A, 0x10, 0x10)] // ORA A
-    public void TestOraRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA)
+    public void TestOrRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = 0x10 };
         initialState.WriteReg(srcReg, srcVal);
@@ -196,7 +196,7 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Fact]
-    public void TestOraM()
+    public void TestOrM()
     {
         ushort addr = 0x2000;
         var initialState = new CpuState { Pc = 0x00, Ra = 0x10 };
@@ -223,7 +223,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0x00, 0x00, 0x00, CpuFlags.Z)]
     [InlineData(0x80, 0x80, 0x80, CpuFlags.None)]
     [InlineData(0x01, 0x02, 0x03, CpuFlags.None)]
-    public void TestOraFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
+    public void TestOrFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
 
@@ -248,7 +248,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0xBB, Reg.E, 0x01)] // CMP E
     [InlineData(0xBC, Reg.H, 0x01)] // CMP H
     [InlineData(0xBD, Reg.L, 0x01)] // CMP L
-    public void TestCmpRegister(byte opcode, Reg srcReg, byte srcVal)
+    public void TestCpRegister(byte opcode, Reg srcReg, byte srcVal)
     {
         // 0x11 - 0x01 = 0x10, no half-borrow, no borrow, non-zero, N=1.
         var initialState = new CpuState { Pc = 0x00, Ra = 0x11 };
@@ -268,7 +268,7 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Fact]
-    public void TestCmpA()
+    public void TestCpA()
     {
         var initialState = new CpuState { Pc = 0x00, Ra = 0x10 };
 
@@ -286,7 +286,7 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Fact]
-    public void TestCmpM()
+    public void TestCpM()
     {
         ushort addr = 0x2000;
         var initialState = new CpuState { Pc = 0x00, Ra = 0x11 };
@@ -312,7 +312,7 @@ public class CpuLogicTests : CpuTestBase
     [InlineData(0x10, 0x10, CpuFlags.Z | CpuFlags.N)]
     [InlineData(0x05, 0x10, CpuFlags.N | CpuFlags.C)]
     [InlineData(0x00, 0x01, CpuFlags.N | CpuFlags.H | CpuFlags.C)]
-    public void TestCmpFlags(byte a, byte b, CpuFlags expectedFlags)
+    public void TestCpFlags(byte a, byte b, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
 

@@ -5,7 +5,7 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int PopB()
+    private int PopBc()
     {
         Rbc = _mmu.ReadWord(Sp);
         Sp += 2;
@@ -13,7 +13,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int PushB()
+    private int PushBc()
     {
         Sp -= 2;
         _mmu.Write((ushort)(Sp + 1), Rb);
@@ -22,7 +22,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int PopD()
+    private int PopDe()
     {
         Rde = _mmu.ReadWord(Sp);
         Sp += 2;
@@ -30,7 +30,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int PushD()
+    private int PushDe()
     {
         Sp -= 2;
         _mmu.Write((ushort)(Sp + 1), Rd);
@@ -40,7 +40,7 @@ public sealed partial class Cpu
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int PopH()
+    private int PopHl()
     {
         Rhl = _mmu.ReadWord(Sp);
         Sp += 2;
@@ -48,7 +48,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int PushH()
+    private int PushHl()
     {
         Sp -= 2;
         _mmu.Write((ushort)(Sp + 1), Rh);
@@ -75,7 +75,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Sphl()
+    private int LdSpHl()
     {
         Sp = Rhl;
         return 8;

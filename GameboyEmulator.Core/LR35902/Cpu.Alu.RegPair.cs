@@ -32,13 +32,13 @@ public sealed partial class Cpu
     private int AddHl(ushort value) { AddHL(value); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHlB() => AddHl(Rbc);
+    private int AddHlBc() => AddHl(Rbc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHlD() => AddHl(Rde);
+    private int AddHlDe() => AddHl(Rde);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHlH() => AddHl(Rhl);
+    private int AddHlHl() => AddHl(Rhl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int AddHlSp() => AddHl(Sp);

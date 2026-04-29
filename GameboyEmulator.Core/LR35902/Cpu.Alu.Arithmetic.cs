@@ -110,35 +110,35 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Sbb(byte value)
+    private int Sbc(byte value)
     {
         Ra = Sub8(Ra, value, (Flags & CpuFlags.C) != 0);
         return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbB() => Sbb(Rb);
+    private int SbcB() => Sbc(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbC() => Sbb(Rc);
+    private int SbcC() => Sbc(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbD() => Sbb(Rd);
+    private int SbcD() => Sbc(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbE() => Sbb(Re);
+    private int SbcE() => Sbc(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbH() => Sbb(Rh);
+    private int SbcH() => Sbc(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbL() => Sbb(Rl);
+    private int SbcL() => Sbc(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbA() => Sbb(Ra);
+    private int SbcA() => Sbc(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbbM()
+    private int SbcM()
     {
         Ra = Sub8(Ra, _mmu.Read(Rhl), (Flags & CpuFlags.C) != 0);
         return 8;

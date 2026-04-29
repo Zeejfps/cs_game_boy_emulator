@@ -11,20 +11,20 @@ public sealed partial class Cpu
     private int SubN() { Sub(Fetch()); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AndN() { Ana(Fetch()); return 8; }
+    private int AndN() { And(Fetch()); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OrN() { Ora(Fetch()); return 8; }
+    private int OrN() { Or(Fetch()); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int AdcN() { Adc(Fetch()); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcN() { Sbb(Fetch()); return 8; }
+    private int SbcN() { Sbc(Fetch()); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XorN() { Xra(Fetch()); return 8; }
+    private int XorN() { Xor(Fetch()); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CpN() { Cmp(Fetch()); return 8; }
+    private int CpN() { Cp(Fetch()); return 8; }
 }

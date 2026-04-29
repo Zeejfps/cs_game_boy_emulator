@@ -34,7 +34,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Hlt()
+    private int Halt()
     {
         var pending = GetPendingInterrupts();
         if (InterruptMasterEnable)

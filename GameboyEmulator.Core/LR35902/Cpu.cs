@@ -221,7 +221,7 @@ public sealed partial class Cpu
         0x73 => LdMe(),
         0x74 => LdMh(),
         0x75 => LdMl(),
-        0x76 => Hlt(),
+        0x76 => Halt(),
         0x77 => LdMa(),
 
         // LD A,(rr)
@@ -239,9 +239,9 @@ public sealed partial class Cpu
         0x31 => LdSpNn(),
 
         // ADD HL,rr
-        0x09 => AddHlB(),
-        0x19 => AddHlD(),
-        0x29 => AddHlH(),
+        0x09 => AddHlBc(),
+        0x19 => AddHlDe(),
+        0x29 => AddHlHl(),
         0x39 => AddHlSp(),
 
         // INC rr
@@ -257,20 +257,20 @@ public sealed partial class Cpu
         0x3B => DecSp(),
 
         // Stack operations
-        0xC1 => PopB(),
-        0xD1 => PopD(),
-        0xE1 => PopH(),
+        0xC1 => PopBc(),
+        0xD1 => PopDe(),
+        0xE1 => PopHl(),
         0xF1 => PopAf(),
 
-        0xC5 => PushB(),
-        0xD5 => PushD(),
-        0xE5 => PushH(),
+        0xC5 => PushBc(),
+        0xD5 => PushDe(),
+        0xE5 => PushHl(),
         0xF5 => PushAf(),
 
         // Conditional returns
-        0xC0 => Rnz(),
-        0xC8 => Rz(),
-        0xD0 => Rnc(),
+        0xC0 => RetNz(),
+        0xC8 => RetZ(),
+        0xD0 => RetNc(),
         0xD8 => RetC(),
 
         // ADD
@@ -303,73 +303,73 @@ public sealed partial class Cpu
         0x96 => SubM(),
         0x97 => SubA(),
 
-        // SBB
-        0x98 => SbbB(),
-        0x99 => SbbC(),
-        0x9A => SbbD(),
-        0x9B => SbbE(),
-        0x9C => SbbH(),
-        0x9D => SbbL(),
-        0x9E => SbbM(),
-        0x9F => SbbA(),
+        // SBC
+        0x98 => SbcB(),
+        0x99 => SbcC(),
+        0x9A => SbcD(),
+        0x9B => SbcE(),
+        0x9C => SbcH(),
+        0x9D => SbcL(),
+        0x9E => SbcM(),
+        0x9F => SbcA(),
 
-        // ANA
-        0xA0 => AnaB(),
-        0xA1 => AnaC(),
-        0xA2 => AnaD(),
-        0xA3 => AnaE(),
-        0xA4 => AnaH(),
-        0xA5 => AnaL(),
-        0xA6 => AnaM(),
-        0xA7 => AnaA(),
+        // AND
+        0xA0 => AndB(),
+        0xA1 => AndC(),
+        0xA2 => AndD(),
+        0xA3 => AndE(),
+        0xA4 => AndH(),
+        0xA5 => AndL(),
+        0xA6 => AndM(),
+        0xA7 => AndA(),
 
-        // XRA
-        0xA8 => XraB(),
-        0xA9 => XraC(),
-        0xAA => XraD(),
-        0xAB => XraE(),
-        0xAC => XraH(),
-        0xAD => XraL(),
-        0xAE => XraM(),
-        0xAF => XraA(),
+        // XOR
+        0xA8 => XorB(),
+        0xA9 => XorC(),
+        0xAA => XorD(),
+        0xAB => XorE(),
+        0xAC => XorH(),
+        0xAD => XorL(),
+        0xAE => XorM(),
+        0xAF => XorA(),
 
-        // ORA
-        0xB0 => OraB(),
-        0xB1 => OraC(),
-        0xB2 => OraD(),
-        0xB3 => OraE(),
-        0xB4 => OraH(),
-        0xB5 => OraL(),
-        0xB6 => OraM(),
-        0xB7 => OraA(),
+        // OR
+        0xB0 => OrB(),
+        0xB1 => OrC(),
+        0xB2 => OrD(),
+        0xB3 => OrE(),
+        0xB4 => OrH(),
+        0xB5 => OrL(),
+        0xB6 => OrM(),
+        0xB7 => OrA(),
 
-        // CMP
-        0xB8 => CmpB(),
-        0xB9 => CmpC(),
-        0xBA => CmpD(),
-        0xBB => CmpE(),
-        0xBC => CmpH(),
-        0xBD => CmpL(),
-        0xBE => CmpM(),
-        0xBF => CmpA(),
+        // CP
+        0xB8 => CpB(),
+        0xB9 => CpC(),
+        0xBA => CpD(),
+        0xBB => CpE(),
+        0xBC => CpH(),
+        0xBD => CpL(),
+        0xBE => CpM(),
+        0xBF => CpA(),
 
-        // Unconditional return, call, pchl
+        // Unconditional return, call, JP HL
         0xC9 => Ret(),
         0xCD => Call(),
-        0xE9 => Pchl(),
+        0xE9 => JpHl(),
 
         // Jumps
-        0xC3 => Jmp(),
-        0xC2 => Jnz(),
-        0xCA => Jz(),
-        0xD2 => Jnc(),
-        0xDA => Jc(),
+        0xC3 => Jp(),
+        0xC2 => JpNz(),
+        0xCA => JpZ(),
+        0xD2 => JpNc(),
+        0xDA => JpC(),
 
         // Conditional calls
-        0xC4 => Cnz(),
-        0xCC => Cz(),
-        0xD4 => Cnc(),
-        0xDC => Cc(),
+        0xC4 => CallNz(),
+        0xCC => CallZ(),
+        0xD4 => CallNc(),
+        0xDC => CallC(),
 
         // Restarts
         0xC7 => Rst0(),
@@ -425,7 +425,7 @@ public sealed partial class Cpu
         0x35 => DecM(),
         0x3D => DecA(),
 
-        0xF9 => Sphl(),
+        0xF9 => LdSpHl(),
 
         // LR35902 Replace opcodes — load/store
         0x22 => LdHlIncA(),

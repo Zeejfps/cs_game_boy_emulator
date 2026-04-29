@@ -5,7 +5,7 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Ana(byte value)
+    private int And(byte value)
     {
         var result = (byte)(Ra & value);
         SetFlags(result, n: false, h: true, c: false);
@@ -14,7 +14,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Xra(byte value)
+    private int Xor(byte value)
     {
         var result = (byte)(Ra ^ value);
         SetFlags(result, n: false, h: false, c: false);
@@ -23,55 +23,55 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaB() => Ana(Rb);
+    private int AndB() => And(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaC() => Ana(Rc);
+    private int AndC() => And(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaD() => Ana(Rd);
+    private int AndD() => And(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaE() => Ana(Re);
+    private int AndE() => And(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaH() => Ana(Rh);
+    private int AndH() => And(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaL() => Ana(Rl);
+    private int AndL() => And(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaA() => Ana(Ra);
+    private int AndA() => And(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaM() { Ana(_mmu.Read(Rhl)); return 8; }
+    private int AndM() { And(_mmu.Read(Rhl)); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraB() => Xra(Rb);
+    private int XorB() => Xor(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraC() => Xra(Rc);
+    private int XorC() => Xor(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraD() => Xra(Rd);
+    private int XorD() => Xor(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraE() => Xra(Re);
+    private int XorE() => Xor(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraH() => Xra(Rh);
+    private int XorH() => Xor(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraL() => Xra(Rl);
+    private int XorL() => Xor(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraA() => Xra(Ra);
+    private int XorA() => Xor(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraM() { Xra(_mmu.Read(Rhl)); return 8; }
+    private int XorM() { Xor(_mmu.Read(Rhl)); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Ora(byte value)
+    private int Or(byte value)
     {
         var result = (byte)(Ra | value);
         SetFlags(result, n: false, h: false, c: false);
@@ -80,57 +80,57 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraB() => Ora(Rb);
+    private int OrB() => Or(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraC() => Ora(Rc);
+    private int OrC() => Or(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraD() => Ora(Rd);
+    private int OrD() => Or(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraE() => Ora(Re);
+    private int OrE() => Or(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraH() => Ora(Rh);
+    private int OrH() => Or(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraL() => Ora(Rl);
+    private int OrL() => Or(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraA() => Ora(Ra);
+    private int OrA() => Or(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraM() { Ora(_mmu.Read(Rhl)); return 8; }
+    private int OrM() { Or(_mmu.Read(Rhl)); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cmp(byte value)
+    private int Cp(byte value)
     {
         Sub8(Ra, value, false);
         return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpB() => Cmp(Rb);
+    private int CpB() => Cp(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpC() => Cmp(Rc);
+    private int CpC() => Cp(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpD() => Cmp(Rd);
+    private int CpD() => Cp(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpE() => Cmp(Re);
+    private int CpE() => Cp(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpH() => Cmp(Rh);
+    private int CpH() => Cp(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpL() => Cmp(Rl);
+    private int CpL() => Cp(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpA() => Cmp(Ra);
+    private int CpA() => Cp(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpM() { Cmp(_mmu.Read(Rhl)); return 8; }
+    private int CpM() { Cp(_mmu.Read(Rhl)); return 8; }
 }

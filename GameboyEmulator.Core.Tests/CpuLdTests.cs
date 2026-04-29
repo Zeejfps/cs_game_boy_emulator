@@ -308,7 +308,7 @@ public class CpuLdTests : CpuTestBase
     }
 
     [Fact]
-    public void TestSphl()
+    public void TestLdSpHl()
     {
         byte opcode = 0xF9;
         var initialState = new CpuState

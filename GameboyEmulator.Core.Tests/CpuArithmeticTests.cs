@@ -156,7 +156,7 @@ public class CpuArithmeticTests : CpuTestBase
     [InlineData(0x9B, Reg.E, 0x10, 0x10, CpuFlags.N)] // SBB E
     [InlineData(0x9C, Reg.H, 0x10, 0x10, CpuFlags.N)] // SBB H
     [InlineData(0x9D, Reg.L, 0x10, 0x10, CpuFlags.N)] // SBB L
-    public void TestSbbRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA, CpuFlags expectedFlags)
+    public void TestSbcRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA, CpuFlags expectedFlags)
     {
         // 0x21 - 0x10 - 1 = 0x10. Low nibble (0x1 - 0x0 - 1) = 0 → no half-borrow.
         var initialState = new CpuState { Pc = 0x00, Ra = 0x21, Flags = CpuFlags.C };
@@ -177,7 +177,7 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Fact]
-    public void TestSbbA()
+    public void TestSbcA()
     {
         // A=0x10, SBB A with C=1 → 0x10 - 0x10 - 1 = -1 = 0xFF, H=1, C=1, Z=0, N=1
         var initialState = new CpuState { Pc = 0x00, Ra = 0x10, Flags = CpuFlags.C };
@@ -197,7 +197,7 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Fact]
-    public void TestSbbM()
+    public void TestSbcM()
     {
         ushort addr = 0x2000;
         var initialState = new CpuState { Pc = 0x00, Ra = 0x21, Flags = CpuFlags.C };
@@ -225,7 +225,7 @@ public class CpuArithmeticTests : CpuTestBase
     [InlineData(CpuFlags.C,    0x10, 0x00, 0x0F, CpuFlags.N | CpuFlags.H)]                          // borrow causes half-borrow
     [InlineData(CpuFlags.C,    0x00, 0x00, 0xFF, CpuFlags.N | CpuFlags.H | CpuFlags.C)]            // borrow causes underflow
     [InlineData(CpuFlags.None, 0x00, 0x01, 0xFF, CpuFlags.N | CpuFlags.H | CpuFlags.C)]            // underflow
-    public void TestSbbFlags(CpuFlags initialFlags, byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
+    public void TestSbcFlags(CpuFlags initialFlags, byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b, Flags = initialFlags };
 
