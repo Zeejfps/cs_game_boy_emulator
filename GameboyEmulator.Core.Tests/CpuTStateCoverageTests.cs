@@ -38,6 +38,9 @@ public class CpuTStateCoverageTests : CpuTestBase
     [InlineData("LDH (a8),A",           12, new byte[] { 0xE0, 0x80 },       CpuFlags.None)]
     [InlineData("JR cc taken",          12, new byte[] { 0x20, 0x00 },       CpuFlags.None)]
     [InlineData("JR cc not-taken",      8,  new byte[] { 0x20, 0x00 },       CpuFlags.Z)]
+    [InlineData("CB op r",              8,  new byte[] { 0xCB, 0x00 },       CpuFlags.None)] // RLC B
+    [InlineData("CB op (HL)",           16, new byte[] { 0xCB, 0x06 },       CpuFlags.None)] // RLC (HL)
+    [InlineData("CB BIT n,(HL)",        12, new byte[] { 0xCB, 0x46 },       CpuFlags.None)] // BIT 0,(HL)
     public void StepReturnsExpectedTStates(string label, int expected, byte[] program, CpuFlags flags)
     {
         _ = label;

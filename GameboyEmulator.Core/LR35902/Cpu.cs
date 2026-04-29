@@ -434,12 +434,6 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CbPrefix()
-    {
-        throw new NotImplementedException("CB prefix — wired in step 4");
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Nop()
     {
         return 4;

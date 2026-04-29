@@ -32,26 +32,29 @@ write 256 case arms.
 
 ### Decoder
 
-- [ ] Create `Cpu.Cb.cs` (new file in `GameboyEmulator.Core/LR35902/`)
+- [x] Create `Cpu.Cb.cs` (new file in `GameboyEmulator.Core/LR35902/`)
       and put the CB dispatch + operation helpers there. Replace the
       `CbPrefix()` body in `Cpu.cs` with a call into this file (or move
       the method outright — pick one and keep `Cpu.cs` thin).
-- [ ] Inside `CbPrefix()`:
-  - [ ] `Fetch()` the sub-opcode byte (the `0xCB` byte itself was
+      *Moved outright: the `CbPrefix()` stub was deleted from `Cpu.cs`
+      and the real method lives in `Cpu.Cb.cs` via the partial class.*
+- [x] Inside `CbPrefix()`:
+  - [x] `Fetch()` the sub-opcode byte (the `0xCB` byte itself was
         already consumed by `Step()`'s outer `Fetch()` before dispatch).
-  - [ ] Compute `op = subOpcode >> 3` (0..31) and `operand = subOpcode & 7`
+  - [x] Compute `op = subOpcode >> 3` (0..31) and `operand = subOpcode & 7`
         (0=B, 1=C, 2=D, 3=E, 4=H, 5=L, 6=(HL), 7=A).
-  - [ ] Read the operand value via a small helper (switch on `operand`,
+  - [x] Read the operand value via a small helper (switch on `operand`,
         returning `Rb` / `Rc` / … / `_mmu.Read(Rhl)` / `Ra`).
-  - [ ] Apply the operation by switching on `op`:
+        *Implemented as `ReadCbOperand(int)` / `WriteCbOperand(int, byte)`.*
+  - [x] Apply the operation by switching on `op`:
         `0..7` → shift/rotate/swap group (8 ops by `op` value),
         `8..15` → `BIT (op-8), r`, `16..23` → `RES (op-16), r`,
         `24..31` → `SET (op-24), r`.
-  - [ ] For `BIT`, return early after reading — no write-back.
-  - [ ] For all other operations, write the new value back via the
+  - [x] For `BIT`, return early after reading — no write-back.
+  - [x] For all other operations, write the new value back via the
         operand-writer (mirror of the reader: register set or
         `_mmu.Write(Rhl, value)`).
-  - [ ] Return the cycle count: register operand → `8`; `(HL)` operand
+  - [x] Return the cycle count: register operand → `8`; `(HL)` operand
         → `16`, except `BIT n,(HL)` → `12`. The 4 T prefix fetch is
         **included** in those totals; `CbPrefix` is responsible for
         the entire 2-byte instruction's T-state budget — do **not**
@@ -63,17 +66,17 @@ Each shift/rotate/swap helper takes the current operand value, computes
 the new value, sets `Z=result, N=0, H=0` and `C` per the table below,
 and returns the new byte. `BIT`/`RES`/`SET` take the bit index too.
 
-- [ ] `RLC` — bit 7 → C and bit 0; `C = old bit7`.
-- [ ] `RRC` — bit 0 → C and bit 7; `C = old bit0`.
-- [ ] `RL`  — rotate left through C; `C = old bit7`.
-- [ ] `RR`  — rotate right through C; `C = old bit0`.
-- [ ] `SLA` — shift left, bit 0 = 0; `C = old bit7`.
-- [ ] `SRA` — arithmetic shift right (bit 7 preserved); `C = old bit0`.
-- [ ] `SWAP` — swap nibbles; `Z=result, N=H=C=0`.
-- [ ] `SRL` — logical shift right (bit 7 = 0); `C = old bit0`.
-- [ ] `BIT n` — `Z = !((value >> n) & 1)`, `N=0`, `H=1`, `C` unchanged.
-- [ ] `RES n` — `value & ~(1 << n)`, no flag changes.
-- [ ] `SET n` — `value | (1 << n)`,  no flag changes.
+- [x] `RLC` — bit 7 → C and bit 0; `C = old bit7`. *(`CbRlc`)*
+- [x] `RRC` — bit 0 → C and bit 7; `C = old bit0`. *(`CbRrc`)*
+- [x] `RL`  — rotate left through C; `C = old bit7`. *(`CbRl`)*
+- [x] `RR`  — rotate right through C; `C = old bit0`. *(`CbRr`)*
+- [x] `SLA` — shift left, bit 0 = 0; `C = old bit7`. *(`CbSla`)*
+- [x] `SRA` — arithmetic shift right (bit 7 preserved); `C = old bit0`. *(`CbSra`)*
+- [x] `SWAP` — swap nibbles; `Z=result, N=H=C=0`. *(`CbSwap`)*
+- [x] `SRL` — logical shift right (bit 7 = 0); `C = old bit0`. *(`CbSrl`)*
+- [x] `BIT n` — `Z = !((value >> n) & 1)`, `N=0`, `H=1`, `C` unchanged. *(`CbBit`)*
+- [x] `RES n` — `value & ~(1 << n)`, no flag changes. *(`CbRes`)*
+- [x] `SET n` — `value | (1 << n)`,  no flag changes. *(`CbSet`)*
 
 ### Tests
 
@@ -81,27 +84,33 @@ Add a new `CpuCbTests.cs` next to the other `Cpu*Tests.cs` files
 (same `CpuTestBase` plumbing as the rest of the suite). Coverage to
 hit the load-bearing parts of the decoder, not all 256 opcodes:
 
-- [ ] One operand-coverage test per operation group: pick a single
+- [x] One operand-coverage test per operation group: pick a single
       sub-opcode that exercises the operation against B (or any
       register), verify the result and the four flag bits. 11 tests.
-- [ ] Operand decoding: a parameterized test that runs `RLC` against
+- [x] Operand decoding: a parameterized test that runs `RLC` against
       each of the 8 operand slots (B, C, D, E, H, L, (HL), A) and
       asserts the right register/memory location was written.
-- [ ] `(HL)` cycle accounting: `RLC (HL)` returns 16, `BIT 0,(HL)`
+      *Divergence: split into a 7-row `[Theory]` for the register
+      slots (`Rlc_OperandDecoding_Register`) plus a separate `[Fact]`
+      `Rlc_OperandDecoding_HL` for the memory slot, because the `(HL)`
+      case needs distinct memory-setup/assertion plumbing that doesn't
+      fit cleanly into `[InlineData]` rows. All 8 slots are still
+      covered.*
+- [x] `(HL)` cycle accounting: `RLC (HL)` returns 16, `BIT 0,(HL)`
       returns 12, `RES 0,(HL)` returns 16, `SET 0,(HL)` returns 16.
-- [ ] Register cycle accounting: `RLC B` returns 8; one row per
+- [x] Register cycle accounting: `RLC B` returns 8; one row per
       operation group is plenty.
-- [ ] Flag-rule regressions worth pinning explicitly:
-  - [ ] `SWAP A` with `A=0` sets `Z=1`, clears N/H/C.
-  - [ ] `BIT n,r` leaves `C` untouched (run with `C=1` preset, assert
+- [x] Flag-rule regressions worth pinning explicitly:
+  - [x] `SWAP A` with `A=0` sets `Z=1`, clears N/H/C.
+  - [x] `BIT n,r` leaves `C` untouched (run with `C=1` preset, assert
         still `C=1` after).
-  - [ ] `RES`/`SET` leave all four flags untouched.
-  - [ ] CB `RLC B` with `B=0x00` sets `Z=1` (distinguishes from the
+  - [x] `RES`/`SET` leave all four flags untouched.
+  - [x] CB `RLC B` with `B=0x00` sets `Z=1` (distinguishes from the
         accumulator `RLCA` form, which always clears Z).
-- [ ] Remove the `[InlineData(0xCB)]` row from
+- [x] Remove the `[InlineData(0xCB)]` row from
       `CpuArithmeticTests.cs::TestDeferredOpcodeThrowsUntilNextStep`.
       `0x10` and `0xD9` stay (they land in step 5).
-- [ ] Add `0xCB` rows to the T-state coverage test in
+- [x] Add `0xCB` rows to the T-state coverage test in
       `CpuTStateCoverageTests.cs` (one register-form CB op = 8 T,
       one `(HL)` form = 16 T, `BIT n,(HL)` = 12 T).
 

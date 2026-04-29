@@ -973,7 +973,6 @@ public class CpuArithmeticTests : CpuTestBase
 
     [Theory]
     [InlineData(0x10)] // STOP — wired in step 5
-    [InlineData(0xCB)] // CB prefix — wired in step 4
     [InlineData(0xD9)] // RETI — wired in step 5
     public void TestDeferredOpcodeThrowsUntilNextStep(byte opcode)
     {
