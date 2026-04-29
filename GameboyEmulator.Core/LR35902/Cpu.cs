@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace SpaceInvadersEmulator.Core.Intel8080;
+namespace GameboyEmulator.Core.LR35902;
 
 public sealed partial class Cpu
 {

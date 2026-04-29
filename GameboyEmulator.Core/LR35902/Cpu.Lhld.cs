@@ -1,14 +1,14 @@
 using System.Runtime.CompilerServices;
 
-namespace SpaceInvadersEmulator.Core.Intel8080;
+namespace GameboyEmulator.Core.LR35902;
 
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Shld()
+    private int Lhld()
     {
         var address = FetchWord();
-        _mmu.WriteWord(address, Rhl);
+        Rhl = _mmu.ReadWord(address);
         return 16;
     }
 }

@@ -1,4 +1,4 @@
-using SpaceInvadersEmulator.Core.Intel8080;
+using GameboyEmulator.Core.LR35902;
 
 namespace GameboyEmulator.Core.Tests;
 

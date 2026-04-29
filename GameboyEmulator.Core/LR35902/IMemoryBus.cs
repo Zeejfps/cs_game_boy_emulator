@@ -1,4 +1,4 @@
-namespace SpaceInvadersEmulator.Core.Intel8080;
+namespace GameboyEmulator.Core.LR35902;
 
 public interface IMemoryBus
 {
