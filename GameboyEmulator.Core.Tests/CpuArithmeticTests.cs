@@ -52,13 +52,13 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x01, 0x01, 0x02, CpuFlags.None)]                                  // no flags
-    [InlineData(0xFF, 0x01, 0x00, CpuFlags.Z | CpuFlags.P | CpuFlags.C | CpuFlags.A)] // carry to zero
-    [InlineData(0x7F, 0x01, 0x80, CpuFlags.S | CpuFlags.A)]                        // sign + aux carry
-    [InlineData(0x01, 0x02, 0x03, CpuFlags.P)]                                     // parity only
-    [InlineData(0xF0, 0x10, 0x00, CpuFlags.Z | CpuFlags.P | CpuFlags.C)]           // carry+zero, no aux carry
-    [InlineData(0x70, 0x10, 0x80, CpuFlags.S)]                                     // sign only
-    [InlineData(0x08, 0x08, 0x10, CpuFlags.A)]                                     // aux carry only
+    [InlineData(0x01, 0x01, 0x02, CpuFlags.None)]                    // no flags
+    [InlineData(0xFF, 0x01, 0x00, CpuFlags.Z | CpuFlags.H | CpuFlags.C)] // carry to zero, half-carry
+    [InlineData(0x7F, 0x01, 0x80, CpuFlags.H)]                       // half-carry only
+    [InlineData(0x01, 0x02, 0x03, CpuFlags.None)]
+    [InlineData(0xF0, 0x10, 0x00, CpuFlags.Z | CpuFlags.C)]          // carry+zero, no half-carry
+    [InlineData(0x70, 0x10, 0x80, CpuFlags.None)]
+    [InlineData(0x08, 0x08, 0x10, CpuFlags.H)]                       // half-carry only
     public void TestAddFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
@@ -84,7 +84,7 @@ public class CpuArithmeticTests : CpuTestBase
     [InlineData(0x8B, Reg.E, 0x05, 0x16, CpuFlags.None)] // ADC E
     [InlineData(0x8C, Reg.H, 0x05, 0x16, CpuFlags.None)] // ADC H
     [InlineData(0x8D, Reg.L, 0x05, 0x16, CpuFlags.None)] // ADC L
-    [InlineData(0x8F, Reg.A, 0x10, 0x21, CpuFlags.P)]    // ADC A: 0x10 + 0x10 + 1 = 0x21
+    [InlineData(0x8F, Reg.A, 0x10, 0x21, CpuFlags.None)] // ADC A: 0x10 + 0x10 + 1 = 0x21
     public void TestAdcRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = 0x10, Flags = CpuFlags.C };
@@ -128,9 +128,9 @@ public class CpuArithmeticTests : CpuTestBase
 
     [Theory]
     [InlineData(CpuFlags.None, 0x10, 0x05, 0x15, CpuFlags.None)]                                  // carry=0: no effect
-    [InlineData(CpuFlags.C,    0x10, 0x05, 0x16, CpuFlags.None)]                                  // carry=1: adds 1 to result
-    [InlineData(CpuFlags.C,    0xFF, 0x00, 0x00, CpuFlags.Z | CpuFlags.P | CpuFlags.C | CpuFlags.A)] // carry causes overflow
-    [InlineData(CpuFlags.None, 0xFF, 0x00, 0xFF, CpuFlags.S | CpuFlags.P)]                        // no carry, no overflow
+    [InlineData(CpuFlags.C,    0x10, 0x05, 0x16, CpuFlags.None)]                                  // carry=1: adds 1
+    [InlineData(CpuFlags.C,    0xFF, 0x00, 0x00, CpuFlags.Z | CpuFlags.H | CpuFlags.C)]           // carry causes overflow + half-carry
+    [InlineData(CpuFlags.None, 0xFF, 0x00, 0xFF, CpuFlags.None)]                                  // no carry, no overflow
     public void TestAdcFlags(CpuFlags initialFlags, byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b, Flags = initialFlags };
@@ -150,14 +150,15 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x98, Reg.B, 0x10, 0x10, CpuFlags.None)] // SBB B
-    [InlineData(0x99, Reg.C, 0x10, 0x10, CpuFlags.None)] // SBB C
-    [InlineData(0x9A, Reg.D, 0x10, 0x10, CpuFlags.None)] // SBB D
-    [InlineData(0x9B, Reg.E, 0x10, 0x10, CpuFlags.None)] // SBB E
-    [InlineData(0x9C, Reg.H, 0x10, 0x10, CpuFlags.None)] // SBB H
-    [InlineData(0x9D, Reg.L, 0x10, 0x10, CpuFlags.None)] // SBB L
+    [InlineData(0x98, Reg.B, 0x10, 0x10, CpuFlags.N)] // SBB B
+    [InlineData(0x99, Reg.C, 0x10, 0x10, CpuFlags.N)] // SBB C
+    [InlineData(0x9A, Reg.D, 0x10, 0x10, CpuFlags.N)] // SBB D
+    [InlineData(0x9B, Reg.E, 0x10, 0x10, CpuFlags.N)] // SBB E
+    [InlineData(0x9C, Reg.H, 0x10, 0x10, CpuFlags.N)] // SBB H
+    [InlineData(0x9D, Reg.L, 0x10, 0x10, CpuFlags.N)] // SBB L
     public void TestSbbRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA, CpuFlags expectedFlags)
     {
+        // 0x21 - 0x10 - 1 = 0x10. Low nibble (0x1 - 0x0 - 1) = 0 → no half-borrow.
         var initialState = new CpuState { Pc = 0x00, Ra = 0x21, Flags = CpuFlags.C };
         initialState.WriteReg(srcReg, srcVal);
 
@@ -178,6 +179,7 @@ public class CpuArithmeticTests : CpuTestBase
     [Fact]
     public void TestSbbA()
     {
+        // A=0x10, SBB A with C=1 → 0x10 - 0x10 - 1 = -1 = 0xFF, H=1, C=1, Z=0, N=1
         var initialState = new CpuState { Pc = 0x00, Ra = 0x10, Flags = CpuFlags.C };
 
         Mmu.Write(0x00, 0x9F); // SBB A
@@ -187,7 +189,7 @@ public class CpuArithmeticTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = 0xFF;
-        expectedState.Flags = CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A;
+        expectedState.Flags = CpuFlags.N | CpuFlags.H | CpuFlags.C;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -207,9 +209,10 @@ public class CpuArithmeticTests : CpuTestBase
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
 
+        // 0x21 - 0x10 - 1 = 0x10. Low nibble (0x1 - 0x0 - 1) = 0 → no half-borrow.
         var expectedState = initialState;
         expectedState.Ra = 0x10;
-        expectedState.Flags = CpuFlags.None;
+        expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(7, cycles);
@@ -217,11 +220,11 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(CpuFlags.None, 0x11, 0x01, 0x10, CpuFlags.None)]                                        // carry=0: same as SUB
-    [InlineData(CpuFlags.C,    0x12, 0x01, 0x10, CpuFlags.None)]                                        // carry=1: subtracts extra 1
-    [InlineData(CpuFlags.C,    0x10, 0x00, 0x0F, CpuFlags.P | CpuFlags.A)]                              // carry causes aux borrow
-    [InlineData(CpuFlags.C,    0x00, 0x00, 0xFF, CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A)]   // carry causes borrow
-    [InlineData(CpuFlags.None, 0x00, 0x01, 0xFF, CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A)]   // borrow from value
+    [InlineData(CpuFlags.None, 0x11, 0x01, 0x10, CpuFlags.N)]                                       // borrow=0: basic sub
+    [InlineData(CpuFlags.C,    0x12, 0x01, 0x10, CpuFlags.N)]                                       // borrow=1: subtracts extra 1
+    [InlineData(CpuFlags.C,    0x10, 0x00, 0x0F, CpuFlags.N | CpuFlags.H)]                          // borrow causes half-borrow
+    [InlineData(CpuFlags.C,    0x00, 0x00, 0xFF, CpuFlags.N | CpuFlags.H | CpuFlags.C)]            // borrow causes underflow
+    [InlineData(CpuFlags.None, 0x00, 0x01, 0xFF, CpuFlags.N | CpuFlags.H | CpuFlags.C)]            // underflow
     public void TestSbbFlags(CpuFlags initialFlags, byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b, Flags = initialFlags };
@@ -249,6 +252,7 @@ public class CpuArithmeticTests : CpuTestBase
     [InlineData(0x95, Reg.L, 0x05, 0x10)] // SUB L
     public void TestSubRegister(byte opcode, Reg srcReg, byte srcVal, byte expectedA)
     {
+        // 0x15 - 0x05 = 0x10. Half-nibble (0x5 - 0x5) = 0, no H.
         var initialState = new CpuState { Pc = 0x00, Ra = 0x15 };
         initialState.WriteReg(srcReg, srcVal);
 
@@ -259,6 +263,7 @@ public class CpuArithmeticTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
+        expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -277,7 +282,7 @@ public class CpuArithmeticTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = 0x00;
-        expectedState.Flags = CpuFlags.Z | CpuFlags.P;
+        expectedState.Flags = CpuFlags.Z | CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -299,6 +304,7 @@ public class CpuArithmeticTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = 0x10;
+        expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(7, cycles);
@@ -306,11 +312,11 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x11, 0x01, 0x10, CpuFlags.None)]                                        // no flags
-    [InlineData(0x10, 0x05, 0x0B, CpuFlags.A)]                                           // aux borrow
-    [InlineData(0x10, 0x10, 0x00, CpuFlags.Z | CpuFlags.P)]                              // zero+parity
-    [InlineData(0x05, 0x10, 0xF5, CpuFlags.S | CpuFlags.P | CpuFlags.C)]                // borrow+sign+parity
-    [InlineData(0x00, 0x01, 0xFF, CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A)]  // all flags
+    [InlineData(0x11, 0x01, 0x10, CpuFlags.N)]                                       // no borrow
+    [InlineData(0x10, 0x05, 0x0B, CpuFlags.N | CpuFlags.H)]                          // half-borrow
+    [InlineData(0x10, 0x10, 0x00, CpuFlags.Z | CpuFlags.N)]                          // zero
+    [InlineData(0x05, 0x10, 0xF5, CpuFlags.N | CpuFlags.C)]                          // borrow
+    [InlineData(0x00, 0x01, 0xFF, CpuFlags.N | CpuFlags.H | CpuFlags.C)]             // full borrow
     public void TestSubFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
@@ -331,9 +337,9 @@ public class CpuArithmeticTests : CpuTestBase
 
     [Theory]
     [InlineData(0x10, 0x05, 0x15, CpuFlags.None)]                                  // basic add
-    [InlineData(0xFF, 0x01, 0x00, CpuFlags.Z | CpuFlags.P | CpuFlags.C | CpuFlags.A)] // carry to zero
-    [InlineData(0x7F, 0x01, 0x80, CpuFlags.S | CpuFlags.A)]                        // sign + aux carry
-    [InlineData(0x08, 0x08, 0x10, CpuFlags.A)]                                     // aux carry only
+    [InlineData(0xFF, 0x01, 0x00, CpuFlags.Z | CpuFlags.H | CpuFlags.C)]           // carry to zero
+    [InlineData(0x7F, 0x01, 0x80, CpuFlags.H)]                                     // half-carry only
+    [InlineData(0x08, 0x08, 0x10, CpuFlags.H)]                                     // half-carry only
     public void TestAdi(byte a, byte imm, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a };
@@ -354,10 +360,10 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x15, 0x05, 0x10, CpuFlags.None)]                                        // basic sub
-    [InlineData(0x10, 0x05, 0x0B, CpuFlags.A)]                                           // aux borrow
-    [InlineData(0x00, 0x01, 0xFF, CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A)]   // borrow underflow
-    [InlineData(0x10, 0x10, 0x00, CpuFlags.Z | CpuFlags.P)]                              // zero
+    [InlineData(0x15, 0x05, 0x10, CpuFlags.N)]                                       // basic sub
+    [InlineData(0x10, 0x05, 0x0B, CpuFlags.N | CpuFlags.H)]                          // half-borrow
+    [InlineData(0x00, 0x01, 0xFF, CpuFlags.N | CpuFlags.H | CpuFlags.C)]             // borrow underflow
+    [InlineData(0x10, 0x10, 0x00, CpuFlags.Z | CpuFlags.N)]                          // zero
     public void TestSui(byte a, byte imm, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a };
@@ -425,12 +431,11 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x01, 0x02, CpuFlags.None, CpuFlags.None)]                             // no flags
-    [InlineData(0x02, 0x03, CpuFlags.None, CpuFlags.P)]                                // parity only
-    [InlineData(0x0F, 0x10, CpuFlags.None, CpuFlags.A)]                                // aux carry only
-    [InlineData(0x7F, 0x80, CpuFlags.None, CpuFlags.S | CpuFlags.A)]                  // sign + aux carry
-    [InlineData(0xFF, 0x00, CpuFlags.None, CpuFlags.Z | CpuFlags.P | CpuFlags.A)]     // zero + parity + aux carry (carry NOT set)
-    [InlineData(0x01, 0x02, CpuFlags.C,    CpuFlags.C)]                                // carry is preserved
+    [InlineData(0x01, 0x02, CpuFlags.None, CpuFlags.None)]                        // no flags
+    [InlineData(0x0F, 0x10, CpuFlags.None, CpuFlags.H)]                           // half-carry
+    [InlineData(0x7F, 0x80, CpuFlags.None, CpuFlags.H)]                           // half-carry on bit3 → bit4
+    [InlineData(0xFF, 0x00, CpuFlags.None, CpuFlags.Z | CpuFlags.H)]              // wraps to zero, half-carry (C NOT set)
+    [InlineData(0x01, 0x02, CpuFlags.C,    CpuFlags.C)]                           // carry preserved
     public void TestInrFlags(byte initial, byte expectedResult, CpuFlags initialFlags, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Rb = initial, Flags = initialFlags };
@@ -469,6 +474,7 @@ public class CpuArithmeticTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.WriteReg(reg, expectedVal);
+        expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(5, cycles);
@@ -489,6 +495,7 @@ public class CpuArithmeticTests : CpuTestBase
         var cycles = Cpu.Step();
 
         var expectedState = initialState;
+        expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(10, cycles);
@@ -497,12 +504,12 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x02, 0x01, CpuFlags.None, CpuFlags.None)]                             // no flags
-    [InlineData(0x10, 0x0F, CpuFlags.None, CpuFlags.P | CpuFlags.A)]                  // parity + aux carry
-    [InlineData(0x80, 0x7F, CpuFlags.None, CpuFlags.A)]                                // aux carry only
-    [InlineData(0x01, 0x00, CpuFlags.None, CpuFlags.Z | CpuFlags.P)]                  // zero + parity
-    [InlineData(0x00, 0xFF, CpuFlags.None, CpuFlags.S | CpuFlags.P | CpuFlags.A)]     // sign + parity + aux carry (carry NOT set)
-    [InlineData(0x02, 0x01, CpuFlags.C,    CpuFlags.C)]                                // carry is preserved
+    [InlineData(0x02, 0x01, CpuFlags.None, CpuFlags.N)]                              // basic dec
+    [InlineData(0x10, 0x0F, CpuFlags.None, CpuFlags.N | CpuFlags.H)]                // half-borrow
+    [InlineData(0x80, 0x7F, CpuFlags.None, CpuFlags.N | CpuFlags.H)]                // half-borrow
+    [InlineData(0x01, 0x00, CpuFlags.None, CpuFlags.Z | CpuFlags.N)]                // zero
+    [InlineData(0x00, 0xFF, CpuFlags.None, CpuFlags.N | CpuFlags.H)]                // wrap with half-borrow (C NOT set)
+    [InlineData(0x02, 0x01, CpuFlags.C,    CpuFlags.N | CpuFlags.C)]                // carry preserved
     public void TestDcrFlags(byte initial, byte expectedResult, CpuFlags initialFlags, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Rb = initial, Flags = initialFlags };
@@ -522,16 +529,16 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xB1, CpuFlags.None,             0x63, CpuFlags.C)]                         // bit7=1: wraps to bit0, C=1
-    [InlineData(0x31, CpuFlags.None,             0x62, CpuFlags.None)]                      // bit7=0: C=0
-    [InlineData(0x80, CpuFlags.None,             0x01, CpuFlags.C)]                         // only bit7: wraps, C=1
-    [InlineData(0x01, CpuFlags.None,             0x02, CpuFlags.None)]                      // only bit0: shifts left, C=0
-    [InlineData(0xB1, CpuFlags.S | CpuFlags.Z,  0x63, CpuFlags.S | CpuFlags.Z | CpuFlags.C)] // other flags preserved
+    [InlineData(0xB1, CpuFlags.None,            0x63, CpuFlags.C)]                  // bit7=1 wraps to bit0, C=1
+    [InlineData(0x31, CpuFlags.None,            0x62, CpuFlags.None)]               // bit7=0, C=0
+    [InlineData(0x80, CpuFlags.None,            0x01, CpuFlags.C)]                  // bit7 only
+    [InlineData(0x01, CpuFlags.None,            0x02, CpuFlags.None)]               // bit0 only
+    [InlineData(0xB1, CpuFlags.Z | CpuFlags.H, 0x63, CpuFlags.C)]                   // Z/H/N cleared (RLCA: Z=0, N=0, H=0)
     public void TestRlc(byte initial, CpuFlags initialFlags, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = initial, Flags = initialFlags };
 
-        Mmu.Write(0x00, 0x07); // RLC
+        Mmu.Write(0x00, 0x07); // RLCA
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
@@ -546,16 +553,16 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xB1, CpuFlags.None,             0x62, CpuFlags.C)]                         // bit7=1, C in=0: bit0=0, C out=1
-    [InlineData(0xB1, CpuFlags.C,                0x63, CpuFlags.C)]                         // bit7=1, C in=1: bit0=1, C out=1
-    [InlineData(0x80, CpuFlags.C,                0x01, CpuFlags.C)]                         // bit7=1, C in=1: bit0=1, C out=1
-    [InlineData(0x00, CpuFlags.C,                0x01, CpuFlags.None)]                      // bit7=0, C in=1: bit0=1, C out=0
-    [InlineData(0x01, CpuFlags.S | CpuFlags.Z,  0x02, CpuFlags.S | CpuFlags.Z)]            // other flags preserved
+    [InlineData(0xB1, CpuFlags.None,            0x62, CpuFlags.C)]                   // bit7=1, Cin=0
+    [InlineData(0xB1, CpuFlags.C,               0x63, CpuFlags.C)]                   // bit7=1, Cin=1
+    [InlineData(0x80, CpuFlags.C,               0x01, CpuFlags.C)]
+    [InlineData(0x00, CpuFlags.C,               0x01, CpuFlags.None)]                // bit7=0, Cin=1
+    [InlineData(0x01, CpuFlags.Z | CpuFlags.H, 0x02, CpuFlags.None)]                 // Z/H/N cleared
     public void TestRal(byte initial, CpuFlags initialFlags, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = initial, Flags = initialFlags };
 
-        Mmu.Write(0x00, 0x17); // RAL
+        Mmu.Write(0x00, 0x17); // RLA
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
@@ -570,14 +577,15 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(CpuFlags.None,             CpuFlags.C)]                         // C gets set
-    [InlineData(CpuFlags.C,                CpuFlags.C)]                         // already set, stays set
-    [InlineData(CpuFlags.S | CpuFlags.Z,  CpuFlags.S | CpuFlags.Z | CpuFlags.C)] // other flags preserved
+    [InlineData(CpuFlags.None,            CpuFlags.C)]                              // sets C, clears N/H
+    [InlineData(CpuFlags.C,               CpuFlags.C)]                              // already set
+    [InlineData(CpuFlags.Z,               CpuFlags.Z | CpuFlags.C)]                 // Z preserved
+    [InlineData(CpuFlags.N | CpuFlags.H, CpuFlags.C)]                               // N/H cleared
     public void TestStc(CpuFlags initialFlags, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Flags = initialFlags };
 
-        Mmu.Write(0x00, 0x37); // STC
+        Mmu.Write(0x00, 0x37); // SCF
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
@@ -591,16 +599,16 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xB1, CpuFlags.None,             0xD8, CpuFlags.C)]                         // bit0=1: wraps to bit7, C=1
-    [InlineData(0xB2, CpuFlags.None,             0x59, CpuFlags.None)]                      // bit0=0: C=0
-    [InlineData(0x01, CpuFlags.None,             0x80, CpuFlags.C)]                         // only bit0: wraps to bit7, C=1
-    [InlineData(0x80, CpuFlags.None,             0x40, CpuFlags.None)]                      // only bit7: shifts right, C=0
-    [InlineData(0xB1, CpuFlags.S | CpuFlags.Z,  0xD8, CpuFlags.S | CpuFlags.Z | CpuFlags.C)] // other flags preserved
+    [InlineData(0xB1, CpuFlags.None,            0xD8, CpuFlags.C)]                  // bit0=1 wraps to bit7
+    [InlineData(0xB2, CpuFlags.None,            0x59, CpuFlags.None)]
+    [InlineData(0x01, CpuFlags.None,            0x80, CpuFlags.C)]
+    [InlineData(0x80, CpuFlags.None,            0x40, CpuFlags.None)]
+    [InlineData(0xB1, CpuFlags.Z | CpuFlags.H, 0xD8, CpuFlags.C)]                   // Z/H/N cleared
     public void TestRrc(byte initial, CpuFlags initialFlags, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = initial, Flags = initialFlags };
 
-        Mmu.Write(0x00, 0x0F); // RRC
+        Mmu.Write(0x00, 0x0F); // RRCA
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
@@ -615,16 +623,16 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xB1, CpuFlags.None,             0x58, CpuFlags.C)]                         // bit0=1, C in=0: bit7=0, C out=1
-    [InlineData(0xB1, CpuFlags.C,                0xD8, CpuFlags.C)]                         // bit0=1, C in=1: bit7=1, C out=1
-    [InlineData(0x01, CpuFlags.C,                0x80, CpuFlags.C)]                         // bit0=1, C in=1: bit7=1, C out=1
-    [InlineData(0x00, CpuFlags.C,                0x80, CpuFlags.None)]                      // bit0=0, C in=1: bit7=1, C out=0
-    [InlineData(0x02, CpuFlags.S | CpuFlags.Z,  0x01, CpuFlags.S | CpuFlags.Z)]            // other flags preserved
+    [InlineData(0xB1, CpuFlags.None,            0x58, CpuFlags.C)]
+    [InlineData(0xB1, CpuFlags.C,               0xD8, CpuFlags.C)]
+    [InlineData(0x01, CpuFlags.C,               0x80, CpuFlags.C)]
+    [InlineData(0x00, CpuFlags.C,               0x80, CpuFlags.None)]
+    [InlineData(0x02, CpuFlags.Z | CpuFlags.H, 0x01, CpuFlags.None)]                 // Z/H/N cleared
     public void TestRar(byte initial, CpuFlags initialFlags, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = initial, Flags = initialFlags };
 
-        Mmu.Write(0x00, 0x1F); // RAR
+        Mmu.Write(0x00, 0x1F); // RRA
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
@@ -639,21 +647,23 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xB1, 0x4E)]  // typical complement
-    [InlineData(0x00, 0xFF)]  // zero → all ones
-    [InlineData(0xFF, 0x00)]  // all ones → zero
+    [InlineData(0xB1, 0x4E)]
+    [InlineData(0x00, 0xFF)]
+    [InlineData(0xFF, 0x00)]
     public void TestCma(byte initial, byte expectedA)
     {
-        var initialFlags = CpuFlags.S | CpuFlags.Z | CpuFlags.P | CpuFlags.A | CpuFlags.C;
+        // CPL: N=1, H=1, Z and C unchanged.
+        var initialFlags = CpuFlags.Z | CpuFlags.C;
         var initialState = new CpuState { Pc = 0x00, Ra = initial, Flags = initialFlags };
 
-        Mmu.Write(0x00, 0x2F); // CMA
+        Mmu.Write(0x00, 0x2F); // CPL
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
+        expectedState.Flags = CpuFlags.Z | CpuFlags.N | CpuFlags.H | CpuFlags.C;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -661,15 +671,16 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(CpuFlags.None,             CpuFlags.C)]                            // C=0 → C=1
-    [InlineData(CpuFlags.C,                CpuFlags.None)]                         // C=1 → C=0
-    [InlineData(CpuFlags.S | CpuFlags.Z,  CpuFlags.S | CpuFlags.Z | CpuFlags.C)] // other flags preserved when setting
-    [InlineData(CpuFlags.S | CpuFlags.Z | CpuFlags.C, CpuFlags.S | CpuFlags.Z)]  // other flags preserved when clearing
+    [InlineData(CpuFlags.None,                          CpuFlags.C)]                  // C=0 → C=1
+    [InlineData(CpuFlags.C,                             CpuFlags.None)]               // C=1 → C=0
+    [InlineData(CpuFlags.Z,                             CpuFlags.Z | CpuFlags.C)]     // Z preserved
+    [InlineData(CpuFlags.Z | CpuFlags.C,               CpuFlags.Z)]                   // clears C
+    [InlineData(CpuFlags.N | CpuFlags.H,               CpuFlags.C)]                   // N/H cleared
     public void TestCmc(CpuFlags initialFlags, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Flags = initialFlags };
 
-        Mmu.Write(0x00, 0x3F); // CMC
+        Mmu.Write(0x00, 0x3F); // CCF
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
@@ -682,37 +693,23 @@ public class CpuArithmeticTests : CpuTestBase
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
-    [Theory]
-    [InlineData(0x5C, CpuFlags.None,  0x62, CpuFlags.A)]                                        // low nibble > 9: add 6, AC set
-    [InlineData(0xAE, CpuFlags.A,     0x14, CpuFlags.P | CpuFlags.A | CpuFlags.C)]              // AC set + high > 9: add 6 and 0x60
-    [InlineData(0x0A, CpuFlags.None,  0x10, CpuFlags.A)]                                        // low = 0xA: add 6, AC set
-    [InlineData(0x10, CpuFlags.A,     0x16, CpuFlags.None)]                                     // AC set but no carry from low correction
-    [InlineData(0xA5, CpuFlags.None,  0x05, CpuFlags.P | CpuFlags.C)]                           // high > 9: add 0x60, C set
-    [InlineData(0x05, CpuFlags.C,     0x65, CpuFlags.P | CpuFlags.C)]                           // C set: add 0x60 regardless
-    [InlineData(0x9A, CpuFlags.None,  0x00, CpuFlags.Z | CpuFlags.P | CpuFlags.A | CpuFlags.C)] // both corrections, result = 0
-    public void TestDaa(byte initial, CpuFlags initialFlags, byte expectedA, CpuFlags expectedFlags)
+    [Fact]
+    public void TestDaaThrowsUntilStep6()
     {
-        var initialState = new CpuState { Pc = 0x00, Ra = initial, Flags = initialFlags };
+        var initialState = new CpuState { Pc = 0x00, Ra = 0x5C };
 
         Mmu.Write(0x00, 0x27); // DAA
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
 
-        var expectedState = initialState;
-        expectedState.Ra = expectedA;
-        expectedState.Flags = expectedFlags;
-        expectedState.IncrementPcBy(1);
-
-        Assert.Equal(4, cycles);
-        Assert.Equal(expectedState, Cpu.ReadState());
+        Assert.Throws<NotImplementedException>(() => Cpu.Step());
     }
 
     [Theory]
-    [InlineData(CpuFlags.None, 0x10, 0x05, 0x15, CpuFlags.None)]                                  // carry=0: no effect
-    [InlineData(CpuFlags.C,    0x10, 0x05, 0x16, CpuFlags.None)]                                  // carry=1: adds 1
-    [InlineData(CpuFlags.C,    0xFF, 0x00, 0x00, CpuFlags.Z | CpuFlags.P | CpuFlags.C | CpuFlags.A)] // carry causes overflow
-    [InlineData(CpuFlags.None, 0xFF, 0x00, 0xFF, CpuFlags.S | CpuFlags.P)]                        // no carry, no overflow
+    [InlineData(CpuFlags.None, 0x10, 0x05, 0x15, CpuFlags.None)]                                  // carry=0
+    [InlineData(CpuFlags.C,    0x10, 0x05, 0x16, CpuFlags.None)]                                  // carry=1
+    [InlineData(CpuFlags.C,    0xFF, 0x00, 0x00, CpuFlags.Z | CpuFlags.H | CpuFlags.C)]           // overflow
+    [InlineData(CpuFlags.None, 0xFF, 0x00, 0xFF, CpuFlags.None)]
     public void TestAci(CpuFlags initialFlags, byte a, byte imm, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Flags = initialFlags };
@@ -733,10 +730,10 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(CpuFlags.None, 0x11, 0x01, 0x10, CpuFlags.None)]                                        // borrow=0: basic sub
-    [InlineData(CpuFlags.C,    0x12, 0x01, 0x10, CpuFlags.None)]                                        // borrow=1: subtracts extra 1
-    [InlineData(CpuFlags.C,    0x10, 0x00, 0x0F, CpuFlags.P | CpuFlags.A)]                              // borrow causes aux borrow
-    [InlineData(CpuFlags.None, 0x00, 0x01, 0xFF, CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A)]   // underflow
+    [InlineData(CpuFlags.None, 0x11, 0x01, 0x10, CpuFlags.N)]                                       // basic
+    [InlineData(CpuFlags.C,    0x12, 0x01, 0x10, CpuFlags.N)]                                       // borrow=1
+    [InlineData(CpuFlags.C,    0x10, 0x00, 0x0F, CpuFlags.N | CpuFlags.H)]                          // half-borrow
+    [InlineData(CpuFlags.None, 0x00, 0x01, 0xFF, CpuFlags.N | CpuFlags.H | CpuFlags.C)]            // underflow
     public void TestSbi(CpuFlags initialFlags, byte a, byte imm, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Flags = initialFlags };
@@ -839,12 +836,13 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x09, Reg.B,  0x0234, 0x1234)] // DAD B
-    [InlineData(0x19, Reg.D,  0x0234, 0x1234)] // DAD D
-    [InlineData(0x39, Reg.Sp, 0x0234, 0x1234)] // DAD SP
+    [InlineData(0x09, Reg.B,  0x0234, 0x1234)] // ADD HL, BC
+    [InlineData(0x19, Reg.D,  0x0234, 0x1234)] // ADD HL, DE
+    [InlineData(0x39, Reg.Sp, 0x0234, 0x1234)] // ADD HL, SP
     public void TestDadRegPair(byte opcode, Reg srcReg, ushort srcValue, ushort expectedHL)
     {
-        var initialState = new CpuState { Pc = 0x00, Flags = CpuFlags.S | CpuFlags.Z | CpuFlags.P | CpuFlags.A };
+        // Z must be preserved by ADD HL on LR35902.
+        var initialState = new CpuState { Pc = 0x00, Flags = CpuFlags.Z };
         initialState.WriteRegPair(Reg.H, 0x1000);
         initialState.WriteRegPair(srcReg, srcValue);
 
@@ -853,8 +851,10 @@ public class CpuArithmeticTests : CpuTestBase
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
 
+        // 0x1000 + 0x0234 = 0x1234. No bit-11 carry, no bit-15 carry.
         var expectedState = initialState;
         expectedState.WriteRegPair(Reg.H, expectedHL);
+        expectedState.Flags = CpuFlags.Z; // Z preserved, N=0, H=0, C=0
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(10, cycles);
@@ -864,16 +864,18 @@ public class CpuArithmeticTests : CpuTestBase
     [Fact]
     public void TestDadH()
     {
-        var initialState = new CpuState { Pc = 0x00, Flags = CpuFlags.S | CpuFlags.Z | CpuFlags.P | CpuFlags.A };
-        initialState.WriteRegPair(Reg.H, 0x1200);
+        // Exit-criteria spot-check: HL=0x0FFF, ADD HL, HL → HL=0x1FFE, N=0 H=1 C=0, Z preserved.
+        var initialState = new CpuState { Pc = 0x00, Flags = CpuFlags.Z };
+        initialState.WriteRegPair(Reg.H, 0x0FFF);
 
-        Mmu.Write(0x00, 0x29); // DAD H
+        Mmu.Write(0x00, 0x29); // ADD HL, HL
 
         Cpu.WriteState(initialState);
         var cycles = Cpu.Step();
 
         var expectedState = initialState;
-        expectedState.WriteRegPair(Reg.H, 0x2400);
+        expectedState.WriteRegPair(Reg.H, 0x1FFE);
+        expectedState.Flags = CpuFlags.Z | CpuFlags.H;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(10, cycles);
@@ -881,16 +883,16 @@ public class CpuArithmeticTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x8000, 0x8000, CpuFlags.S | CpuFlags.Z, 0x0000, CpuFlags.S | CpuFlags.Z | CpuFlags.C)] // carry set, S|Z preserved
-    [InlineData(0x8000, 0x7FFF, CpuFlags.C,              0xFFFF, CpuFlags.None)]                         // no overflow, C cleared
-    [InlineData(0x0001, 0x0001, CpuFlags.P | CpuFlags.A, 0x0002, CpuFlags.P | CpuFlags.A)]              // P|A preserved, no carry
+    [InlineData(0x8000, 0x8000, CpuFlags.Z, 0x0000, CpuFlags.Z | CpuFlags.C)] // bit-15 carry, Z preserved
+    [InlineData(0x0FFF, 0x0001, CpuFlags.C, 0x1000, CpuFlags.H)]              // bit-11 carry only
+    [InlineData(0x0001, 0x0001, CpuFlags.None, 0x0002, CpuFlags.None)]
     public void TestDadFlags(ushort initialHL, ushort bc, CpuFlags initialFlags, ushort expectedHL, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Flags = initialFlags };
         initialState.WriteRegPair(Reg.H, initialHL);
         initialState.WriteRegPair(Reg.B, bc);
 
-        Mmu.Write(0x00, 0x09); // DAD B
+        Mmu.Write(0x00, 0x09); // ADD HL, BC
 
         Cpu.WriteState(initialState);
         Cpu.Step();
@@ -898,6 +900,44 @@ public class CpuArithmeticTests : CpuTestBase
         var expectedState = initialState;
         expectedState.WriteRegPair(Reg.H, expectedHL);
         expectedState.Flags = expectedFlags;
+        expectedState.IncrementPcBy(1);
+
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Fact]
+    public void TestIncBExitCriteria()
+    {
+        // Exit-criteria spot-check: INC B with B=0x0F → B=0x10, Z=0 N=0 H=1, C unchanged.
+        var initialState = new CpuState { Pc = 0x00, Rb = 0x0F, Flags = CpuFlags.C };
+
+        Mmu.Write(0x00, 0x04); // INC B
+
+        Cpu.WriteState(initialState);
+        Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.Rb = 0x10;
+        expectedState.Flags = CpuFlags.H | CpuFlags.C;
+        expectedState.IncrementPcBy(1);
+
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Fact]
+    public void TestSubExitCriteria()
+    {
+        // Exit-criteria spot-check: A=0x10, SUB 0x01 → A=0x0F, Z=0 N=1 H=1 C=0.
+        var initialState = new CpuState { Pc = 0x00, Ra = 0x10, Rb = 0x01 };
+
+        Mmu.Write(0x00, 0x90); // SUB B
+
+        Cpu.WriteState(initialState);
+        Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.Ra = 0x0F;
+        expectedState.Flags = CpuFlags.N | CpuFlags.H;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(expectedState, Cpu.ReadState());

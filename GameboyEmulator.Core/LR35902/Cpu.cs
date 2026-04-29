@@ -4,7 +4,12 @@ namespace GameboyEmulator.Core.LR35902;
 
 public sealed partial class Cpu
 {
-    public CpuFlags Flags { get; set; }
+    private CpuFlags _flags;
+    public CpuFlags Flags
+    {
+        get => _flags;
+        set => _flags = value & (CpuFlags)0xF0;
+    }
     public ushort Pc { get; set; }
     public ushort Sp { get; set; }
     public byte Ra { get; set; }

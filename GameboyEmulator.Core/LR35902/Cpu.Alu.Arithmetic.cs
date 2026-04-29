@@ -5,43 +5,16 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Parity(byte value)
-    {
-        value ^= (byte)(value >> 4);
-        value ^= (byte)(value >> 2);
-        value ^= (byte)(value >> 1);
-        return (value & 1) == 0;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static CpuFlags ComputeAddFlags(byte a, byte b, int result, int carry = 0)
-    {
-        var flags = CpuFlags.None;
-        var byteResult = (byte)result;
-        if (byteResult == 0) flags |= CpuFlags.Z;
-        if ((byteResult & 0x80) != 0) flags |= CpuFlags.S;
-        if (Parity(byteResult)) flags |= CpuFlags.P;
-        if (result > 0xFF) flags |= CpuFlags.C;
-        if ((a & 0xF) + (b & 0xF) + carry > 0xF) flags |= CpuFlags.A;
-        return flags;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Add(byte value)
     {
-        var result = Ra + value;
-        Flags = ComputeAddFlags(Ra, value, result);
-        Ra = (byte)result;
+        Ra = Add8(Ra, value, false);
         return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Adc(byte value)
     {
-        var carry = (Flags & CpuFlags.C) != 0 ? 1 : 0;
-        var result = Ra + value + carry;
-        Flags = ComputeAddFlags(Ra, value, result, carry);
-        Ra = (byte)result;
+        Ra = Add8(Ra, value, (Flags & CpuFlags.C) != 0);
         return 4;
     }
 
@@ -69,10 +42,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int AddM()
     {
-        var value = _mmu.Read(Rhl);
-        var result = Ra + value;
-        Flags = ComputeAddFlags(Ra, value, result);
-        Ra = (byte)result;
+        Ra = Add8(Ra, _mmu.Read(Rhl), false);
         return 7;
     }
 
@@ -100,33 +70,14 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int AdcM()
     {
-        var value = _mmu.Read(Rhl);
-        var carry = (Flags & CpuFlags.C) != 0 ? 1 : 0;
-        var result = Ra + value + carry;
-        Flags = ComputeAddFlags(Ra, value, result, carry);
-        Ra = (byte)result;
+        Ra = Add8(Ra, _mmu.Read(Rhl), (Flags & CpuFlags.C) != 0);
         return 7;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static CpuFlags ComputeSubFlags(byte a, byte b, int result, int borrow = 0)
-    {
-        var flags = CpuFlags.None;
-        var byteResult = (byte)result;
-        if (byteResult == 0) flags |= CpuFlags.Z;
-        if ((byteResult & 0x80) != 0) flags |= CpuFlags.S;
-        if (Parity(byteResult)) flags |= CpuFlags.P;
-        if (result < 0) flags |= CpuFlags.C;
-        if ((a & 0xF) < (b & 0xF) + borrow) flags |= CpuFlags.A;
-        return flags;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Sub(byte value)
     {
-        var result = Ra - value;
-        Flags = ComputeSubFlags(Ra, value, result);
-        Ra = (byte)result;
+        Ra = Sub8(Ra, value, false);
         return 4;
     }
 
@@ -154,20 +105,14 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int SubM()
     {
-        var value = _mmu.Read(Rhl);
-        var result = Ra - value;
-        Flags = ComputeSubFlags(Ra, value, result);
-        Ra = (byte)result;
+        Ra = Sub8(Ra, _mmu.Read(Rhl), false);
         return 7;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Sbb(byte value)
     {
-        var borrow = (Flags & CpuFlags.C) != 0 ? 1 : 0;
-        var result = Ra - value - borrow;
-        Flags = ComputeSubFlags(Ra, value, result, borrow);
-        Ra = (byte)result;
+        Ra = Sub8(Ra, value, (Flags & CpuFlags.C) != 0);
         return 4;
     }
 
@@ -195,30 +140,16 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int SbbM()
     {
-        var value = _mmu.Read(Rhl);
-        var borrow = (Flags & CpuFlags.C) != 0 ? 1 : 0;
-        var result = Ra - value - borrow;
-        Flags = ComputeSubFlags(Ra, value, result, borrow);
-        Ra = (byte)result;
+        Ra = Sub8(Ra, _mmu.Read(Rhl), (Flags & CpuFlags.C) != 0);
         return 7;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static CpuFlags ComputeInrDcrFlags(byte result, bool auxCarry, CpuFlags currentFlags)
-    {
-        var flags = CpuFlags.None;
-        if (result == 0) flags |= CpuFlags.Z;
-        if ((result & 0x80) != 0) flags |= CpuFlags.S;
-        if (Parity(result)) flags |= CpuFlags.P;
-        if (auxCarry) flags |= CpuFlags.A;
-        return flags | (currentFlags & CpuFlags.C);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Inr(byte value)
     {
-        var result = (byte)(value + 1);
-        Flags = ComputeInrDcrFlags(result, (value & 0xF) == 0xF, Flags);
+        var carry = (Flags & CpuFlags.C) != 0;
+        var result = Add8(value, 1, false);
+        SetC(carry);
         return result;
     }
 
@@ -253,8 +184,9 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Dcr(byte value)
     {
-        var result = (byte)(value - 1);
-        Flags = ComputeInrDcrFlags(result, (value & 0xF) == 0x0, Flags);
+        var carry = (Flags & CpuFlags.C) != 0;
+        var result = Sub8(value, 1, false);
+        SetC(carry);
         return result;
     }
 

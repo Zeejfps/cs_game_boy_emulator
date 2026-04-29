@@ -63,6 +63,24 @@ public class CpuStackTests : CpuTestBase
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
+    [Fact]
+    public void TestPopAfMasksLowNibble()
+    {
+        // Exit-criteria spot-check: POP AF of stack value 0x12FF → A=0x12, F=0xF0.
+        ushort stackAddr = 0x2000;
+        var initialState = new CpuState { Pc = 0x10, Sp = stackAddr };
+
+        Mmu.Write(initialState.Pc, 0xF1); // POP AF
+        Mmu.Write(stackAddr, 0xFF);                // F (low byte)
+        Mmu.Write((ushort)(stackAddr + 1), 0x12);  // A (high byte)
+
+        Cpu.WriteState(initialState);
+        Cpu.Step();
+
+        Assert.Equal(0x12, Cpu.Ra);
+        Assert.Equal((CpuFlags)0xF0, Cpu.Flags);
+    }
+
     [Theory]
     [InlineData(0xC5, Reg.B)]
     [InlineData(0xD5, Reg.D)]

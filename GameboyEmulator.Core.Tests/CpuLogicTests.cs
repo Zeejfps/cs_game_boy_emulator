@@ -24,6 +24,7 @@ public class CpuLogicTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
+        expectedState.Flags = CpuFlags.H; // AND on LR35902: Z, N=0, H=1, C=0
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -45,6 +46,7 @@ public class CpuLogicTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = 0x15;
+        expectedState.Flags = CpuFlags.H;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(7, cycles);
@@ -52,11 +54,11 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x11, 0x01, 0x01, CpuFlags.None)]                              // no flags
-    [InlineData(0xF0, 0x0F, 0x00, CpuFlags.Z | CpuFlags.P | CpuFlags.A)]      // zero+parity+aux (bit 3 set in operands)
-    [InlineData(0xFF, 0x80, 0x80, CpuFlags.S | CpuFlags.A)]                    // sign+aux
-    [InlineData(0x0F, 0x0F, 0x0F, CpuFlags.P | CpuFlags.A)]                    // parity+aux
-    [InlineData(0x08, 0x08, 0x08, CpuFlags.A)]                                 // aux carry only (bit 3 of both operands set)
+    [InlineData(0x11, 0x01, 0x01, CpuFlags.H)]                      // result non-zero
+    [InlineData(0xF0, 0x0F, 0x00, CpuFlags.Z | CpuFlags.H)]         // zero
+    [InlineData(0xFF, 0x80, 0x80, CpuFlags.H)]
+    [InlineData(0x0F, 0x0F, 0x0F, CpuFlags.H)]
+    [InlineData(0x08, 0x08, 0x08, CpuFlags.H)]
     public void TestAnaFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
@@ -94,6 +96,7 @@ public class CpuLogicTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
+        expectedState.Flags = CpuFlags.None; // XOR: Z based on result, N=0, H=0, C=0
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -112,7 +115,7 @@ public class CpuLogicTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = 0x00;
-        expectedState.Flags = CpuFlags.Z | CpuFlags.P;
+        expectedState.Flags = CpuFlags.Z;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -134,6 +137,7 @@ public class CpuLogicTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = 0x08;
+        expectedState.Flags = CpuFlags.None;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(7, cycles);
@@ -141,11 +145,11 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x0F, 0x07, 0x08, CpuFlags.None)]                   // no flags
-    [InlineData(0xFF, 0xFF, 0x00, CpuFlags.Z | CpuFlags.P)]         // zero+parity
-    [InlineData(0xFF, 0x7F, 0x80, CpuFlags.S)]                      // sign only
-    [InlineData(0x3C, 0x0F, 0x33, CpuFlags.P)]                      // parity only
-    [InlineData(0x00, 0xFF, 0xFF, CpuFlags.S | CpuFlags.P)]         // sign+parity
+    [InlineData(0x0F, 0x07, 0x08, CpuFlags.None)]
+    [InlineData(0xFF, 0xFF, 0x00, CpuFlags.Z)]
+    [InlineData(0xFF, 0x7F, 0x80, CpuFlags.None)]
+    [InlineData(0x3C, 0x0F, 0x33, CpuFlags.None)]
+    [InlineData(0x00, 0xFF, 0xFF, CpuFlags.None)]
     public void TestXraFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
@@ -184,6 +188,7 @@ public class CpuLogicTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
+        expectedState.Flags = CpuFlags.None;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -205,6 +210,7 @@ public class CpuLogicTests : CpuTestBase
 
         var expectedState = initialState;
         expectedState.Ra = 0x10;
+        expectedState.Flags = CpuFlags.None;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(7, cycles);
@@ -212,11 +218,11 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x10, 0x10, 0x10, CpuFlags.None)]                   // no flags
-    [InlineData(0xF0, 0x0F, 0xFF, CpuFlags.S | CpuFlags.P)]         // sign+parity
-    [InlineData(0x00, 0x00, 0x00, CpuFlags.Z | CpuFlags.P)]         // zero
-    [InlineData(0x80, 0x80, 0x80, CpuFlags.S)]                      // sign only
-    [InlineData(0x01, 0x02, 0x03, CpuFlags.P)]                      // parity only
+    [InlineData(0x10, 0x10, 0x10, CpuFlags.None)]
+    [InlineData(0xF0, 0x0F, 0xFF, CpuFlags.None)]
+    [InlineData(0x00, 0x00, 0x00, CpuFlags.Z)]
+    [InlineData(0x80, 0x80, 0x80, CpuFlags.None)]
+    [InlineData(0x01, 0x02, 0x03, CpuFlags.None)]
     public void TestOraFlags(byte a, byte b, byte expectedResult, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
@@ -236,14 +242,15 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xB8, Reg.B, 0x01, CpuFlags.None)] // CMP B
-    [InlineData(0xB9, Reg.C, 0x01, CpuFlags.None)] // CMP C
-    [InlineData(0xBA, Reg.D, 0x01, CpuFlags.None)] // CMP D
-    [InlineData(0xBB, Reg.E, 0x01, CpuFlags.None)] // CMP E
-    [InlineData(0xBC, Reg.H, 0x01, CpuFlags.None)] // CMP H
-    [InlineData(0xBD, Reg.L, 0x01, CpuFlags.None)] // CMP L
-    public void TestCmpRegister(byte opcode, Reg srcReg, byte srcVal, CpuFlags expectedFlags)
+    [InlineData(0xB8, Reg.B, 0x01)] // CMP B
+    [InlineData(0xB9, Reg.C, 0x01)] // CMP C
+    [InlineData(0xBA, Reg.D, 0x01)] // CMP D
+    [InlineData(0xBB, Reg.E, 0x01)] // CMP E
+    [InlineData(0xBC, Reg.H, 0x01)] // CMP H
+    [InlineData(0xBD, Reg.L, 0x01)] // CMP L
+    public void TestCmpRegister(byte opcode, Reg srcReg, byte srcVal)
     {
+        // 0x11 - 0x01 = 0x10, no half-borrow, no borrow, non-zero, N=1.
         var initialState = new CpuState { Pc = 0x00, Ra = 0x11 };
         initialState.WriteReg(srcReg, srcVal);
 
@@ -253,7 +260,7 @@ public class CpuLogicTests : CpuTestBase
         var cycles = Cpu.Step();
 
         var expectedState = initialState;
-        expectedState.Flags = expectedFlags;
+        expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -271,7 +278,7 @@ public class CpuLogicTests : CpuTestBase
         var cycles = Cpu.Step();
 
         var expectedState = initialState;
-        expectedState.Flags = CpuFlags.Z | CpuFlags.P;
+        expectedState.Flags = CpuFlags.Z | CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(4, cycles);
@@ -292,7 +299,7 @@ public class CpuLogicTests : CpuTestBase
         var cycles = Cpu.Step();
 
         var expectedState = initialState;
-        expectedState.Flags = CpuFlags.None;
+        expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
         Assert.Equal(7, cycles);
@@ -300,11 +307,11 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x11, 0x01, CpuFlags.None)]                                        // no flags
-    [InlineData(0x10, 0x05, CpuFlags.A)]                                           // aux borrow
-    [InlineData(0x10, 0x10, CpuFlags.Z | CpuFlags.P)]                              // equal
-    [InlineData(0x05, 0x10, CpuFlags.S | CpuFlags.P | CpuFlags.C)]                // less than
-    [InlineData(0x00, 0x01, CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A)]  // all flags
+    [InlineData(0x11, 0x01, CpuFlags.N)]
+    [InlineData(0x10, 0x05, CpuFlags.N | CpuFlags.H)]
+    [InlineData(0x10, 0x10, CpuFlags.Z | CpuFlags.N)]
+    [InlineData(0x05, 0x10, CpuFlags.N | CpuFlags.C)]
+    [InlineData(0x00, 0x01, CpuFlags.N | CpuFlags.H | CpuFlags.C)]
     public void TestCmpFlags(byte a, byte b, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a, Rb = b };
@@ -323,10 +330,10 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xFF, 0xFF, 0x00, CpuFlags.Z | CpuFlags.P)]  // XOR with self: zero
-    [InlineData(0xFF, 0x0F, 0xF0, CpuFlags.S | CpuFlags.P)]  // sign + parity
-    [InlineData(0x80, 0x00, 0x80, CpuFlags.S)]               // sign only
-    [InlineData(0x01, 0x02, 0x03, CpuFlags.P)]               // parity only
+    [InlineData(0xFF, 0xFF, 0x00, CpuFlags.Z)]
+    [InlineData(0xFF, 0x0F, 0xF0, CpuFlags.None)]
+    [InlineData(0x80, 0x00, 0x80, CpuFlags.None)]
+    [InlineData(0x01, 0x02, 0x03, CpuFlags.None)]
     public void TestXri(byte a, byte imm, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a };
@@ -347,11 +354,11 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x11, 0x01, CpuFlags.None)]                                        // a > imm: no flags
-    [InlineData(0x10, 0x05, CpuFlags.A)]                                           // aux borrow
-    [InlineData(0x10, 0x10, CpuFlags.Z | CpuFlags.P)]                              // equal
-    [InlineData(0x05, 0x10, CpuFlags.S | CpuFlags.P | CpuFlags.C)]                // less than
-    [InlineData(0x00, 0x01, CpuFlags.S | CpuFlags.P | CpuFlags.C | CpuFlags.A)]  // all flags
+    [InlineData(0x11, 0x01, CpuFlags.N)]
+    [InlineData(0x10, 0x05, CpuFlags.N | CpuFlags.H)]
+    [InlineData(0x10, 0x10, CpuFlags.Z | CpuFlags.N)]
+    [InlineData(0x05, 0x10, CpuFlags.N | CpuFlags.C)]
+    [InlineData(0x00, 0x01, CpuFlags.N | CpuFlags.H | CpuFlags.C)]
     public void TestCpi(byte a, byte imm, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a };
@@ -371,10 +378,10 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0xFF, 0x0F, 0x0F, CpuFlags.P | CpuFlags.A)]              // bit3 in both operands: A set, 4 bits even: P set
-    [InlineData(0xFF, 0xF0, 0xF0, CpuFlags.S | CpuFlags.P | CpuFlags.A)] // sign + parity + A
-    [InlineData(0xF0, 0x00, 0x00, CpuFlags.Z | CpuFlags.P)]              // neither has bit3: A clear, zero
-    [InlineData(0x0F, 0x08, 0x08, CpuFlags.A)]                           // bit3 in Ra: A set
+    [InlineData(0xFF, 0x0F, 0x0F, CpuFlags.H)]
+    [InlineData(0xFF, 0xF0, 0xF0, CpuFlags.H)]
+    [InlineData(0xF0, 0x00, 0x00, CpuFlags.Z | CpuFlags.H)]
+    [InlineData(0x0F, 0x08, 0x08, CpuFlags.H)]
     public void TestAni(byte a, byte imm, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a };
@@ -395,10 +402,10 @@ public class CpuLogicTests : CpuTestBase
     }
 
     [Theory]
-    [InlineData(0x10, 0x05, 0x15, CpuFlags.None)]             // basic OR, no flags
-    [InlineData(0xC0, 0x00, 0xC0, CpuFlags.S | CpuFlags.P)]  // sign + parity
-    [InlineData(0x00, 0x00, 0x00, CpuFlags.Z | CpuFlags.P)]  // zero
-    [InlineData(0x01, 0x02, 0x03, CpuFlags.P)]                // parity only
+    [InlineData(0x10, 0x05, 0x15, CpuFlags.None)]
+    [InlineData(0xC0, 0x00, 0xC0, CpuFlags.None)]
+    [InlineData(0x00, 0x00, 0x00, CpuFlags.Z)]
+    [InlineData(0x01, 0x02, 0x03, CpuFlags.None)]
     public void TestOri(byte a, byte imm, byte expectedA, CpuFlags expectedFlags)
     {
         var initialState = new CpuState { Pc = 0x00, Ra = a };

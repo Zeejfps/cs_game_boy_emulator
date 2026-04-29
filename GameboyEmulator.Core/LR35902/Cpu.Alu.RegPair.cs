@@ -29,13 +29,7 @@ public sealed partial class Cpu
     private int DcxSp() { Sp = (ushort)(Sp - 1); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Dad(ushort value)
-    {
-        var result = Rhl + value;
-        Flags = result > 0xFFFF ? (Flags | CpuFlags.C) : (Flags & ~CpuFlags.C);
-        Rhl = (ushort)result;
-        return 10;
-    }
+    private int Dad(ushort value) { AddHL(value); return 10; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int DadB() => Dad(Rbc);

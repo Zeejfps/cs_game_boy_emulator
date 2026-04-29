@@ -4,32 +4,11 @@ namespace GameboyEmulator.Core.LR35902;
 
 public sealed partial class Cpu
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static CpuFlags ComputeAnaFlags(byte a, byte b, byte result)
-    {
-        var flags = CpuFlags.None;
-        if (result == 0) flags |= CpuFlags.Z;
-        if ((result & 0x80) != 0) flags |= CpuFlags.S;
-        if (Parity(result)) flags |= CpuFlags.P;
-        if (((a | b) & 0x08) != 0) flags |= CpuFlags.A;
-        return flags;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static CpuFlags ComputeLogicalFlags(byte result)
-    {
-        var flags = CpuFlags.None;
-        if (result == 0) flags |= CpuFlags.Z;
-        if ((result & 0x80) != 0) flags |= CpuFlags.S;
-        if (Parity(result)) flags |= CpuFlags.P;
-        return flags;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Ana(byte value)
     {
         var result = (byte)(Ra & value);
-        Flags = ComputeAnaFlags(Ra, value, result);
+        SetFlags(result, n: false, h: true, c: false);
         Ra = result;
         return 4;
     }
@@ -38,7 +17,7 @@ public sealed partial class Cpu
     private int Xra(byte value)
     {
         var result = (byte)(Ra ^ value);
-        Flags = ComputeLogicalFlags(result);
+        SetFlags(result, n: false, h: false, c: false);
         Ra = result;
         return 4;
     }
@@ -65,14 +44,7 @@ public sealed partial class Cpu
     private int AnaA() => Ana(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaM()
-    {
-        var value = _mmu.Read(Rhl);
-        var result = (byte)(Ra & value);
-        Flags = ComputeAnaFlags(Ra, value, result);
-        Ra = result;
-        return 7;
-    }
+    private int AnaM() { Ana(_mmu.Read(Rhl)); return 7; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int XraB() => Xra(Rb);
@@ -96,20 +68,13 @@ public sealed partial class Cpu
     private int XraA() => Xra(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraM()
-    {
-        var value = _mmu.Read(Rhl);
-        var result = (byte)(Ra ^ value);
-        Flags = ComputeLogicalFlags(result);
-        Ra = result;
-        return 7;
-    }
+    private int XraM() { Xra(_mmu.Read(Rhl)); return 7; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Ora(byte value)
     {
         var result = (byte)(Ra | value);
-        Flags = ComputeLogicalFlags(result);
+        SetFlags(result, n: false, h: false, c: false);
         Ra = result;
         return 4;
     }
@@ -136,20 +101,12 @@ public sealed partial class Cpu
     private int OraA() => Ora(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraM()
-    {
-        var value = _mmu.Read(Rhl);
-        var result = (byte)(Ra | value);
-        Flags = ComputeLogicalFlags(result);
-        Ra = result;
-        return 7;
-    }
+    private int OraM() { Ora(_mmu.Read(Rhl)); return 7; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Cmp(byte value)
     {
-        var result = Ra - value;
-        Flags = ComputeSubFlags(Ra, value, result);
+        Sub8(Ra, value, false);
         return 4;
     }
 
@@ -175,11 +132,5 @@ public sealed partial class Cpu
     private int CmpA() => Cmp(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpM()
-    {
-        var value = _mmu.Read(Rhl);
-        var result = Ra - value;
-        Flags = ComputeSubFlags(Ra, value, result);
-        return 7;
-    }
+    private int CmpM() { Cmp(_mmu.Read(Rhl)); return 7; }
 }

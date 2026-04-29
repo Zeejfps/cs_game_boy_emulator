@@ -4,10 +4,9 @@ namespace GameboyEmulator.Core.LR35902;
 public enum CpuFlags : byte
 {
     None = 0,
-    C = 1,
-    P = 1 << 2,
-    A = 1 << 4,
-    Z = 1 << 6,
-    S = 1 << 7,
-    All = S | Z | A | P | C,
+    C = 1 << 4,
+    H = 1 << 5,
+    N = 1 << 6,
+    Z = 1 << 7,
+    All = Z | N | H | C,
 }

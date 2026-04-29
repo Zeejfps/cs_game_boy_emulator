@@ -27,26 +27,10 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rpo()
-    {
-        if ((Flags & CpuFlags.P) != 0)
-            return 5;
-
-        Pc = _mmu.ReadWord(Sp);
-        Sp += 2;
-        return 11;
-    }
+    private int Rpo() => throw new NotImplementedException("8080 RPO/RPE/RP/RM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rp()
-    {
-        if ((Flags & CpuFlags.S) != 0)
-            return 5;
-
-        Pc = _mmu.ReadWord(Sp);
-        Sp += 2;
-        return 11;
-    }
+    private int Rp() => throw new NotImplementedException("8080 RPO/RPE/RP/RM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Rz()
@@ -71,26 +55,10 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rpe()
-    {
-        if ((Flags & CpuFlags.P) == 0)
-            return 5;
-
-        Pc = _mmu.ReadWord(Sp);
-        Sp += 2;
-        return 11;
-    }
+    private int Rpe() => throw new NotImplementedException("8080 RPO/RPE/RP/RM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rm()
-    {
-        if ((Flags & CpuFlags.S) == 0)
-            return 5;
-
-        Pc = _mmu.ReadWord(Sp);
-        Sp += 2;
-        return 11;
-    }
+    private int Rm() => throw new NotImplementedException("8080 RPO/RPE/RP/RM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Jnz()
@@ -111,22 +79,10 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jpo()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.P) == 0)
-            Pc = address;
-        return 10;
-    }
+    private int Jpo() => throw new NotImplementedException("8080 JPO/JPE/JP/JM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jp()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.S) == 0)
-            Pc = address;
-        return 10;
-    }
+    private int Jp() => throw new NotImplementedException("8080 JPO/JPE/JP/JM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Jz()
@@ -147,22 +103,10 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jpe()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.P) != 0)
-            Pc = address;
-        return 10;
-    }
+    private int Jpe() => throw new NotImplementedException("8080 JPO/JPE/JP/JM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Jm()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.S) != 0)
-            Pc = address;
-        return 10;
-    }
+    private int Jm() => throw new NotImplementedException("8080 JPO/JPE/JP/JM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Ret()
@@ -221,28 +165,10 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cpo()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.P) != 0)
-            return 11;
-        Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
-        Pc = address;
-        return 17;
-    }
+    private int Cpo() => throw new NotImplementedException("8080 CPO/CPE/CP/CM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cp()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.S) != 0)
-            return 11;
-        Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
-        Pc = address;
-        return 17;
-    }
+    private int Cp() => throw new NotImplementedException("8080 CPO/CPE/CP/CM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Cz()
@@ -269,28 +195,10 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cpe()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.P) == 0)
-            return 11;
-        Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
-        Pc = address;
-        return 17;
-    }
+    private int Cpe() => throw new NotImplementedException("8080 CPO/CPE/CP/CM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cm()
-    {
-        var address = FetchWord();
-        if ((Flags & CpuFlags.S) == 0)
-            return 11;
-        Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
-        Pc = address;
-        return 17;
-    }
+    private int Cm() => throw new NotImplementedException("8080 CPO/CPE/CP/CM rewired in step 3");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Rst(ushort vector)

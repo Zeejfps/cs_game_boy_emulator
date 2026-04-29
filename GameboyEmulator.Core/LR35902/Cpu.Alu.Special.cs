@@ -9,7 +9,7 @@ public sealed partial class Cpu
     {
         var carry = (Ra & 0x80) != 0;
         Ra = (byte)((Ra << 1) | (carry ? 1 : 0));
-        Flags = carry ? (Flags | CpuFlags.C) : (Flags & ~CpuFlags.C);
+        _flags = carry ? CpuFlags.C : CpuFlags.None;
         return 4;
     }
 
@@ -19,7 +19,7 @@ public sealed partial class Cpu
         var newCarry = (Ra & 0x80) != 0;
         var oldCarry = (Flags & CpuFlags.C) != 0;
         Ra = (byte)((Ra << 1) | (oldCarry ? 1 : 0));
-        Flags = newCarry ? (Flags | CpuFlags.C) : (Flags & ~CpuFlags.C);
+        _flags = newCarry ? CpuFlags.C : CpuFlags.None;
         return 4;
     }
 
@@ -28,7 +28,7 @@ public sealed partial class Cpu
     {
         var carry = (Ra & 0x01) != 0;
         Ra = (byte)((Ra >> 1) | (carry ? 0x80 : 0));
-        Flags = carry ? (Flags | CpuFlags.C) : (Flags & ~CpuFlags.C);
+        _flags = carry ? CpuFlags.C : CpuFlags.None;
         return 4;
     }
 
@@ -38,7 +38,7 @@ public sealed partial class Cpu
         var newCarry = (Ra & 0x01) != 0;
         var oldCarry = (Flags & CpuFlags.C) != 0;
         Ra = (byte)((Ra >> 1) | (oldCarry ? 0x80 : 0));
-        Flags = newCarry ? (Flags | CpuFlags.C) : (Flags & ~CpuFlags.C);
+        _flags = newCarry ? CpuFlags.C : CpuFlags.None;
         return 4;
     }
 
@@ -46,50 +46,32 @@ public sealed partial class Cpu
     private int Cma()
     {
         Ra = (byte)~Ra;
+        SetN(true);
+        SetH(true);
         return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Cmc()
     {
-        Flags ^= CpuFlags.C;
+        SetN(false);
+        SetH(false);
+        _flags ^= CpuFlags.C;
         return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Stc()
     {
-        Flags |= CpuFlags.C;
+        SetN(false);
+        SetH(false);
+        SetC(true);
         return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Daa()
     {
-        var a = Ra;
-        var correction = 0;
-        var newCarry = (Flags & CpuFlags.C) != 0;
-
-        if ((Flags & CpuFlags.A) != 0 || (a & 0xF) > 9)
-            correction = 0x06;
-
-        if ((Flags & CpuFlags.C) != 0 || a > 0x99)
-        {
-            correction |= 0x60;
-            newCarry = true;
-        }
-
-        var result = (byte)(a + correction);
-
-        var flags = CpuFlags.None;
-        if (result == 0) flags |= CpuFlags.Z;
-        if ((result & 0x80) != 0) flags |= CpuFlags.S;
-        if (Parity(result)) flags |= CpuFlags.P;
-        if (newCarry) flags |= CpuFlags.C;
-        if ((a & 0xF) + (correction & 0xF) > 0xF) flags |= CpuFlags.A;
-
-        Flags = flags;
-        Ra = result;
-        return 4;
+        throw new NotImplementedException("DAA rewrites in step 6");
     }
 }
