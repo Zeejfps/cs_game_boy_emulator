@@ -67,45 +67,37 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public int Step()
     {
+        var cycles = Dispatch();
+        UpdateInterruptTimer();
+        return cycles;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private int Dispatch()
+    {
         if (IsSleeping)
         {
-            // Joypad interrupt request wakes from STOP. The wake step itself
+            // Joypad interrupt request wakes from IsSleeping. The wake step itself
             // does not dispatch and does not fetch — the next Step() prologue
             // handles dispatch (if IME=1) or normal fetch.
             if (IsInterruptRequested(InterruptType.Joypad))
             {
                 IsSleeping = false;
             }
-            UpdateInterruptTimer();
             return 4;
         }
 
         var pending = GetPendingInterrupts();
-
-        if (IsWaitingForInterrupt)
-        {
-            if (pending != InterruptType.None)
-            {
-                IsWaitingForInterrupt = false;
-            }
-            else
-            {
-                UpdateInterruptTimer();
-                return 4;
-            }
-        }
+        if (IsWaitingForInterrupt && pending == InterruptType.None)
+            return 4;
+        
+        IsWaitingForInterrupt = false;
 
         if (InterruptMasterEnable && pending != InterruptType.None)
-        {
-            var cycles = ServicePendingInterrupt(pending);
-            UpdateInterruptTimer();
-            return cycles;
-        }
+            return ServicePendingInterrupt(pending);
 
         var opcode = Fetch();
-        var executed = Execute(opcode);
-        UpdateInterruptTimer();
-        return executed;
+        return Execute(opcode);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
