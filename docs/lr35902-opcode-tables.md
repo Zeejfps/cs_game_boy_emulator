@@ -5,8 +5,17 @@ to the LR35902 (Sharp SM83 / DMG CPU) instruction at the same byte. Cycle
 counts are in **T-states** (1 M-cycle = 4 T). Section references (e.g. §3, §4)
 point at the main conversion guide.
 
-Legend: **Keep** / **Modify** / **Replace** / **Delete** / **Add** — see the
-main guide for definitions.
+Legend:
+
+- **Keep** — opcode and behavior are identical (or close enough that only minor flag
+  semantics change, addressed in §3 of the main guide).
+- **Modify** — opcode stays at the same byte but the behavior, cycles, or flag effects
+  change. Existing handler must be edited.
+- **Replace** — opcode byte exists on both CPUs but encodes a *different* instruction
+  on LR35902. Old handler must be deleted and a new handler written.
+- **Delete** — opcode is illegal on LR35902. Should map to a hard fault / panic in the
+  decoder, not silently NOP.
+- **Add** — opcode does not exist (or was a NOP/alias) on the 8080. New handler needed.
 
 ---
 
