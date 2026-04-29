@@ -23,6 +23,7 @@ public class CpuTStateCoverageTests : CpuTestBase
     [InlineData("ADD A,(HL)",           8,  new byte[] { 0x86 },             CpuFlags.None)]
     [InlineData("ADI d8",               8,  new byte[] { 0xC6, 0x00 },       CpuFlags.None)]
     [InlineData("ADD HL,rr",            8,  new byte[] { 0x09 },             CpuFlags.None)]
+    [InlineData("DAA",                  4,  new byte[] { 0x27 },             CpuFlags.None)]
     [InlineData("RST n",                16, new byte[] { 0xC7 },             CpuFlags.None)]
     [InlineData("JP a16",               16, new byte[] { 0xC3, 0x00, 0x00 }, CpuFlags.None)]
     [InlineData("JP cc taken",          16, new byte[] { 0xC2, 0x00, 0x00 }, CpuFlags.None)]

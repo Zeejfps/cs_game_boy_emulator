@@ -72,6 +72,28 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Daa()
     {
-        throw new NotImplementedException("DAA rewrites in step 6");
+        var flags = Flags;
+        var h = (flags & CpuFlags.H) != 0;
+        var c = (flags & CpuFlags.C) != 0;
+        byte correction = 0;
+        var setC = c;
+
+        if ((flags & CpuFlags.N) == 0)
+        {
+            if (h || (Ra & 0x0F) > 9) correction |= 0x06;
+            if (c || Ra > 0x99) { correction |= 0x60; setC = true; }
+            Ra = (byte)(Ra + correction);
+        }
+        else
+        {
+            if (h) correction |= 0x06;
+            if (c) correction |= 0x60;
+            Ra = (byte)(Ra - correction);
+        }
+
+        SetZ(Ra);
+        SetH(false);
+        SetC(setC);
+        return 4;
     }
 }

@@ -35,7 +35,7 @@ ADD/ADC/SUB/SBC/INC/DEC handler must already be setting H and N correctly
 
 ### Implement DAA
 
-- [ ] Replace the throw in `Cpu.Alu.Special.cs::Daa()` with the N-aware
+- [x] Replace the throw in `Cpu.Alu.Special.cs::Daa()` with the N-aware
       algorithm from §3.2:
       ```
       if (Flags & N) == 0:                       // last op was add
@@ -53,7 +53,7 @@ ADD/ADC/SUB/SBC/INC/DEC handler must already be setting H and N correctly
       in — both give the canonical `01-special` behavior; pick whichever
       reads cleaner). Compute the correction first, then mutate `Ra`
       once. Do **not** clear `N` — the spec says `N` is preserved.
-- [ ] Return `4` T.
+- [x] Return `4` T.
 
 ### Tests
 
@@ -61,39 +61,39 @@ Add a `Daa` test block in `CpuArithmeticTests.cs` (alongside the existing
 `Add`/`Sub`/`Inc`/`Dec` blocks). Cover the load-bearing branches without
 exhaustively enumerating BCD inputs.
 
-- [ ] **Add path, no carries needed**: `A=0x12`, `N=0`, `H=0`, `C=0` →
+- [x] **Add path, no carries needed**: `A=0x12`, `N=0`, `H=0`, `C=0` →
       `A=0x12`, flags `Z=0, N=0, H=0, C=0`.
-- [ ] **Add path, low-nibble correction**: `A=0x0A`, `N=0`, `H=0`, `C=0` →
+- [x] **Add path, low-nibble correction**: `A=0x0A`, `N=0`, `H=0`, `C=0` →
       `A=0x10` (low nibble `>9` triggers `+0x06`), `C=0`, `H=0`.
-- [ ] **Add path, half-carry correction**: `A=0x10`, `N=0`, `H=1`, `C=0` →
+- [x] **Add path, half-carry correction**: `A=0x10`, `N=0`, `H=1`, `C=0` →
       `A=0x16` (`H=1` triggers `+0x06` even though low nibble is fine).
-- [ ] **Add path, high-nibble correction sets C**: `A=0xA0`, `N=0`, `H=0`,
+- [x] **Add path, high-nibble correction sets C**: `A=0xA0`, `N=0`, `H=0`,
       `C=0` → `A=0x00`, `C=1`, `Z=1`, `H=0`. (Pins both the `>0x99`
       branch and the `Z` recompute on overflow.)
-- [ ] **Add path, carry-in forces high correction**: `A=0x10`, `N=0`,
+- [x] **Add path, carry-in forces high correction**: `A=0x10`, `N=0`,
       `H=0`, `C=1` → `A=0x70`, `C=1`. (Earlier ADD overflowed to a
       pre-existing `C=1`; DAA must keep `C=1`.)
-- [ ] **Sub path, no correction**: `A=0x42`, `N=1`, `H=0`, `C=0` →
+- [x] **Sub path, no correction**: `A=0x42`, `N=1`, `H=0`, `C=0` →
       `A=0x42`, `N=1`, `H=0`, `C=0`.
-- [ ] **Sub path, half-borrow correction**: `A=0x06`, `N=1`, `H=1`, `C=0`
+- [x] **Sub path, half-borrow correction**: `A=0x06`, `N=1`, `H=1`, `C=0`
       → `A=0x00` (`-0x06`), `Z=1`, `N=1`, `H=0`, `C=0`.
-- [ ] **Sub path, full-borrow correction**: `A=0x00`, `N=1`, `H=0`, `C=1`
+- [x] **Sub path, full-borrow correction**: `A=0x00`, `N=1`, `H=0`, `C=1`
       → `A=0xA0` (`-0x60`), `N=1`, `H=0`, `C=1`. (Sub branch never
       *clears* C.)
-- [ ] **Sub path, both corrections**: `A=0x00`, `N=1`, `H=1`, `C=1` →
+- [x] **Sub path, both corrections**: `A=0x00`, `N=1`, `H=1`, `C=1` →
       `A=0x9A` (`-0x66`), `N=1`, `H=0`, `C=1`.
-- [ ] **End-to-end add+DAA**: program `LD A,0x15; ADD A,0x27; DAA`
+- [x] **End-to-end add+DAA**: program `LD A,0x15; ADD A,0x27; DAA`
       (`0x3E 0x15 0xC6 0x27 0x27`). After three steps `A=0x42`,
       `N=0`, `H=0`, `C=0` (15 + 27 = 42 BCD).
-- [ ] **End-to-end sub+DAA**: program `LD A,0x42; SUB A,0x15; DAA`
+- [x] **End-to-end sub+DAA**: program `LD A,0x42; SUB A,0x15; DAA`
       (`0x3E 0x42 0xD6 0x15 0x27`). After three steps `A=0x27`,
       `N=1`, `H=0`, `C=0` (42 − 15 = 27 BCD). Pins that the SUB sets
       `N=1` and DAA reads it.
-- [ ] **H is always cleared**: same setup as the half-borrow row but
+- [x] **H is always cleared**: same setup as the half-borrow row but
       assert `(Flags & CpuFlags.H) == 0` explicitly.
 
-- [ ] Delete `TestDaaThrowsUntilStep6` from `CpuArithmeticTests.cs`.
-- [ ] Add `DAA → 4 T (0x27)` row to the
+- [x] Delete `TestDaaThrowsUntilStep6` from `CpuArithmeticTests.cs`.
+- [x] Add `DAA → 4 T (0x27)` row to the
       `StepReturnsExpectedTStates` theory in `CpuTStateCoverageTests.cs`.
 
 ## Out of scope (explicitly)

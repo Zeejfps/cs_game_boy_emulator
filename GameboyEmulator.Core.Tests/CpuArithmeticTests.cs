@@ -693,16 +693,88 @@ public class CpuArithmeticTests : CpuTestBase
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
-    [Fact]
-    public void TestDaaThrowsUntilStep6()
+    [Theory]
+    // Add path
+    [InlineData(0x12, CpuFlags.None,                          0x12, CpuFlags.None)]                       // no correction
+    [InlineData(0x0A, CpuFlags.None,                          0x10, CpuFlags.None)]                       // low-nibble correction
+    [InlineData(0x10, CpuFlags.H,                             0x16, CpuFlags.None)]                       // half-carry correction
+    [InlineData(0xA0, CpuFlags.None,                          0x00, CpuFlags.Z | CpuFlags.C)]            // high-nibble correction sets C and Z
+    [InlineData(0x10, CpuFlags.C,                             0x70, CpuFlags.C)]                          // carry-in forces high correction
+    // Sub path
+    [InlineData(0x42, CpuFlags.N,                             0x42, CpuFlags.N)]                          // no correction
+    [InlineData(0x06, CpuFlags.N | CpuFlags.H,               0x00, CpuFlags.Z | CpuFlags.N)]            // half-borrow correction
+    [InlineData(0x00, CpuFlags.N | CpuFlags.C,               0xA0, CpuFlags.N | CpuFlags.C)]            // full-borrow correction
+    [InlineData(0x00, CpuFlags.N | CpuFlags.H | CpuFlags.C, 0x9A, CpuFlags.N | CpuFlags.C)]            // both corrections
+    public void TestDaa(byte a, CpuFlags initialFlags, byte expectedA, CpuFlags expectedFlags)
     {
-        var initialState = new CpuState { Pc = 0x00, Ra = 0x5C };
+        var initialState = new CpuState { Pc = 0x00, Ra = a, Flags = initialFlags };
 
         Mmu.Write(0x00, 0x27); // DAA
 
         Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
 
-        Assert.Throws<NotImplementedException>(() => Cpu.Step());
+        var expectedState = initialState;
+        expectedState.Ra = expectedA;
+        expectedState.Flags = expectedFlags;
+        expectedState.IncrementPcBy(1);
+
+        Assert.Equal(4, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Fact]
+    public void TestDaaAlwaysClearsH()
+    {
+        // Same setup as the half-borrow row; assert H is explicitly cleared.
+        var initialState = new CpuState { Pc = 0x00, Ra = 0x06, Flags = CpuFlags.N | CpuFlags.H };
+
+        Mmu.Write(0x00, 0x27); // DAA
+
+        Cpu.WriteState(initialState);
+        Cpu.Step();
+
+        Assert.Equal(CpuFlags.None, Cpu.ReadState().Flags & CpuFlags.H);
+    }
+
+    [Fact]
+    public void TestDaaAfterAdd()
+    {
+        // LD A,0x15; ADD A,0x27; DAA → A=0x42 (15+27=42 BCD)
+        Mmu.Write(0x00, 0x3E); // LD A,d8
+        Mmu.Write(0x01, 0x15);
+        Mmu.Write(0x02, 0xC6); // ADD A,d8
+        Mmu.Write(0x03, 0x27);
+        Mmu.Write(0x04, 0x27); // DAA
+
+        Cpu.WriteState(new CpuState { Pc = 0x00 });
+        Cpu.Step();
+        Cpu.Step();
+        Cpu.Step();
+
+        var state = Cpu.ReadState();
+        Assert.Equal(0x42, state.Ra);
+        Assert.Equal(CpuFlags.None, state.Flags);
+    }
+
+    [Fact]
+    public void TestDaaAfterSub()
+    {
+        // LD A,0x42; SUB 0x15; DAA → A=0x27 (42-15=27 BCD)
+        Mmu.Write(0x00, 0x3E); // LD A,d8
+        Mmu.Write(0x01, 0x42);
+        Mmu.Write(0x02, 0xD6); // SUB d8
+        Mmu.Write(0x03, 0x15);
+        Mmu.Write(0x04, 0x27); // DAA
+
+        Cpu.WriteState(new CpuState { Pc = 0x00 });
+        Cpu.Step();
+        Cpu.Step();
+        Cpu.Step();
+
+        var state = Cpu.ReadState();
+        Assert.Equal(0x27, state.Ra);
+        Assert.Equal(CpuFlags.N, state.Flags);
     }
 
     [Theory]
