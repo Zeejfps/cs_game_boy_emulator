@@ -38,7 +38,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rcy()
+    private int RetC()
     {
         if ((Flags & CpuFlags.C) == 0)
             return 8;

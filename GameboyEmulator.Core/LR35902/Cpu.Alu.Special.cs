@@ -5,7 +5,7 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rlc()
+    private int Rlca()
     {
         var carry = (Ra & 0x80) != 0;
         Ra = (byte)((Ra << 1) | (carry ? 1 : 0));
@@ -14,7 +14,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Ral()
+    private int Rla()
     {
         var newCarry = (Ra & 0x80) != 0;
         var oldCarry = (Flags & CpuFlags.C) != 0;
@@ -24,7 +24,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rrc()
+    private int Rrca()
     {
         var carry = (Ra & 0x01) != 0;
         Ra = (byte)((Ra >> 1) | (carry ? 0x80 : 0));
@@ -33,7 +33,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rar()
+    private int Rra()
     {
         var newCarry = (Ra & 0x01) != 0;
         var oldCarry = (Flags & CpuFlags.C) != 0;

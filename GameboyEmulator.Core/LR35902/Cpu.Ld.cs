@@ -5,198 +5,198 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBb() { return 4; }
+    private int LdBb() { return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBc() { Rb = Rc; return 4; }
+    private int LdBc() { Rb = Rc; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBd() { Rb = Rd; return 4; }
+    private int LdBd() { Rb = Rd; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBe() { Rb = Re; return 4; }
+    private int LdBe() { Rb = Re; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBh() { Rb = Rh; return 4; }
+    private int LdBh() { Rb = Rh; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBl() { Rb = Rl; return 4; }
+    private int LdBl() { Rb = Rl; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBa() { Rb = Ra; return 4; }
+    private int LdBa() { Rb = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveBm() { Rb = _mmu.Read(Rhl); return 8; }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCb() { Rc = Rb; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCc() { return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCd() { Rc = Rd; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCe() { Rc = Re; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCh() { Rc = Rh; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCl() { Rc = Rl; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCa() { Rc = Ra; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveCm() { Rc = _mmu.Read(Rhl); return 8; }
+    private int LdBm() { Rb = _mmu.Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDb() { Rd = Rb; return 4; }
+    private int LdCb() { Rc = Rb; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDc() { Rd = Rc; return 4; }
+    private int LdCc() { return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDd() { return 4; }
+    private int LdCd() { Rc = Rd; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDe() { Rd = Re; return 4; }
+    private int LdCe() { Rc = Re; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDh() { Rd = Rh; return 4; }
+    private int LdCh() { Rc = Rh; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDl() { Rd = Rl; return 4; }
+    private int LdCl() { Rc = Rl; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDa() { Rd = Ra; return 4; }
+    private int LdCa() { Rc = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveDm() { Rd = _mmu.Read(Rhl); return 8; }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEb() { Re = Rb; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEc() { Re = Rc; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEd() { Re = Rd; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEe() { return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEh() { Re = Rh; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEl() { Re = Rl; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEa() { Re = Ra; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveEm() { Re = _mmu.Read(Rhl); return 8; }
+    private int LdCm() { Rc = _mmu.Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHb() { Rh = Rb; return 4; }
+    private int LdDb() { Rd = Rb; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHc() { Rh = Rc; return 4; }
+    private int LdDc() { Rd = Rc; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHd() { Rh = Rd; return 4; }
+    private int LdDd() { return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHe() { Rh = Re; return 4; }
+    private int LdDe() { Rd = Re; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHh() { return 4; }
+    private int LdDh() { Rd = Rh; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHl() { Rh = Rl; return 4; }
+    private int LdDl() { Rd = Rl; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHa() { Rh = Ra; return 4; }
+    private int LdDa() { Rd = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveHm() { Rh = _mmu.Read(Rhl); return 8; }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLb() { Rl = Rb; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLc() { Rl = Rc; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLd() { Rl = Rd; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLe() { Rl = Re; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLh() { Rl = Rh; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLl() { return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLa() { Rl = Ra; return 4; }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveLm() { Rl = _mmu.Read(Rhl); return 8; }
+    private int LdDm() { Rd = _mmu.Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAb() { Ra = Rb; return 4; }
+    private int LdEb() { Re = Rb; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAc() { Ra = Rc; return 4; }
+    private int LdEc() { Re = Rc; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAd() { Ra = Rd; return 4; }
+    private int LdEd() { Re = Rd; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAe() { Ra = Re; return 4; }
+    private int LdEe() { return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAh() { Ra = Rh; return 4; }
+    private int LdEh() { Re = Rh; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAl() { Ra = Rl; return 4; }
+    private int LdEl() { Re = Rl; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAa() { return 4; }
+    private int LdEa() { Re = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveAm() { Ra = _mmu.Read(Rhl); return 8; }
+    private int LdEm() { Re = _mmu.Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveMb() { _mmu.Write(Rhl, Rb); return 8; }
+    private int LdHb() { Rh = Rb; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveMc() { _mmu.Write(Rhl, Rc); return 8; }
+    private int LdHc() { Rh = Rc; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveMd() { _mmu.Write(Rhl, Rd); return 8; }
+    private int LdHd() { Rh = Rd; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveMe() { _mmu.Write(Rhl, Re); return 8; }
+    private int LdHe() { Rh = Re; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveMh() { _mmu.Write(Rhl, Rh); return 8; }
+    private int LdHh() { return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveMl() { _mmu.Write(Rhl, Rl); return 8; }
+    private int LdHl() { Rh = Rl; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MoveMa() { _mmu.Write(Rhl, Ra); return 8; }
+    private int LdHa() { Rh = Ra; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdHm() { Rh = _mmu.Read(Rhl); return 8; }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLb() { Rl = Rb; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLc() { Rl = Rc; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLd() { Rl = Rd; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLe() { Rl = Re; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLh() { Rl = Rh; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLl() { return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLa() { Rl = Ra; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdLm() { Rl = _mmu.Read(Rhl); return 8; }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAb() { Ra = Rb; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAc() { Ra = Rc; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAd() { Ra = Rd; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAe() { Ra = Re; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAh() { Ra = Rh; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAl() { Ra = Rl; return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAa() { return 4; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdAm() { Ra = _mmu.Read(Rhl); return 8; }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdMb() { _mmu.Write(Rhl, Rb); return 8; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdMc() { _mmu.Write(Rhl, Rc); return 8; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdMd() { _mmu.Write(Rhl, Rd); return 8; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdMe() { _mmu.Write(Rhl, Re); return 8; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdMh() { _mmu.Write(Rhl, Rh); return 8; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdMl() { _mmu.Write(Rhl, Rl); return 8; }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int LdMa() { _mmu.Write(Rhl, Ra); return 8; }
 }

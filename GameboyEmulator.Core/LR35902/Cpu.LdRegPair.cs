@@ -5,28 +5,28 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LxiB()
+    private int LdBcNn()
     {
         Rbc = FetchWord();
         return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LxiD()
+    private int LdDeNn()
     {
         Rde = FetchWord();
         return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LxiH()
+    private int LdHlNn()
     {
         Rhl = FetchWord();
         return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LxiSp()
+    private int LdSpNn()
     {
         Sp = FetchWord();
         return 12;

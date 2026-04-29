@@ -2,7 +2,7 @@ using GameboyEmulator.Core.LR35902;
 
 namespace GameboyEmulator.Core.Tests;
 
-public class CpuMovTests : CpuTestBase
+public class CpuLdTests : CpuTestBase
 {
     [Fact]
     public void TestNoOp()
@@ -72,7 +72,7 @@ public class CpuMovTests : CpuTestBase
     [InlineData(0x7C, Reg.A, Reg.H)]
     [InlineData(0x7D, Reg.A, Reg.L)]
     [InlineData(0x7F, Reg.A, Reg.A)]
-    public void TestMoveRr(byte opcode, Reg dst, Reg src)
+    public void TestLdRr(byte opcode, Reg dst, Reg src)
     {
         var initialState = new CpuState { Pc = 0x10, Flags = CpuFlags.All };
         initialState.WriteReg(dst, 0x11);
@@ -99,7 +99,7 @@ public class CpuMovTests : CpuTestBase
     [InlineData(0x66, Reg.H)]
     [InlineData(0x6E, Reg.L)]
     [InlineData(0x7E, Reg.A)]
-    public void TestMoveRm(byte opcode, Reg dst)
+    public void TestLdRm(byte opcode, Reg dst)
     {
         var initialState = new CpuState
         {
@@ -133,7 +133,7 @@ public class CpuMovTests : CpuTestBase
     [InlineData(0x74, Reg.H)]
     [InlineData(0x75, Reg.L)]
     [InlineData(0x77, Reg.A)]
-    public void TestMoveMr(byte opcode, Reg src)
+    public void TestLdMr(byte opcode, Reg src)
     {
         var initialState = new CpuState
         {
@@ -171,7 +171,7 @@ public class CpuMovTests : CpuTestBase
     [InlineData(0x26, Reg.H)]
     [InlineData(0x2E, Reg.L)]
     [InlineData(0x3E, Reg.A)]
-    public void TestMviR(byte opcode, Reg dst)
+    public void TestLdRn(byte opcode, Reg dst)
     {
         var instructionSize = 2;
         var initialState = new CpuState
@@ -195,7 +195,7 @@ public class CpuMovTests : CpuTestBase
     }
 
     [Fact]
-    public void TestMviM()
+    public void TestLdMn()
     {
         byte opcode = 0x36;
         byte sentinel = 0xAB;
@@ -287,7 +287,7 @@ public class CpuMovTests : CpuTestBase
     [InlineData(0x11, Reg.D)]
     [InlineData(0x21, Reg.H)]
     [InlineData(0x31, Reg.Sp)]
-    public void TestLxi(byte opcode, Reg dst)
+    public void TestLdRrNn(byte opcode, Reg dst)
     {
         ushort immediate = 0x2030;
         var instructionSize = 3;

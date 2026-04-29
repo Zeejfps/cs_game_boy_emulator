@@ -5,28 +5,28 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdAb()
+    private int LdABc()
     {
         Ra = _mmu.Read(Rbc);
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdAd()
+    private int LdADe()
     {
         Ra = _mmu.Read(Rde);
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int StAb()
+    private int LdBcA()
     {
         _mmu.Write(Rbc, Ra);
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int StAd()
+    private int LdDeA()
     {
         _mmu.Write(Rde, Ra);
         return 8;

@@ -5,56 +5,56 @@ namespace GameboyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviB()
+    private int LdBn()
     {
         Rb = Fetch();
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviC()
+    private int LdCn()
     {
         Rc = Fetch();
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviD()
+    private int LdDn()
     {
         Rd = Fetch();
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviE()
+    private int LdEn()
     {
         Re = Fetch();
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviH()
+    private int LdHn()
     {
         Rh = Fetch();
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviL()
+    private int LdLn()
     {
         Rl = Fetch();
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviA()
+    private int LdAn()
     {
         Ra = Fetch();
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int MviM()
+    private int LdMn()
     {
         var value = Fetch();
         _mmu.Write(Rhl, value);

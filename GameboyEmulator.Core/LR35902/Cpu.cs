@@ -134,109 +134,109 @@ public sealed partial class Cpu
         // NOP
         0x00 => Nop(),
 
-        // Mvi
-        0x06 => MviB(),
-        0x0E => MviC(),
-        0x16 => MviD(),
-        0x1E => MviE(),
-        0x26 => MviH(),
-        0x2E => MviL(),
-        0x3E => MviA(),
-        0x36 => MviM(),
+        // LD r,n8
+        0x06 => LdBn(),
+        0x0E => LdCn(),
+        0x16 => LdDn(),
+        0x1E => LdEn(),
+        0x26 => LdHn(),
+        0x2E => LdLn(),
+        0x3E => LdAn(),
+        0x36 => LdMn(),
 
-        // Move Bx
-        0x40 => MoveBb(),
-        0x41 => MoveBc(),
-        0x42 => MoveBd(),
-        0x43 => MoveBe(),
-        0x44 => MoveBh(),
-        0x45 => MoveBl(),
-        0x46 => MoveBm(),
-        0x47 => MoveBa(),
+        // LD B,r
+        0x40 => LdBb(),
+        0x41 => LdBc(),
+        0x42 => LdBd(),
+        0x43 => LdBe(),
+        0x44 => LdBh(),
+        0x45 => LdBl(),
+        0x46 => LdBm(),
+        0x47 => LdBa(),
 
-        // Move Cx
-        0x48 => MoveCb(),
-        0x49 => MoveCc(),
-        0x4A => MoveCd(),
-        0x4B => MoveCe(),
-        0x4C => MoveCh(),
-        0x4D => MoveCl(),
-        0x4E => MoveCm(),
-        0x4F => MoveCa(),
+        // LD C,r
+        0x48 => LdCb(),
+        0x49 => LdCc(),
+        0x4A => LdCd(),
+        0x4B => LdCe(),
+        0x4C => LdCh(),
+        0x4D => LdCl(),
+        0x4E => LdCm(),
+        0x4F => LdCa(),
 
-        // Move Dx
-        0x50 => MoveDb(),
-        0x51 => MoveDc(),
-        0x52 => MoveDd(),
-        0x53 => MoveDe(),
-        0x54 => MoveDh(),
-        0x55 => MoveDl(),
-        0x56 => MoveDm(),
-        0x57 => MoveDa(),
+        // LD D,r
+        0x50 => LdDb(),
+        0x51 => LdDc(),
+        0x52 => LdDd(),
+        0x53 => LdDe(),
+        0x54 => LdDh(),
+        0x55 => LdDl(),
+        0x56 => LdDm(),
+        0x57 => LdDa(),
 
-        // Move Ex
-        0x58 => MoveEb(),
-        0x59 => MoveEc(),
-        0x5A => MoveEd(),
-        0x5B => MoveEe(),
-        0x5C => MoveEh(),
-        0x5D => MoveEl(),
-        0x5E => MoveEm(),
-        0x5F => MoveEa(),
+        // LD E,r
+        0x58 => LdEb(),
+        0x59 => LdEc(),
+        0x5A => LdEd(),
+        0x5B => LdEe(),
+        0x5C => LdEh(),
+        0x5D => LdEl(),
+        0x5E => LdEm(),
+        0x5F => LdEa(),
 
-        // Move Hx
-        0x60 => MoveHb(),
-        0x61 => MoveHc(),
-        0x62 => MoveHd(),
-        0x63 => MoveHe(),
-        0x64 => MoveHh(),
-        0x65 => MoveHl(),
-        0x66 => MoveHm(),
-        0x67 => MoveHa(),
+        // LD H,r
+        0x60 => LdHb(),
+        0x61 => LdHc(),
+        0x62 => LdHd(),
+        0x63 => LdHe(),
+        0x64 => LdHh(),
+        0x65 => LdHl(),
+        0x66 => LdHm(),
+        0x67 => LdHa(),
 
-        // Move Lx
-        0x68 => MoveLb(),
-        0x69 => MoveLc(),
-        0x6A => MoveLd(),
-        0x6B => MoveLe(),
-        0x6C => MoveLh(),
-        0x6D => MoveLl(),
-        0x6E => MoveLm(),
-        0x6F => MoveLa(),
+        // LD L,r
+        0x68 => LdLb(),
+        0x69 => LdLc(),
+        0x6A => LdLd(),
+        0x6B => LdLe(),
+        0x6C => LdLh(),
+        0x6D => LdLl(),
+        0x6E => LdLm(),
+        0x6F => LdLa(),
 
-        // Move Ax
-        0x78 => MoveAb(),
-        0x79 => MoveAc(),
-        0x7A => MoveAd(),
-        0x7B => MoveAe(),
-        0x7C => MoveAh(),
-        0x7D => MoveAl(),
-        0x7E => MoveAm(),
-        0x7F => MoveAa(),
+        // LD A,r
+        0x78 => LdAb(),
+        0x79 => LdAc(),
+        0x7A => LdAd(),
+        0x7B => LdAe(),
+        0x7C => LdAh(),
+        0x7D => LdAl(),
+        0x7E => LdAm(),
+        0x7F => LdAa(),
 
-        // Move Mx
-        0x70 => MoveMb(),
-        0x71 => MoveMc(),
-        0x72 => MoveMd(),
-        0x73 => MoveMe(),
-        0x74 => MoveMh(),
-        0x75 => MoveMl(),
+        // LD (HL),r
+        0x70 => LdMb(),
+        0x71 => LdMc(),
+        0x72 => LdMd(),
+        0x73 => LdMe(),
+        0x74 => LdMh(),
+        0x75 => LdMl(),
         0x76 => Hlt(),
-        0x77 => MoveMa(),
+        0x77 => LdMa(),
 
-        // Load
-        0x0A => LdAb(),
-        0x1A => LdAd(),
+        // LD A,(rr)
+        0x0A => LdABc(),
+        0x1A => LdADe(),
 
-        // Store
-        0x02 => StAb(),
-        0x12 => StAd(),
+        // LD (rr),A
+        0x02 => LdBcA(),
+        0x12 => LdDeA(),
 
-        // Load register pair immediate
-        0x01 => LxiB(),
-        0x11 => LxiD(),
-        0x21 => LxiH(),
-        0x31 => LxiSp(),
+        // LD rr,n16
+        0x01 => LdBcNn(),
+        0x11 => LdDeNn(),
+        0x21 => LdHlNn(),
+        0x31 => LdSpNn(),
 
         // ADD HL,rr
         0x09 => AddHlB(),
@@ -271,7 +271,7 @@ public sealed partial class Cpu
         0xC0 => Rnz(),
         0xC8 => Rz(),
         0xD0 => Rnc(),
-        0xD8 => Rcy(),
+        0xD8 => RetC(),
 
         // ADD
         0x80 => AddB(),
@@ -386,20 +386,20 @@ public sealed partial class Cpu
         0xFB => Ei(),
 
         // Immediate arithmetic / logic
-        0xC6 => Adi(),
-        0xCE => Aci(),
-        0xD6 => Sui(),
-        0xDE => Sbi(),
-        0xE6 => Ani(),
-        0xEE => Xri(),
-        0xF6 => Ori(),
-        0xFE => Cpi(),
+        0xC6 => AddN(),
+        0xCE => AdcN(),
+        0xD6 => SubN(),
+        0xDE => SbcN(),
+        0xE6 => AndN(),
+        0xEE => XorN(),
+        0xF6 => OrN(),
+        0xFE => CpN(),
 
         // Rotate / special accumulator
-        0x07 => Rlc(),
-        0x0F => Rrc(),
-        0x17 => Ral(),
-        0x1F => Rar(),
+        0x07 => Rlca(),
+        0x0F => Rrca(),
+        0x17 => Rla(),
+        0x1F => Rra(),
         0x27 => Daa(),
         0x2F => Cpl(),
         0x37 => Scf(),

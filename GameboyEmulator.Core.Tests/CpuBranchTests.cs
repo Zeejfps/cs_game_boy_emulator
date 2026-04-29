@@ -4,9 +4,9 @@ namespace GameboyEmulator.Core.Tests;
 
 public class CpuBranchTests : CpuTestBase
 {
-    // 8080 sign/parity-condition tests (RP/RM/RPE/RPO, JP/JM/JPE/JPO, CP/CM/CPE/CPO)
-    // are intentionally dropped — those opcodes are repurposed in step 3 and currently
-    // throw NotImplementedException.
+    // The LR35902 only branches on Z and C. The 8080 sign/parity-condition opcodes
+    // (RP/RM/RPE/RPO, JP/JM/JPE/JPO, CP/CM/CPE/CPO) do not exist on the LR35902 —
+    // those opcode slots are repurposed (e.g., LDH, LD A,(C), interrupt control).
 
     [Theory]
     [InlineData(0xC0, CpuFlags.None,    true)]   // RNZ taken (Z=0)
