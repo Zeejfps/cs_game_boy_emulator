@@ -310,4 +310,55 @@ public class CpuInterruptTests : CpuTestBase
         Cpu.Reset();
         Assert.False(Cpu.InterruptMasterEnable);
     }
+
+    // HALT bug interaction with a two-byte LD A,d8: the opcode byte 0x3E
+    // is fetched twice, so the immediate operand reads as 0x3E (the LD
+    // opcode itself), not the byte the programmer wrote next.
+    [Fact]
+    public void HaltBug_DoublesNextOpcodeByte_LdAImmediate()
+    {
+        ushort start = 0x0100;
+        Mmu.Write(start, 0x76);             // HALT
+        Mmu.Write((ushort)(start + 1), 0x3E); // LD A,d8 (opcode)
+        Mmu.Write((ushort)(start + 2), 0x42); // intended immediate
+        Mmu.Write(IoRegisters.InterruptEnableAddress, 0x01);
+        Mmu.Write(IoRegisters.InterruptFlagAddress, 0x01);
+
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000, Ra = 0x00 });
+        Cpu.InterruptMasterEnable = false;
+
+        Cpu.Step(); // HALT — sets _haltBugPending
+        Assert.False(Cpu.IsWaitingForInterrupt);
+        Assert.Equal((ushort)(start + 1), Cpu.Pc);
+
+        Cpu.Step(); // LD A,d8 — bug doubles the 0x3E byte
+        Assert.Equal(0x3E, Cpu.Ra);             // not 0x42
+        Assert.Equal((ushort)(start + 2), Cpu.Pc); // PC advanced by 1, not 2
+    }
+
+    // HALT bug × JP a16: the 0xC3 opcode byte is fetched twice, so the
+    // low byte of the target ends up being 0xC3 instead of the intended
+    // 0x34 — JP 0x1234 jumps to 0x34C3 instead.
+    [Fact]
+    public void HaltBug_DoublesNextOpcodeByte_BreaksJpNn()
+    {
+        ushort start = 0x0100;
+        Mmu.Write(start, 0x76);             // HALT
+        Mmu.Write((ushort)(start + 1), 0xC3); // JP a16
+        Mmu.Write((ushort)(start + 2), 0x34); // low (intended)
+        Mmu.Write((ushort)(start + 3), 0x12); // high (intended)
+        Mmu.Write(IoRegisters.InterruptEnableAddress, 0x01);
+        Mmu.Write(IoRegisters.InterruptFlagAddress, 0x01);
+
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
+        Cpu.InterruptMasterEnable = false;
+
+        Cpu.Step(); // HALT
+        Assert.Equal((ushort)(start + 1), Cpu.Pc);
+
+        Cpu.Step(); // JP — opcode byte doubled
+        // Bug: PC stays at start+1 for the JP fetch, then operand low =
+        // mem[start+1] = 0xC3, operand high = mem[start+2] = 0x34.
+        Assert.Equal((ushort)0x34C3, Cpu.Pc);
+    }
 }
