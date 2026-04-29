@@ -185,7 +185,7 @@ public class CpuInterruptTests : CpuTestBase
 
         var cycles1 = Cpu.Step();
         Assert.Equal(4, cycles1);
-        Assert.True(Cpu.Halted);
+        Assert.True(Cpu.IsWaitingForInterrupt);
 
         // Peripheral asserts VBlank.
         Mmu.Write(IoRegisters.InterruptFlagAddress, 0x01);
@@ -193,7 +193,7 @@ public class CpuInterruptTests : CpuTestBase
         var cycles2 = Cpu.Step();
         Assert.Equal(20, cycles2);
         Assert.Equal(0x0040, Cpu.Pc);
-        Assert.False(Cpu.Halted);
+        Assert.False(Cpu.IsWaitingForInterrupt);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class CpuInterruptTests : CpuTestBase
         Cpu.InterruptMasterEnable = false;
 
         Cpu.Step(); // HALT itself
-        Assert.False(Cpu.Halted);
+        Assert.False(Cpu.IsWaitingForInterrupt);
         Assert.Equal((ushort)(start + 1), Cpu.Pc);
         Assert.Equal(0x00, Cpu.Ra);
 
@@ -234,11 +234,11 @@ public class CpuInterruptTests : CpuTestBase
 
         var c1 = Cpu.Step(); // HALT
         Assert.Equal(4, c1);
-        Assert.True(Cpu.Halted);
+        Assert.True(Cpu.IsWaitingForInterrupt);
 
         var c2 = Cpu.Step(); // idling
         Assert.Equal(4, c2);
-        Assert.True(Cpu.Halted);
+        Assert.True(Cpu.IsWaitingForInterrupt);
         Assert.Equal((ushort)(start + 1), Cpu.Pc);
 
         // Pending interrupt enables: wakes and runs INC A *without* dispatching.
@@ -246,7 +246,7 @@ public class CpuInterruptTests : CpuTestBase
         Mmu.Write(IoRegisters.InterruptFlagAddress, 0x01);
 
         var c3 = Cpu.Step();
-        Assert.False(Cpu.Halted);
+        Assert.False(Cpu.IsWaitingForInterrupt);
         Assert.Equal(4, c3); // INC A's normal cost, not 20
         Assert.Equal(0x01, Cpu.Ra);
         Assert.Equal((ushort)(start + 2), Cpu.Pc);
@@ -265,19 +265,19 @@ public class CpuInterruptTests : CpuTestBase
 
         var c1 = Cpu.Step();
         Assert.Equal(4, c1);
-        Assert.True(Cpu.Stopped);
+        Assert.True(Cpu.IsSleeping);
         Assert.Equal((ushort)(start + 2), Cpu.Pc);
 
         var c2 = Cpu.Step();
         Assert.Equal(4, c2);
-        Assert.True(Cpu.Stopped);
+        Assert.True(Cpu.IsSleeping);
         Assert.Equal((ushort)(start + 2), Cpu.Pc);
 
         // Set IF joypad bit to wake.
         Mmu.Write(IoRegisters.InterruptFlagAddress, 0x10);
 
         var c3 = Cpu.Step(); // wake step — clears Stopped, does not run INC A
-        Assert.False(Cpu.Stopped);
+        Assert.False(Cpu.IsSleeping);
         Assert.Equal(0x00, Cpu.Ra);
         Assert.Equal((ushort)(start + 2), Cpu.Pc);
         Assert.Equal(4, c3);

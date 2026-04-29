@@ -39,7 +39,7 @@ public sealed partial class Cpu
         var pending = GetPendingInterrupts();
         if (InterruptMasterEnable)
         {
-            Halted = true;
+            IsWaitingForInterrupt = true;
         }
         else if (pending != InterruptType.None)
         {
@@ -49,7 +49,7 @@ public sealed partial class Cpu
         }
         else
         {
-            Halted = true;
+            IsWaitingForInterrupt = true;
         }
         return 4;
     }
@@ -60,7 +60,7 @@ public sealed partial class Cpu
         // Per spec encoders write `10 00`, but real hardware ignores the
         // following byte — just consume it without inspecting.
         Fetch();
-        Stopped = true;
+        IsSleeping = true;
         return 4;
     }
 

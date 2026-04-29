@@ -104,9 +104,10 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
       `Pc = GetInterruptVector(serviced)` etc., with no `1 << bit` or
       `& 0x10` masks at the call sites.
 - [x] Restructure the top of `Step()` so the prologue runs in this order:
-      1. If `Halted`, check `(IE & IF & 0x1F) != 0`. If yes: clear `Halted`
-         and fall through to step 2. If no: `UpdateInterruptTimer()` and
-         return 4 (CPU keeps idling at 4 T per step).
+      1. If `IsWaitingForInterrupt`, check `(IE & IF & 0x1F) != 0`. If yes:
+         clear `IsWaitingForInterrupt` and fall through to step 2. If no:
+         `UpdateInterruptTimer()` and return 4 (CPU keeps idling at 4 T
+         per step).
       2. If `InterruptMasterEnable && (IE & IF & 0x1F) != 0`: call `ServicePendingInterrupt()`,
          then `UpdateInterruptTimer()`, return 20.
       3. Otherwise: `Fetch()` + `Execute()` + `UpdateInterruptTimer()` as
@@ -132,18 +133,24 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
 - [x] Move `Hlt()` from `Cpu.cs` into `Cpu.Interrupts.cs`. Make `Halted`'s
       setter `internal` (or keep `private set` and assign through a private
       backing field — the partial class can reach it either way).
+      **Deviation:** the property is named `IsWaitingForInterrupt` (not
+      `Halted`). It reads more naturally at the call site
+      (`if (IsWaitingForInterrupt)`) and reflects the *behavior* — the CPU
+      is parked waiting for any enabled interrupt to become pending —
+      rather than the opcode mnemonic. Setter is `internal`.
 - [x] Add a `bool _haltBugPending` field. The next `Fetch()` after it's
       set reads `_mmu.Read(Pc)` *without* incrementing `Pc`, and clears
       the flag. The byte that follows HALT is therefore read twice — once
       with the bug fetch, once on the subsequent normal fetch.
 - [x] In `Hlt()`:
-      - If `InterruptMasterEnable`: set `Halted = true`. (Wake-and-dispatch is handled by the
-        `Step()` prologue.)
+      - If `InterruptMasterEnable`: set `IsWaitingForInterrupt = true`.
+        (Wake-and-dispatch is handled by the `Step()` prologue.)
       - If `!InterruptMasterEnable` and `(IE & IF & 0x1F) != 0`: do **not** halt. Set
         `_haltBugPending = true` and return 4. The next instruction will
         fetch the byte after HALT twice.
-      - If `!InterruptMasterEnable` and no interrupt pending: set `Halted = true`. The
-        prologue's wake-without-dispatch path handles resume.
+      - If `!InterruptMasterEnable` and no interrupt pending: set
+        `IsWaitingForInterrupt = true`. The prologue's wake-without-dispatch
+        path handles resume.
       - Always return 4.
 - [x] Modify `Fetch()` to honour `_haltBugPending`: if set, read at `Pc`
       without incrementing, then clear the flag. (The hot path adds one
@@ -156,9 +163,14 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
       hardware ignores whatever byte follows — don't assert it's `0x00`).
       Set a new `bool Stopped { get; private set; }` flag on `Cpu`.
       Return 4.
+      **Deviation:** the property is named `IsSleeping` (not `Stopped`),
+      mirroring the HALT rename. Reads as `if (IsSleeping)` at the call
+      site and conveys "CPU is parked in deep sleep, only joypad wakes it"
+      better than the opcode mnemonic.
 - [x] Add a `Stopped` short-circuit in `Step()` (above the `Halted`
       check): if stopped, `UpdateInterruptTimer()` and return 4. CPU
-      stays parked.
+      stays parked. *(Now `IsSleeping` short-circuit above the
+      `IsWaitingForInterrupt` check.)*
 - [x] Wake from STOP is driven by the joypad. Since joypad MMIO isn't
       wired yet, expose a single internal escape hatch — either
       `internal void WakeFromStop()` on `Cpu` or have the prologue check
@@ -166,7 +178,7 @@ RETI does not. HALT has a real hardware bug that test ROMs check for.
       `IF` bit-4 check: it's the same mechanism the real hardware uses,
       and once joypad MMIO lands in a later step it Just Works without
       another change to the CPU. **Do not** dispatch the joypad
-      interrupt as part of waking — clearing `Stopped` is enough; the
+      interrupt as part of waking — clearing `IsSleeping` is enough; the
       normal prologue will dispatch on the next step if `InterruptMasterEnable` is set.
 - [x] CGB speed-switch path is explicitly out of scope for DMG.
 
@@ -213,36 +225,38 @@ the model — not exhaustive multiplication of (IME × IF bits × HALT state).
       is true *immediately* (without an instruction delay), step returns
       16.
 - [x] **HALT, IME=1, interrupt pending**: `Pc` at `0x76`, IE=IF=0x01,
-      `InterruptMasterEnable=true`. First `Step()` is the HALT itself (returns 4, sets
-      `Halted`). Second `Step()` services the interrupt: returns 20,
-      `Pc == 0x0040`, `Halted == false`. (We don't combine HALT and
+      `InterruptMasterEnable=true`. First `Step()` is the HALT itself
+      (returns 4, sets `IsWaitingForInterrupt`). Second `Step()` services
+      the interrupt: returns 20, `Pc == 0x0040`,
+      `IsWaitingForInterrupt == false`. (We don't combine HALT and
       dispatch into a single step — the snapshot's prologue clears
-      `Halted` first, then dispatches.)
+      `IsWaitingForInterrupt` first, then dispatches.)
       **Deviation:** as written, this setup makes the prologue dispatch
       *before* the HALT runs (IME=1 + pending overlap is checked before
       `Fetch()`), so the HALT instruction never executes. The realistic
       sequence — and the one that matches real hardware — is HALT runs
       with IF=0, then a peripheral asserts IF later. The implemented
       `HaltImeOnePendingInterrupt` test follows that flow: IF=0 at HALT
-      time (step 1: HALT, returns 4, Halted=true), then `Mmu.Write(0xFF0F,
-      0x01)` (step 2: prologue clears Halted and dispatches, returns 20).
+      time (step 1: HALT, returns 4, `IsWaitingForInterrupt=true`), then
+      `Mmu.Write(IoRegisters.InterruptFlagAddress, 0x01)` (step 2:
+      prologue clears `IsWaitingForInterrupt` and dispatches, returns 20).
 - [x] **HALT, IME=0, interrupt pending → HALT bug**: `Pc=0x100`, IE=IF=
       `0x01`, `InterruptMasterEnable=false`. Place `0x76` at 0x100 and `0x3C` (INC A) at
-      0x101. After `Step()` (HALT itself): `Halted == false`, `Pc ==
-      0x101`, A unchanged. After next `Step()`: A incremented and `Pc
-      == 0x101` *still* (the bug fetch didn't advance). After third
+      0x101. After `Step()` (HALT itself): `IsWaitingForInterrupt == false`,
+      `Pc == 0x101`, A unchanged. After next `Step()`: A incremented and
+      `Pc == 0x101` *still* (the bug fetch didn't advance). After third
       `Step()`: A incremented again, `Pc == 0x102`. (Two INCs from one
       written byte is the canonical halt_bug.gb signature.)
 - [x] **HALT, IME=0, no interrupt**: `Pc` at `0x76`, IE=IF=0. First
       `Step()` halts (returns 4). Subsequent `Step()`s return 4 without
       advancing `Pc`. Set `IF=0x01` with IE=0x01 → next `Step()` clears
-      `Halted` and runs the opcode after HALT (does *not* dispatch,
-      because IME=0). Step returns whatever that opcode normally costs,
-      not 20.
+      `IsWaitingForInterrupt` and runs the opcode after HALT (does *not*
+      dispatch, because IME=0). Step returns whatever that opcode
+      normally costs, not 20.
 - [x] **STOP**: `Pc` at `0x10 0x00 0x3C` (STOP, padding, INC A). First
-      `Step()` returns 4, `Stopped == true`, `Pc` advanced past both
+      `Step()` returns 4, `IsSleeping == true`, `Pc` advanced past both
       bytes. Subsequent `Step()`s return 4 without advancing `Pc`. Set
-      IF bit 4 (joypad) → next `Step()` clears `Stopped`; the step
+      IF bit 4 (joypad) → next `Step()` clears `IsSleeping`; the step
       after runs `INC A`.
 - [x] **DI clears IME**: `InterruptMasterEnable=true`, run `DI` → `InterruptMasterEnable=false`, returns 4.
 - [x] **Reset post-boot**: `Reset()` leaves `InterruptMasterEnable == false`.

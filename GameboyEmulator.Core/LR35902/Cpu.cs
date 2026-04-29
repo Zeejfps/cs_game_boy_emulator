@@ -20,8 +20,8 @@ public sealed partial class Cpu
     public byte Rh { get; set; }
     public byte Rl { get; set; }
     public bool InterruptMasterEnable { get; set; }
-    public bool Halted { get; internal set; }
-    public bool Stopped { get; private set; }
+    public bool IsWaitingForInterrupt { get; internal set; }
+    public bool IsSleeping { get; private set; }
     
     private ushort Rbc
     {
@@ -58,8 +58,8 @@ public sealed partial class Cpu
         Ra = Rb = Rc = Rd = Re = Rh = Rl = 0;
         // Post-boot DMG state per `8080-to-LR35902.md` §6.1.
         InterruptMasterEnable = false;
-        Halted = false;
-        Stopped = false;
+        IsWaitingForInterrupt = false;
+        IsSleeping = false;
         _enableInterruptsTimer = 0;
         _haltBugPending = false;
     }
@@ -67,23 +67,27 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public int Step()
     {
-        if (Stopped)
+        if (IsSleeping)
         {
             // Joypad interrupt request wakes from STOP. The wake step itself
             // does not dispatch and does not fetch — the next Step() prologue
             // handles dispatch (if IME=1) or normal fetch.
             if (IsInterruptRequested(InterruptType.Joypad))
-                Stopped = false;
+            {
+                IsSleeping = false;
+            }
             UpdateInterruptTimer();
             return 4;
         }
 
         var pending = GetPendingInterrupts();
 
-        if (Halted)
+        if (IsWaitingForInterrupt)
         {
             if (pending != InterruptType.None)
-                Halted = false;
+            {
+                IsWaitingForInterrupt = false;
+            }
             else
             {
                 UpdateInterruptTimer();
