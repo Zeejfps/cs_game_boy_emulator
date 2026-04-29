@@ -5,3 +5,6 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 *.DotSettings.user
+
+# Blargg test ROMs — fetched locally per TestRoms/blargg/README.md, not checked in.
+GameboyEmulator.Core.Tests/TestRoms/**/*.gb

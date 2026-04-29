@@ -236,8 +236,12 @@ Likely failure modes given what step 1-6 already covered:
   serial writes, and pumps a working timer that raises `IF` bit 2.
 - All 11 `cpu_instrs` sub-tests print `"Passed"` via the captured
   serial buffer (`01-special` … `11-op a,(hl)`).
-- `halt_bug.gb` prints `"Passed"` — confirms the IME=0 + pending
-  interrupt branch from step 5 survives a real ROM.
+- `halt_bug.gb` is **deferred**: the ROM image contains zero writes
+  to the serial control register (`0xFF02`), so it cannot be validated
+  via the serial-scrape harness — its output goes through the LCD only.
+  Validating it requires VRAM/tilemap scraping, which collides with
+  the "PPU/LCD out of scope" line above. The test is checked in as
+  `[Fact(Skip = …)]` and tracked as a follow-up once the PPU lands.
 - `instr_timing.gb` prints `"Passed"` — confirms the cycle counts
   in `lr35902-opcode-tables.md` are wired into `Execute()`
   correctly, including the variable-cycle conditional branches and

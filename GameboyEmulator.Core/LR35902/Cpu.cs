@@ -56,7 +56,24 @@ public sealed partial class Cpu
         Pc = 0;
         Sp = 0;
         Ra = Rb = Rc = Rd = Re = Rh = Rl = 0;
-        // Post-boot DMG state per `8080-to-LR35902.md` §6.1.
+        InterruptMasterEnable = false;
+        IsWaitingForInterrupt = false;
+        IsSleeping = false;
+        _enableInterruptsTimer = 0;
+        _haltBugPending = false;
+    }
+
+    // Used by ROM-level test harnesses that jump straight
+    // to 0x0100.
+    public void SkipBoot()
+    {
+        Pc = 0x0100;
+        Sp = 0xFFFE;
+        Ra = 0x01;
+        Flags = CpuFlags.Z | CpuFlags.H | CpuFlags.C;
+        Rbc = 0x0013;
+        Rde = 0x00D8;
+        Rhl = 0x014D;
         InterruptMasterEnable = false;
         IsWaitingForInterrupt = false;
         IsSleeping = false;

@@ -9,14 +9,14 @@ order — later steps assume the earlier ones are done.
 
 ## Steps
 
-- [ ] [Step 1 — Flag layout and ALU helpers](plan/step-1-flags-and-alu-helpers.md)
-- [ ] [Step 2 — Strip 8080-only plumbing](plan/step-2-strip-8080-plumbing.md)
-- [ ] [Step 3 — Implement the 21 "Replace" opcodes](plan/step-3-replace-opcodes.md)
-- [ ] [Step 3.1 — Cycle-count audit for Keep/Modify opcodes](plan/step-3.1-cycle-count-audit.md)
-- [ ] [Step 4 — CB-prefix path and the 11 CB operations](plan/step-4-cb-prefix.md)
-- [ ] [Step 5 — Interrupt model, EI/DI/RETI, HALT, STOP](plan/step-5-interrupts-halt-stop.md)
-- [ ] [Step 6 — DAA](plan/step-6-daa.md)
-- [ ] [Step 7 — Validate against Blargg's `cpu_instrs`](plan/step-7-blargg-validation.md)
+- [x] [Step 1 — Flag layout and ALU helpers](plan/step-1-flags-and-alu-helpers.md)
+- [x] [Step 2 — Strip 8080-only plumbing](plan/step-2-strip-8080-plumbing.md)
+- [x] [Step 3 — Implement the 21 "Replace" opcodes](plan/step-3-replace-opcodes.md)
+- [x] [Step 3.1 — Cycle-count audit for Keep/Modify opcodes](plan/step-3.1-cycle-count-audit.md)
+- [x] [Step 4 — CB-prefix path and the 11 CB operations](plan/step-4-cb-prefix.md)
+- [x] [Step 5 — Interrupt model, EI/DI/RETI, HALT, STOP](plan/step-5-interrupts-halt-stop.md)
+- [x] [Step 6 — DAA](plan/step-6-daa.md)
+- [x] [Step 7 — Validate against Blargg's `cpu_instrs`](plan/step-7-blargg-validation.md) (halt_bug deferred — LCD output only, see step doc)
 
 ## Reference docs
 

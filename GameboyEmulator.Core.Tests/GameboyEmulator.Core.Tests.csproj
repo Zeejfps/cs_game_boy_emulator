@@ -22,4 +22,10 @@
       <ProjectReference Include="..\GameboyEmulator.Core\GameboyEmulator.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="TestRoms\**\*.gb">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>
