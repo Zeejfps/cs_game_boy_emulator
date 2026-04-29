@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameboyEmulator.Core", "GameboyEmulator.Core\GameboyEmulator.Core.csproj", "{64DAA4AA-A6C9-4E82-8950-43AB59EC8CC4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameboyEmulator.Core.Tests", "GameboyEmulator.Core.Tests\GameboyEmulator.Core.Tests.csproj", "{8A93C18F-364F-4300-83AC-993D0DD318FE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{64DAA4AA-A6C9-4E82-8950-43AB59EC8CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{64DAA4AA-A6C9-4E82-8950-43AB59EC8CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{64DAA4AA-A6C9-4E82-8950-43AB59EC8CC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A93C18F-364F-4300-83AC-993D0DD318FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A93C18F-364F-4300-83AC-993D0DD318FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A93C18F-364F-4300-83AC-993D0DD318FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A93C18F-364F-4300-83AC-993D0DD318FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
