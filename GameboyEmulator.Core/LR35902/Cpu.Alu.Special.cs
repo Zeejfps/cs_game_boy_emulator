@@ -43,7 +43,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cma()
+    private int Cpl()
     {
         Ra = (byte)~Ra;
         SetN(true);
@@ -52,7 +52,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cmc()
+    private int Ccf()
     {
         SetN(false);
         SetH(false);
@@ -61,7 +61,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Stc()
+    private int Scf()
     {
         SetN(false);
         SetH(false);

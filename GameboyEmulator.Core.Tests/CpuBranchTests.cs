@@ -233,6 +233,65 @@ public class CpuBranchTests : CpuTestBase
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
+    [Theory]
+    [InlineData((sbyte)0x10)]
+    [InlineData((sbyte)-4)]
+    public void TestJr(sbyte offset)
+    {
+        ushort start = 0x0100;
+        var initialState = new CpuState { Pc = start, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0x18);
+        Mmu.Write((ushort)(initialState.Pc + 1), (byte)offset);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        // PC has advanced past the operand, then offset is applied.
+        expectedState.Pc = (ushort)(start + 2 + offset);
+
+        Assert.Equal(12, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Theory]
+    [InlineData(0x20, CpuFlags.None, true)]   // JR NZ taken
+    [InlineData(0x20, CpuFlags.All,  false)]  // JR NZ not taken
+    [InlineData(0x28, CpuFlags.All,  true)]   // JR Z taken
+    [InlineData(0x28, CpuFlags.None, false)]  // JR Z not taken
+    [InlineData(0x30, CpuFlags.Z,    true)]   // JR NC taken (Z set, C clear)
+    [InlineData(0x30, CpuFlags.All,  false)]  // JR NC not taken
+    [InlineData(0x38, CpuFlags.All,  true)]   // JR C taken
+    [InlineData(0x38, CpuFlags.Z,    false)]  // JR C not taken
+    public void TestJrConditional(byte opcode, CpuFlags flags, bool taken)
+    {
+        ushort start = 0x0100;
+        sbyte offset = 0x10;
+        var initialState = new CpuState { Pc = start, Flags = flags };
+
+        Mmu.Write(initialState.Pc, opcode);
+        Mmu.Write((ushort)(initialState.Pc + 1), (byte)offset);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        if (taken)
+        {
+            expectedState.Pc = (ushort)(start + 2 + offset);
+            Assert.Equal(12, cycles);
+        }
+        else
+        {
+            // Operand is consumed even when not taken.
+            expectedState.Pc = (ushort)(start + 2);
+            Assert.Equal(8, cycles);
+        }
+
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
     [Fact]
     public void TestCall()
     {

@@ -35,7 +35,7 @@ public class CpuStackTests : CpuTestBase
     }
 
     [Fact]
-    public void TestPopPsw()
+    public void TestPopAf()
     {
         byte opcode = 0xF1;
         ushort stackAddr = 0x2000;
@@ -112,7 +112,7 @@ public class CpuStackTests : CpuTestBase
     }
 
     [Fact]
-    public void TestPushPsw()
+    public void TestPushAf()
     {
         byte opcode = 0xF5;
         ushort stackAddr = 0x2002;

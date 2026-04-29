@@ -29,17 +29,25 @@ public sealed partial class Cpu
     private int DcxSp() { Sp = (ushort)(Sp - 1); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Dad(ushort value) { AddHL(value); return 10; }
+    private int AddHl(ushort value) { AddHL(value); return 10; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DadB() => Dad(Rbc);
+    private int AddHlB() => AddHl(Rbc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DadD() => Dad(Rde);
+    private int AddHlD() => AddHl(Rde);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DadH() => Dad(Rhl);
+    private int AddHlH() => AddHl(Rhl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DadSp() => Dad(Sp);
+    private int AddHlSp() => AddHl(Sp);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int AddSpR8()
+    {
+        var r8 = (sbyte)Fetch();
+        Sp = AddSpSigned(r8);
+        return 16;
+    }
 }

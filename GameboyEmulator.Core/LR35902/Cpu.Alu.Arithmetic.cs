@@ -145,7 +145,7 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private byte Inr(byte value)
+    private byte Inc(byte value)
     {
         var carry = (Flags & CpuFlags.C) != 0;
         var result = Add8(value, 1, false);
@@ -154,35 +154,35 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrB() { Rb = Inr(Rb); return 5; }
+    private int IncB() { Rb = Inc(Rb); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrC() { Rc = Inr(Rc); return 5; }
+    private int IncC() { Rc = Inc(Rc); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrD() { Rd = Inr(Rd); return 5; }
+    private int IncD() { Rd = Inc(Rd); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrE() { Re = Inr(Re); return 5; }
+    private int IncE() { Re = Inc(Re); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrH() { Rh = Inr(Rh); return 5; }
+    private int IncH() { Rh = Inc(Rh); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrL() { Rl = Inr(Rl); return 5; }
+    private int IncL() { Rl = Inc(Rl); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrA() { Ra = Inr(Ra); return 5; }
+    private int IncA() { Ra = Inc(Ra); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int InrM()
+    private int IncM()
     {
-        _mmu.Write(Rhl, Inr(_mmu.Read(Rhl)));
+        _mmu.Write(Rhl, Inc(_mmu.Read(Rhl)));
         return 10;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private byte Dcr(byte value)
+    private byte Dec(byte value)
     {
         var carry = (Flags & CpuFlags.C) != 0;
         var result = Sub8(value, 1, false);
@@ -191,30 +191,30 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrB() { Rb = Dcr(Rb); return 5; }
+    private int DecB() { Rb = Dec(Rb); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrC() { Rc = Dcr(Rc); return 5; }
+    private int DecC() { Rc = Dec(Rc); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrD() { Rd = Dcr(Rd); return 5; }
+    private int DecD() { Rd = Dec(Rd); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrE() { Re = Dcr(Re); return 5; }
+    private int DecE() { Re = Dec(Re); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrH() { Rh = Dcr(Rh); return 5; }
+    private int DecH() { Rh = Dec(Rh); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrL() { Rl = Dcr(Rl); return 5; }
+    private int DecL() { Rl = Dec(Rl); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrA() { Ra = Dcr(Ra); return 5; }
+    private int DecA() { Ra = Dec(Ra); return 5; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DcrM()
+    private int DecM()
     {
-        _mmu.Write(Rhl, Dcr(_mmu.Read(Rhl)));
+        _mmu.Write(Rhl, Dec(_mmu.Read(Rhl)));
         return 10;
     }
 }

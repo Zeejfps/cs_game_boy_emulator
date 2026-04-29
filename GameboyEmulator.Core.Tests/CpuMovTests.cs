@@ -331,4 +331,270 @@ public class CpuMovTests : CpuTestBase
         Assert.Equal(5, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
+
+    [Theory]
+    [InlineData((ushort)0x2030, (ushort)0x2031)]
+    [InlineData((ushort)0xFFFF, (ushort)0x0000)]
+    public void TestLdHlIncA(ushort initialHl, ushort expectedHl)
+    {
+        byte sentinel = 0xAB;
+        var initialState = new CpuState { Pc = 0x10, Ra = sentinel, Flags = CpuFlags.All };
+        initialState.WriteRegPair(Reg.H, initialHl);
+
+        Mmu.Write(initialState.Pc, 0x22);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(1);
+        expectedState.WriteRegPair(Reg.H, expectedHl);
+
+        Assert.Equal(8, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+        Assert.Equal(sentinel, Mmu.Read(initialHl));
+    }
+
+    [Theory]
+    [InlineData((ushort)0x2030, (ushort)0x2031)]
+    [InlineData((ushort)0xFFFF, (ushort)0x0000)]
+    public void TestLdAHlInc(ushort initialHl, ushort expectedHl)
+    {
+        byte sentinel = 0xAB;
+        var initialState = new CpuState { Pc = 0x10, Flags = CpuFlags.All };
+        initialState.WriteRegPair(Reg.H, initialHl);
+
+        Mmu.Write(initialState.Pc, 0x2A);
+        Mmu.Write(initialHl, sentinel);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(1);
+        expectedState.Ra = sentinel;
+        expectedState.WriteRegPair(Reg.H, expectedHl);
+
+        Assert.Equal(8, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Theory]
+    [InlineData((ushort)0x2030, (ushort)0x202F)]
+    [InlineData((ushort)0x0000, (ushort)0xFFFF)]
+    public void TestLdHlDecA(ushort initialHl, ushort expectedHl)
+    {
+        byte sentinel = 0xAB;
+        var initialState = new CpuState { Pc = 0x10, Ra = sentinel, Flags = CpuFlags.All };
+        initialState.WriteRegPair(Reg.H, initialHl);
+
+        Mmu.Write(initialState.Pc, 0x32);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(1);
+        expectedState.WriteRegPair(Reg.H, expectedHl);
+
+        Assert.Equal(8, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+        Assert.Equal(sentinel, Mmu.Read(initialHl));
+    }
+
+    [Theory]
+    [InlineData((ushort)0x2030, (ushort)0x202F)]
+    [InlineData((ushort)0x0000, (ushort)0xFFFF)]
+    public void TestLdAHlDec(ushort initialHl, ushort expectedHl)
+    {
+        byte sentinel = 0xAB;
+        var initialState = new CpuState { Pc = 0x10, Flags = CpuFlags.All };
+        initialState.WriteRegPair(Reg.H, initialHl);
+
+        Mmu.Write(initialState.Pc, 0x3A);
+        Mmu.Write(initialHl, sentinel);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(1);
+        expectedState.Ra = sentinel;
+        expectedState.WriteRegPair(Reg.H, expectedHl);
+
+        Assert.Equal(8, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Fact]
+    public void TestLdA16A()
+    {
+        byte sentinel = 0xAB;
+        ushort target = 0x2030;
+        var initialState = new CpuState { Pc = 0x10, Ra = sentinel, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0xEA);
+        Mmu.WriteWord((ushort)(initialState.Pc + 1), target);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(3);
+
+        Assert.Equal(16, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+        Assert.Equal(sentinel, Mmu.Read(target));
+    }
+
+    [Fact]
+    public void TestLdAA16()
+    {
+        byte sentinel = 0xAB;
+        ushort source = 0x2030;
+        var initialState = new CpuState { Pc = 0x10, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0xFA);
+        Mmu.WriteWord((ushort)(initialState.Pc + 1), source);
+        Mmu.Write(source, sentinel);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(3);
+        expectedState.Ra = sentinel;
+
+        Assert.Equal(16, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Fact]
+    public void TestLdhA8A()
+    {
+        byte sentinel = 0xAB;
+        byte offset = 0x55;
+        var initialState = new CpuState { Pc = 0x10, Ra = sentinel, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0xE0);
+        Mmu.Write((ushort)(initialState.Pc + 1), offset);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(2);
+
+        Assert.Equal(12, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+        Assert.Equal(sentinel, Mmu.Read((ushort)(0xFF00 + offset)));
+    }
+
+    [Fact]
+    public void TestLdhAA8()
+    {
+        byte sentinel = 0xAB;
+        byte offset = 0x55;
+        var initialState = new CpuState { Pc = 0x10, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0xF0);
+        Mmu.Write((ushort)(initialState.Pc + 1), offset);
+        Mmu.Write((ushort)(0xFF00 + offset), sentinel);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(2);
+        expectedState.Ra = sentinel;
+
+        Assert.Equal(12, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Fact]
+    public void TestLdCA()
+    {
+        byte sentinel = 0xAB;
+        byte offset = 0x55;
+        var initialState = new CpuState { Pc = 0x10, Ra = sentinel, Rc = offset, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0xE2);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(1);
+
+        Assert.Equal(8, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+        Assert.Equal(sentinel, Mmu.Read((ushort)(0xFF00 + offset)));
+    }
+
+    [Fact]
+    public void TestLdAC()
+    {
+        byte sentinel = 0xAB;
+        byte offset = 0x55;
+        var initialState = new CpuState { Pc = 0x10, Rc = offset, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0xF2);
+        Mmu.Write((ushort)(0xFF00 + offset), sentinel);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(1);
+        expectedState.Ra = sentinel;
+
+        Assert.Equal(8, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
+
+    [Fact]
+    public void TestLdA16Sp()
+    {
+        ushort target = 0x2030;
+        var initialState = new CpuState { Pc = 0x10, Sp = 0xBEEF, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0x08);
+        Mmu.WriteWord((ushort)(initialState.Pc + 1), target);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(3);
+
+        Assert.Equal(20, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+        Assert.Equal(0xEF, Mmu.Read(target));
+        Assert.Equal(0xBE, Mmu.Read((ushort)(target + 1)));
+    }
+
+    [Theory]
+    [InlineData((ushort)0xFFF8, (sbyte)2,    (ushort)0xFFFA, CpuFlags.None)]
+    [InlineData((ushort)0x000F, (sbyte)1,    (ushort)0x0010, CpuFlags.H)]
+    [InlineData((ushort)0x00FF, (sbyte)1,    (ushort)0x0100, CpuFlags.H | CpuFlags.C)]
+    [InlineData((ushort)0x0005, (sbyte)-1,   (ushort)0x0004, CpuFlags.H | CpuFlags.C)]
+    public void TestLdHlSpR8(ushort initialSp, sbyte r8, ushort expectedHl, CpuFlags expectedFlags)
+    {
+        var initialState = new CpuState { Pc = 0x10, Sp = initialSp, Flags = CpuFlags.All };
+
+        Mmu.Write(initialState.Pc, 0xF8);
+        Mmu.Write((ushort)(initialState.Pc + 1), (byte)r8);
+
+        Cpu.WriteState(initialState);
+        var cycles = Cpu.Step();
+
+        var expectedState = initialState;
+        expectedState.IncrementPcBy(2);
+        expectedState.WriteRegPair(Reg.H, expectedHl);
+        expectedState.Flags = expectedFlags;
+
+        Assert.Equal(12, cycles);
+        Assert.Equal(expectedState, Cpu.ReadState());
+    }
 }

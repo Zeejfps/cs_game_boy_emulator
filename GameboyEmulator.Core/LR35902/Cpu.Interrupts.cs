@@ -17,4 +17,16 @@ public sealed partial class Cpu
         _enableInterruptsTimer = 2;
         return 4;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int Stop()
+    {
+        throw new NotImplementedException("STOP — wired in step 5");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int Reti()
+    {
+        throw new NotImplementedException("RETI — wired in step 5");
+    }
 }

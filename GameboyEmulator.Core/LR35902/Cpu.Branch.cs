@@ -194,6 +194,54 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)] 
     private int Rst6() => Rst(0x0030);
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Rst7() => Rst(0x0038);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int Jr()
+    {
+        var offset = (sbyte)Fetch();
+        Pc = (ushort)(Pc + offset);
+        return 12;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int JrNz()
+    {
+        var offset = (sbyte)Fetch();
+        if ((Flags & CpuFlags.Z) != 0)
+            return 8;
+        Pc = (ushort)(Pc + offset);
+        return 12;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int JrZ()
+    {
+        var offset = (sbyte)Fetch();
+        if ((Flags & CpuFlags.Z) == 0)
+            return 8;
+        Pc = (ushort)(Pc + offset);
+        return 12;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int JrNc()
+    {
+        var offset = (sbyte)Fetch();
+        if ((Flags & CpuFlags.C) != 0)
+            return 8;
+        Pc = (ushort)(Pc + offset);
+        return 12;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int JrC()
+    {
+        var offset = (sbyte)Fetch();
+        if ((Flags & CpuFlags.C) == 0)
+            return 8;
+        Pc = (ushort)(Pc + offset);
+        return 12;
+    }
 }

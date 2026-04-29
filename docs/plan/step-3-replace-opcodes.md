@@ -60,34 +60,34 @@ own commit before adding the new opcodes so the diff stays readable.
 
 ### Loads / stores reusing 8080 byte slots (`Cpu.LoadStore.cs`)
 
-- [ ] `0x22` → `LD (HL+),A` — store A at `(HL)`, then `HL++`. 8 T.
-- [ ] `0x2A` → `LD A,(HL+)` — load A from `(HL)`, then `HL++`. 8 T.
-- [ ] `0x32` → `LD (HL-),A` — store A at `(HL)`, then `HL--`. 8 T.
-- [ ] `0x3A` → `LD A,(HL-)` — load A from `(HL)`, then `HL--`. 8 T.
-- [ ] `0xEA` → `LD (a16),A` — fetch 16-bit immediate, write A there. 16 T.
-- [ ] `0xFA` → `LD A,(a16)` — fetch 16-bit immediate, read A from there. 16 T.
-- [ ] `0xE0` → `LDH (a8),A` — write A to `0xFF00 + fetched a8`. 12 T.
-- [ ] `0xF0` → `LDH A,(a8)` — read A from `0xFF00 + fetched a8`. 12 T.
-- [ ] `0xE2` → `LD (C),A` — write A to `0xFF00 + C`. **One-byte instruction**
+- [x] `0x22` → `LD (HL+),A` — store A at `(HL)`, then `HL++`. 8 T.
+- [x] `0x2A` → `LD A,(HL+)` — load A from `(HL)`, then `HL++`. 8 T.
+- [x] `0x32` → `LD (HL-),A` — store A at `(HL)`, then `HL--`. 8 T.
+- [x] `0x3A` → `LD A,(HL-)` — load A from `(HL)`, then `HL--`. 8 T.
+- [x] `0xEA` → `LD (a16),A` — fetch 16-bit immediate, write A there. 16 T.
+- [x] `0xFA` → `LD A,(a16)` — fetch 16-bit immediate, read A from there. 16 T.
+- [x] `0xE0` → `LDH (a8),A` — write A to `0xFF00 + fetched a8`. 12 T.
+- [x] `0xF0` → `LDH A,(a8)` — read A from `0xFF00 + fetched a8`. 12 T.
+- [x] `0xE2` → `LD (C),A` — write A to `0xFF00 + C`. **One-byte instruction**
       (no immediate). 8 T.
-- [ ] `0xF2` → `LD A,(C)` — read A from `0xFF00 + C`. One-byte. 8 T.
-- [ ] `0x08` → `LD (a16),SP` — fetch 16-bit immediate, write SP (little-endian)
+- [x] `0xF2` → `LD A,(C)` — read A from `0xFF00 + C`. One-byte. 8 T.
+- [x] `0x08` → `LD (a16),SP` — fetch 16-bit immediate, write SP (little-endian)
       there. 20 T.
 
 ### Stack / SP arithmetic
 
-- [ ] `0xE8` → `ADD SP,r8` (`Cpu.Alu.RegPair.cs`) — `SP = AddSpSigned(r8)`.
+- [x] `0xE8` → `ADD SP,r8` (`Cpu.Alu.RegPair.cs`) — `SP = AddSpSigned(r8)`.
       Flags Z=0, N=0, H from bit-3 of low byte, C from bit-7 of low byte. 16 T.
-- [ ] `0xF8` → `LD HL,SP+r8` (`Cpu.Stack.cs`) — `HL = AddSpSigned(r8)` (do not
+- [x] `0xF8` → `LD HL,SP+r8` (`Cpu.Stack.cs`) — `HL = AddSpSigned(r8)` (do not
       mutate SP; the helper sets the same flag rules as 0xE8). 12 T.
 
 ### Relative jumps (`Cpu.Branch.cs`)
 
-- [ ] `0x18` → `JR r8` — unconditional signed 8-bit relative jump. 12 T.
-- [ ] `0x20` → `JR NZ,r8` — 12 T taken, 8 T not taken.
-- [ ] `0x28` → `JR Z,r8`  — 12 T / 8 T.
-- [ ] `0x30` → `JR NC,r8` — 12 T / 8 T.
-- [ ] `0x38` → `JR C,r8`  — 12 T / 8 T.
+- [x] `0x18` → `JR r8` — unconditional signed 8-bit relative jump. 12 T.
+- [x] `0x20` → `JR NZ,r8` — 12 T taken, 8 T not taken.
+- [x] `0x28` → `JR Z,r8`  — 12 T / 8 T.
+- [x] `0x30` → `JR NC,r8` — 12 T / 8 T.
+- [x] `0x38` → `JR C,r8`  — 12 T / 8 T.
 
 Conditional `JR` must always fetch the displacement (PC advances by 1) before
 deciding whether to add it to PC, so the not-taken path still consumes the
@@ -95,55 +95,61 @@ operand byte.
 
 ### Stub the deferred opcodes so dispatch is total
 
-- [ ] `0x10` → `Stop()` in `Cpu.Interrupts.cs` —
+- [x] `0x10` → `Stop()` in `Cpu.Interrupts.cs` —
       `throw new NotImplementedException("STOP — wired in step 5")`.
       Dispatch arm only; step 5 replaces with the real implementation
       (consume trailing `0x00`, set `Stopped`, exit on joypad input).
-- [ ] `0xCB` → `CbPrefix()` —
+- [x] `0xCB` → `CbPrefix()` —
       `throw new NotImplementedException("CB prefix — wired in step 4")`.
       Place next to the dispatch switch in `Cpu.cs` (step 4 replaces the
       body with the prefix decoder).
-- [ ] `0xD9` → `Reti()` in `Cpu.Interrupts.cs` —
+- [x] `0xD9` → `Reti()` in `Cpu.Interrupts.cs` —
       `throw new NotImplementedException("RETI — wired in step 5")`.
 
 ### Illegal opcodes — make the dispatch total and faulting
 
-- [ ] Add a single `Illegal(byte opcode)` helper that throws
+- [x] Add a single `Illegal(byte opcode)` helper that throws
       `InvalidOperationException($"Illegal LR35902 opcode 0x{opcode:X2}")`.
-- [ ] Wire dispatch arms for all 11 illegal bytes:
+- [x] Wire dispatch arms for all 11 illegal bytes:
       `0xD3, 0xDB, 0xDD, 0xE3, 0xE4, 0xEB, 0xEC, 0xED, 0xF4, 0xFC, 0xFD`,
       each calling `Illegal(<byte>)`.
-- [ ] Add a `_ => Illegal(opcode)` default arm to the `Execute` switch so
+- [x] ~~Add a `_ => Illegal(opcode)` default arm to the `Execute` switch so
       the expression is exhaustive and every unmapped byte (from a future
       decoding bug) also faults instead of throwing
-      `SwitchExpressionException`.
+      `SwitchExpressionException`.~~ **Deviation:** with all 256 bytes
+      mapped explicitly the C# compiler rejects `_ => Illegal(opcode)` as
+      an unreachable pattern (CS8510). The exhaustiveness guarantee is
+      already enforced statically by the compiler in this configuration,
+      so the catch-all was dropped. If a future change removes any
+      explicit arm, the compiler will warn that the switch is
+      non-exhaustive — at which point the catch-all should be reinstated.
 
 ### Renames deferred from step 1
 
-- [ ] Rename `Inr*` → `Inc*`, `Dcr*` → `Dec*`, `Dad*` → `AddHl*`,
+- [x] Rename `Inr*` → `Inc*`, `Dcr*` → `Dec*`, `Dad*` → `AddHl*`,
       `Cma` → `Cpl`, `Stc` → `Scf`, `Cmc` → `Ccf`,
       `PushPsw` → `PushAf`, `PopPsw` → `PopAf`. Update dispatch arms and
       tests to match. (No behavior change — pure rename.)
 
 ### Tests
 
-- [ ] Add focused tests for each new opcode in the appropriate existing
+- [x] Add focused tests for each new opcode in the appropriate existing
       test file (`CpuMovTests` for the load/store ops and `LD HL,SP+r8`,
       `CpuBranchTests` for `JR`, `CpuStackTests` or a new
       `CpuArithmeticTests` row for `ADD SP,r8`). Cover at minimum:
-  - [ ] `LD (HL+),A` / `LD A,(HL+)` increment HL and wrap from `0xFFFF` → `0x0000`.
-  - [ ] `LD (HL-),A` / `LD A,(HL-)` decrement HL and wrap from `0x0000` → `0xFFFF`.
-  - [ ] `LDH` / `LD (C),A` use the `0xFF00 + offset` zero-page mapping.
-  - [ ] `LD (a16),SP` writes both bytes (little-endian).
-  - [ ] `JR cc` taken vs not-taken cycle counts (12 / 8) and that the
+  - [x] `LD (HL+),A` / `LD A,(HL+)` increment HL and wrap from `0xFFFF` → `0x0000`.
+  - [x] `LD (HL-),A` / `LD A,(HL-)` decrement HL and wrap from `0x0000` → `0xFFFF`.
+  - [x] `LDH` / `LD (C),A` use the `0xFF00 + offset` zero-page mapping.
+  - [x] `LD (a16),SP` writes both bytes (little-endian).
+  - [x] `JR cc` taken vs not-taken cycle counts (12 / 8) and that the
         operand is consumed in both cases.
-  - [ ] `JR r8` displacement is signed (negative branch works).
-  - [ ] `ADD SP,r8` and `LD HL,SP+r8` flag rules: Z=0, N=0, H from bit-3
+  - [x] `JR r8` displacement is signed (negative branch works).
+  - [x] `ADD SP,r8` and `LD HL,SP+r8` flag rules: Z=0, N=0, H from bit-3
         of low byte, C from bit-7 of low byte; signed displacement applied
         to a 16-bit `SP` produces the correct unsigned result.
-- [ ] Add a test that executing each of the 11 illegal opcodes throws
+- [x] Add a test that executing each of the 11 illegal opcodes throws
       `InvalidOperationException` (one parameterized test row per byte).
-- [ ] Add a test that `0x10` / `0xCB` / `0xD9` throw
+- [x] Add a test that `0x10` / `0xCB` / `0xD9` throw
       `NotImplementedException` until their respective steps land. (Can be
       a single parameterized test; lets step 4 / step 5 see those tests
       flip from "throws" to "passes".)
@@ -151,8 +157,9 @@ operand byte.
 ## Exit criteria
 
 - The primary opcode dispatch is total — every byte 0x00–0xFF either runs
-  an LR35902 instruction, calls `Illegal(...)` (the 11 illegal bytes plus
-  the catch-all default), or routes to a step-4/step-5 stub.
+  an LR35902 instruction, calls `Illegal(...)` (the 11 illegal bytes; the
+  catch-all default arm was dropped — see deviation note in the Illegal
+  opcodes task), or routes to a step-4/step-5 stub.
 - No path in `Execute` can throw `SwitchExpressionException` anymore.
 - Conditional `JR` instructions take the variable cycle count documented in
   `lr35902-opcode-tables.md` §1 (taken vs. not-taken).

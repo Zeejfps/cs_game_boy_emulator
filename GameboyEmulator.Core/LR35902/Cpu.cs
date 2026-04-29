@@ -195,11 +195,11 @@ public sealed partial class Cpu
         0x21 => LxiH(),
         0x31 => LxiSp(),
 
-        // DAD
-        0x09 => DadB(),
-        0x19 => DadD(),
-        0x29 => DadH(),
-        0x39 => DadSp(),
+        // ADD HL,rr
+        0x09 => AddHlB(),
+        0x19 => AddHlD(),
+        0x29 => AddHlH(),
+        0x39 => AddHlSp(),
 
         // INX
         0x03 => InxB(),
@@ -217,12 +217,12 @@ public sealed partial class Cpu
         0xC1 => PopB(),
         0xD1 => PopD(),
         0xE1 => PopH(),
-        0xF1 => PopPsw(),
+        0xF1 => PopAf(),
 
         0xC5 => PushB(),
         0xD5 => PushD(),
         0xE5 => PushH(),
-        0xF5 => PushPsw(),
+        0xF5 => PushAf(),
 
         // Conditional returns
         0xC0 => Rnz(),
@@ -358,32 +358,86 @@ public sealed partial class Cpu
         0x17 => Ral(),
         0x1F => Rar(),
         0x27 => Daa(),
-        0x2F => Cma(),
-        0x37 => Stc(),
-        0x3F => Cmc(),
+        0x2F => Cpl(),
+        0x37 => Scf(),
+        0x3F => Ccf(),
 
-        // INR
-        0x04 => InrB(),
-        0x0C => InrC(),
-        0x14 => InrD(),
-        0x1C => InrE(),
-        0x24 => InrH(),
-        0x2C => InrL(),
-        0x34 => InrM(),
-        0x3C => InrA(),
+        // INC r
+        0x04 => IncB(),
+        0x0C => IncC(),
+        0x14 => IncD(),
+        0x1C => IncE(),
+        0x24 => IncH(),
+        0x2C => IncL(),
+        0x34 => IncM(),
+        0x3C => IncA(),
 
-        // DCR
-        0x05 => DcrB(),
-        0x0D => DcrC(),
-        0x15 => DcrD(),
-        0x1D => DcrE(),
-        0x25 => DcrH(),
-        0x2D => DcrL(),
-        0x35 => DcrM(),
-        0x3D => DcrA(),
+        // DEC r
+        0x05 => DecB(),
+        0x0D => DecC(),
+        0x15 => DecD(),
+        0x1D => DecE(),
+        0x25 => DecH(),
+        0x2D => DecL(),
+        0x35 => DecM(),
+        0x3D => DecA(),
 
         0xF9 => Sphl(),
+
+        // LR35902 Replace opcodes — load/store
+        0x22 => LdHlIncA(),
+        0x2A => LdAHlInc(),
+        0x32 => LdHlDecA(),
+        0x3A => LdAHlDec(),
+        0xEA => LdA16A(),
+        0xFA => LdAA16(),
+        0xE0 => LdhA8A(),
+        0xF0 => LdhAA8(),
+        0xE2 => LdCA(),
+        0xF2 => LdAC(),
+        0x08 => LdA16Sp(),
+
+        // SP arithmetic
+        0xE8 => AddSpR8(),
+        0xF8 => LdHlSpR8(),
+
+        // Relative jumps
+        0x18 => Jr(),
+        0x20 => JrNz(),
+        0x28 => JrZ(),
+        0x30 => JrNc(),
+        0x38 => JrC(),
+
+        // Deferred to later steps
+        0x10 => Stop(),
+        0xCB => CbPrefix(),
+        0xD9 => Reti(),
+
+        // Illegal opcodes
+        0xD3 => Illegal(0xD3),
+        0xDB => Illegal(0xDB),
+        0xDD => Illegal(0xDD),
+        0xE3 => Illegal(0xE3),
+        0xE4 => Illegal(0xE4),
+        0xEB => Illegal(0xEB),
+        0xEC => Illegal(0xEC),
+        0xED => Illegal(0xED),
+        0xF4 => Illegal(0xF4),
+        0xFC => Illegal(0xFC),
+        0xFD => Illegal(0xFD),
     };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int Illegal(byte opcode)
+    {
+        throw new InvalidOperationException($"Illegal LR35902 opcode 0x{opcode:X2}");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int CbPrefix()
+    {
+        throw new NotImplementedException("CB prefix — wired in step 4");
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Nop()
