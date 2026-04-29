@@ -449,7 +449,7 @@ public sealed partial class Cpu
     private int Hlt()
     {
         Halted = true;
-        return 7;
+        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

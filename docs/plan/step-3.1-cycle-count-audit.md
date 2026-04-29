@@ -124,13 +124,13 @@ conditional CALLs.
 
 ### Code changes
 
-- [ ] Update each handler in the diff tables above to its target T-state.
+- [x] Update each handler in the diff tables above to its target T-state.
       Group commits per-file so a regression bisect points at the right
       handler.
-- [ ] Fix the `Jnz/Jz/Jnc/Jc` taken-vs-not-taken bug (16 / 12) — restructure
+- [x] Fix the `Jnz/Jz/Jnc/Jc` taken-vs-not-taken bug (16 / 12) — restructure
       to match the `Cnz`-family early-return shape rather than a single
       `return 10` after the `if`.
-- [ ] Cross-check every conditional handler (`Rnz/Rz/Rnc/Rcy`, `Cnz/Cz/Cnc/Cc`,
+- [x] Cross-check every conditional handler (`Rnz/Rz/Rnc/Rcy`, `Cnz/Cz/Cnc/Cc`,
       `Jnz/Jz/Jnc/Jc`, and the `JR cc` family from step 3) returns the
       correct T-state on **both** the taken and not-taken paths.
 
@@ -140,18 +140,40 @@ The existing test suite asserts the **old** 8080 cycle counts in many
 places. Sweep cycle assertions before changing the production values so a
 green build can be restored quickly.
 
-- [ ] Grep each `*Tests.cs` for `Step()`/`Execute(...)` cycle-count
+- [x] Grep each `*Tests.cs` for `Step()`/`Execute(...)` cycle-count
       assertions. Update every numeric expectation to the target column
       above.
-- [ ] Add focused regression tests for the conditional jump cycle bug:
-  - [ ] `JNZ` taken returns 16, not-taken returns 12.
-  - [ ] Same for `JZ`, `JNC`, `JC`.
-- [ ] Add a small "T-state coverage" test that runs one representative
+- [x] Add focused regression tests for the conditional jump cycle bug:
+  - [x] `JNZ` taken returns 16, not-taken returns 12.
+  - [x] Same for `JZ`, `JNC`, `JC`.
+- [x] Add a small "T-state coverage" test that runs one representative
       opcode per category (NOP, MOV r,r, MOV r,(HL), MVI, LXI, INX, DCR,
       ADD A,r, ADD A,(HL), ADI, RST, JP, JP cc taken/not, CALL, CALL cc
       taken/not, RET, RET cc taken/not, PUSH, POP, ADD HL,rr, LDH (a8),A,
       JR cc taken/not) through `Step()` and asserts the published T-state
       count. Cheap insurance against future drift.
+
+## Deviations
+
+- The four JNZ/JZ/JNC/JC regression cases were combined into one
+  `[Theory]` (`ConditionalJumpCyclesDifferOnTakenVsNotTaken` in
+  `CpuBranchTests.cs`) instead of four `[Fact]` tests. Same coverage,
+  shorter file.
+- The T-state coverage test lives in a new file
+  `CpuTStateCoverageTests.cs` rather than being grafted onto an
+  existing test class.
+- Per-file commit grouping was not done — all changes landed together.
+  The audit table above still gives a per-file map for any future
+  bisect.
+- `Inx*`/`Dcx*` were not renamed to `Inc*`/`Dec*` reg-pair names — the
+  rename was conditional ("if step 3 did the rename") and step 3 did
+  not.
+
+## Verification
+
+- `dotnet build` clean, `dotnet test` green at 424/424.
+- `grep -E "return (5|7|10|11|17);"` over `GameboyEmulator.Core/LR35902/`
+  returns no matches.
 
 ## Exit criteria
 

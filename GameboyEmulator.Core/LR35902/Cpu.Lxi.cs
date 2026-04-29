@@ -8,27 +8,27 @@ public sealed partial class Cpu
     private int LxiB()
     {
         Rbc = FetchWord();
-        return 10;
+        return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LxiD()
     {
         Rde = FetchWord();
-        return 10;
+        return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LxiH()
     {
         Rhl = FetchWord();
-        return 10;
+        return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LxiSp()
     {
         Sp = FetchWord();
-        return 10;
+        return 12;
     }
 }

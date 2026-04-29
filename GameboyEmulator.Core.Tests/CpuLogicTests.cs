@@ -49,7 +49,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = CpuFlags.H;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -140,7 +140,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = CpuFlags.None;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -213,7 +213,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = CpuFlags.None;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -302,7 +302,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -349,7 +349,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -373,7 +373,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -397,7 +397,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -421,7 +421,7 @@ public class CpuLogicTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 }

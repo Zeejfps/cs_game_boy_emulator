@@ -47,7 +47,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Ra = 0x15;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -122,7 +122,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = CpuFlags.None;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -215,7 +215,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -307,7 +307,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -355,7 +355,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -379,7 +379,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -405,7 +405,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.WriteReg(reg, expectedVal);
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(4, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -425,7 +425,7 @@ public class CpuArithmeticTests : CpuTestBase
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(12, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(0x02, Mmu.Read(addr));
     }
@@ -450,7 +450,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(4, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -477,7 +477,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(4, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -498,7 +498,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = CpuFlags.N;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(12, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(0x01, Mmu.Read(addr));
     }
@@ -524,7 +524,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(4, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -725,7 +725,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -749,7 +749,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = expectedFlags;
         expectedState.IncrementPcBy(2);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -772,7 +772,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.WriteRegPair(reg, expectedPair);
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -813,7 +813,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.WriteRegPair(reg, expectedPair);
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -857,7 +857,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = CpuFlags.Z; // Z preserved, N=0, H=0, C=0
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -878,7 +878,7 @@ public class CpuArithmeticTests : CpuTestBase
         expectedState.Flags = CpuFlags.Z | CpuFlags.H;
         expectedState.IncrementPcBy(1);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 

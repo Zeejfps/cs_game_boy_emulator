@@ -30,7 +30,7 @@ public class CpuStackTests : CpuTestBase
         expectedState.Sp = (ushort)(stackAddr + 2);
         expectedState.WriteRegPair(dst, 0x2030);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(12, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -59,7 +59,7 @@ public class CpuStackTests : CpuTestBase
         expectedState.Flags = CpuFlags.Z;
         expectedState.Ra = 0xAB;
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(12, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -105,7 +105,7 @@ public class CpuStackTests : CpuTestBase
         expectedState.IncrementPcBy(1);
         expectedState.Sp = (ushort)(stackAddr - 2);
 
-        Assert.Equal(11, cycles);
+        Assert.Equal(16, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(0x30, Mmu.Read((ushort)(stackAddr - 2)));
         Assert.Equal(0x20, Mmu.Read((ushort)(stackAddr - 1)));
@@ -133,7 +133,7 @@ public class CpuStackTests : CpuTestBase
         expectedState.IncrementPcBy(1);
         expectedState.Sp = (ushort)(stackAddr - 2);
 
-        Assert.Equal(11, cycles);
+        Assert.Equal(16, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal((byte)CpuFlags.Z, Mmu.Read((ushort)(stackAddr - 2)));
         Assert.Equal(0xAB, Mmu.Read((ushort)(stackAddr - 1)));

@@ -9,60 +9,60 @@ public sealed partial class Cpu
     {
         Rbc = _mmu.ReadWord(Sp);
         Sp += 2;
-        return 10;
+        return 12;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PushB()
     {
         Sp -= 2;
         _mmu.Write((ushort)(Sp + 1), Rb);
         _mmu.Write(Sp, Rc);
-        return 11;
+        return 16;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PopD()
     {
         Rde = _mmu.ReadWord(Sp);
         Sp += 2;
-        return 10;
+        return 12;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PushD()
     {
         Sp -= 2;
         _mmu.Write((ushort)(Sp + 1), Rd);
         _mmu.Write(Sp, Re);
-        return 11;
+        return 16;
     }
 
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PopH()
     {
         Rhl = _mmu.ReadWord(Sp);
         Sp += 2;
-        return 10;
+        return 12;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PushH()
     {
         Sp -= 2;
         _mmu.Write((ushort)(Sp + 1), Rh);
         _mmu.Write(Sp, Rl);
-        return 11;
+        return 16;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PopAf()
     {
         Flags = (CpuFlags)_mmu.Read(Sp);
         Ra = _mmu.Read((ushort)(Sp + 1));
         Sp += 2;
-        return 10;
+        return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -71,14 +71,14 @@ public sealed partial class Cpu
         Sp -= 2;
         _mmu.Write((ushort)(Sp + 1), Ra);
         _mmu.Write(Sp, (byte)Flags);
-        return 11;
+        return 16;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Sphl()
     {
         Sp = Rhl;
-        return 5;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

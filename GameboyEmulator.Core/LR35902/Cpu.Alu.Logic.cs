@@ -44,7 +44,7 @@ public sealed partial class Cpu
     private int AnaA() => Ana(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AnaM() { Ana(_mmu.Read(Rhl)); return 7; }
+    private int AnaM() { Ana(_mmu.Read(Rhl)); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int XraB() => Xra(Rb);
@@ -68,7 +68,7 @@ public sealed partial class Cpu
     private int XraA() => Xra(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int XraM() { Xra(_mmu.Read(Rhl)); return 7; }
+    private int XraM() { Xra(_mmu.Read(Rhl)); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Ora(byte value)
@@ -101,7 +101,7 @@ public sealed partial class Cpu
     private int OraA() => Ora(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int OraM() { Ora(_mmu.Read(Rhl)); return 7; }
+    private int OraM() { Ora(_mmu.Read(Rhl)); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Cmp(byte value)
@@ -132,5 +132,5 @@ public sealed partial class Cpu
     private int CmpA() => Cmp(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int CmpM() { Cmp(_mmu.Read(Rhl)); return 7; }
+    private int CmpM() { Cmp(_mmu.Read(Rhl)); return 8; }
 }

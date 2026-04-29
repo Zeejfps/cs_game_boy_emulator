@@ -39,12 +39,12 @@ public class CpuBranchTests : CpuTestBase
         {
             expectedState.Pc = 0x2030;
             expectedState.Sp = (ushort)(stackAddr + 2);
-            Assert.Equal(11, cycles);
+            Assert.Equal(20, cycles);
         }
         else
         {
             expectedState.IncrementPcBy(1);
-            Assert.Equal(5, cycles);
+            Assert.Equal(8, cycles);
         }
 
         Assert.Equal(expectedState, Cpu.ReadState());
@@ -76,11 +76,16 @@ public class CpuBranchTests : CpuTestBase
 
         var expectedState = initialState;
         if (taken)
+        {
             expectedState.Pc = 0x2030;
+            Assert.Equal(16, cycles);
+        }
         else
+        {
             expectedState.IncrementPcBy(3);
+            Assert.Equal(12, cycles);
+        }
 
-        Assert.Equal(10, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -104,7 +109,7 @@ public class CpuBranchTests : CpuTestBase
         var expectedState = initialState;
         expectedState.Pc = 0x2030;
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(16, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -139,12 +144,12 @@ public class CpuBranchTests : CpuTestBase
         {
             expectedState.Pc = 0x2030;
             expectedState.Sp = (ushort)(stackAddr - 2);
-            Assert.Equal(17, cycles);
+            Assert.Equal(24, cycles);
         }
         else
         {
             expectedState.IncrementPcBy(3);
-            Assert.Equal(11, cycles);
+            Assert.Equal(12, cycles);
         }
 
         Assert.Equal(expectedState, Cpu.ReadState());
@@ -183,7 +188,7 @@ public class CpuBranchTests : CpuTestBase
         expectedState.Pc = target;
         expectedState.Sp = (ushort)(stackAddr - 2);
 
-        Assert.Equal(11, cycles);
+        Assert.Equal(16, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(0x11, Mmu.Read((ushort)(stackAddr - 2)));
         Assert.Equal(0x00, Mmu.Read((ushort)(stackAddr - 1)));
@@ -211,7 +216,7 @@ public class CpuBranchTests : CpuTestBase
         expectedState.Pc = 0x2030;
         expectedState.Sp = (ushort)(stackAddr + 2);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(16, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -229,7 +234,7 @@ public class CpuBranchTests : CpuTestBase
         var expectedState = initialState;
         expectedState.Pc = 0x2030;
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(4, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -314,9 +319,33 @@ public class CpuBranchTests : CpuTestBase
         expectedState.Pc = 0x2030;
         expectedState.Sp = (ushort)(stackAddr - 2);
 
-        Assert.Equal(17, cycles);
+        Assert.Equal(24, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(0x13, Mmu.Read((ushort)(stackAddr - 2)));
         Assert.Equal(0x00, Mmu.Read((ushort)(stackAddr - 1)));
+    }
+
+    // Regression guard for the pre-step-3.1 bug where Jnz/Jz/Jnc/Jc returned the
+    // same cycle count regardless of taken-vs-not-taken. LR35902 returns 16 taken,
+    // 12 not-taken — these must differ.
+    [Theory]
+    [InlineData(0xC2, CpuFlags.None, CpuFlags.All)]   // JNZ taken when Z=0, not-taken when Z=1
+    [InlineData(0xCA, CpuFlags.All,  CpuFlags.None)]  // JZ
+    [InlineData(0xD2, CpuFlags.Z,    CpuFlags.All)]   // JNC taken when C=0, not-taken when C=1
+    [InlineData(0xDA, CpuFlags.All,  CpuFlags.Z)]     // JC
+    public void ConditionalJumpCyclesDifferOnTakenVsNotTaken(byte opcode, CpuFlags takenFlags, CpuFlags notTakenFlags)
+    {
+        Mmu.Write(0x10, opcode);
+        Mmu.Write(0x11, 0x30);
+        Mmu.Write(0x12, 0x20);
+
+        Cpu.WriteState(new CpuState { Pc = 0x10, Flags = takenFlags });
+        var takenCycles = Cpu.Step();
+
+        Cpu.WriteState(new CpuState { Pc = 0x10, Flags = notTakenFlags });
+        var notTakenCycles = Cpu.Step();
+
+        Assert.Equal(16, takenCycles);
+        Assert.Equal(12, notTakenCycles);
     }
 }

@@ -87,7 +87,7 @@ public class CpuMovTests : CpuTestBase
         expectedState.IncrementPcBy(1);
         expectedState.WriteReg(dst, initialState.ReadReg(src));
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(4, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -121,7 +121,7 @@ public class CpuMovTests : CpuTestBase
         expectedState.IncrementPcBy(1);
         expectedState.WriteReg(dst, 0x50);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -158,7 +158,7 @@ public class CpuMovTests : CpuTestBase
         var expectedValueInMem = initialState.ReadReg(src);
         var valueInMem = Mmu.Read(initialState.Rhl);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(expectedValueInMem, valueInMem);
     }
@@ -190,7 +190,7 @@ public class CpuMovTests : CpuTestBase
         expectedState.IncrementPcBy(instructionSize);
         expectedState.WriteReg(dst, 0xAB);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -219,7 +219,7 @@ public class CpuMovTests : CpuTestBase
 
         var memValue = Mmu.Read(expectedState.Rhl);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(12, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(sentinel, memValue);
     }
@@ -248,7 +248,7 @@ public class CpuMovTests : CpuTestBase
         expectedState.IncrementPcBy(1);
         expectedState.Ra = sentinel;
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -277,7 +277,7 @@ public class CpuMovTests : CpuTestBase
 
         var memValue = Mmu.Read(address);
 
-        Assert.Equal(7, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
         Assert.Equal(sentinel, memValue);
     }
@@ -303,7 +303,7 @@ public class CpuMovTests : CpuTestBase
         expectedState.IncrementPcBy(instructionSize);
         expectedState.WriteRegPair(dst, immediate);
 
-        Assert.Equal(10, cycles);
+        Assert.Equal(12, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 
@@ -328,7 +328,7 @@ public class CpuMovTests : CpuTestBase
         expectedState.IncrementPcBy(1);
         expectedState.Sp = 0x2030;
 
-        Assert.Equal(5, cycles);
+        Assert.Equal(8, cycles);
         Assert.Equal(expectedState, Cpu.ReadState());
     }
 

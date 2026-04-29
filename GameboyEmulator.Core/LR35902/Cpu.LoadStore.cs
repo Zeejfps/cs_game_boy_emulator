@@ -8,28 +8,28 @@ public sealed partial class Cpu
     private int LdAb()
     {
         Ra = _mmu.Read(Rbc);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LdAd()
     {
         Ra = _mmu.Read(Rde);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int StAb()
     {
         _mmu.Write(Rbc, Ra);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int StAd()
     {
         _mmu.Write(Rde, Ra);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -43,7 +43,7 @@ public sealed partial class Cpu
     private int AddM()
     {
         Ra = Add8(Ra, _mmu.Read(Rhl), false);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -71,7 +71,7 @@ public sealed partial class Cpu
     private int AdcM()
     {
         Ra = Add8(Ra, _mmu.Read(Rhl), (Flags & CpuFlags.C) != 0);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -106,7 +106,7 @@ public sealed partial class Cpu
     private int SubM()
     {
         Ra = Sub8(Ra, _mmu.Read(Rhl), false);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -141,7 +141,7 @@ public sealed partial class Cpu
     private int SbbM()
     {
         Ra = Sub8(Ra, _mmu.Read(Rhl), (Flags & CpuFlags.C) != 0);
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -154,31 +154,31 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncB() { Rb = Inc(Rb); return 5; }
+    private int IncB() { Rb = Inc(Rb); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncC() { Rc = Inc(Rc); return 5; }
+    private int IncC() { Rc = Inc(Rc); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncD() { Rd = Inc(Rd); return 5; }
+    private int IncD() { Rd = Inc(Rd); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncE() { Re = Inc(Re); return 5; }
+    private int IncE() { Re = Inc(Re); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncH() { Rh = Inc(Rh); return 5; }
+    private int IncH() { Rh = Inc(Rh); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncL() { Rl = Inc(Rl); return 5; }
+    private int IncL() { Rl = Inc(Rl); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncA() { Ra = Inc(Ra); return 5; }
+    private int IncA() { Ra = Inc(Ra); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int IncM()
     {
         _mmu.Write(Rhl, Inc(_mmu.Read(Rhl)));
-        return 10;
+        return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -191,30 +191,30 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecB() { Rb = Dec(Rb); return 5; }
+    private int DecB() { Rb = Dec(Rb); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecC() { Rc = Dec(Rc); return 5; }
+    private int DecC() { Rc = Dec(Rc); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecD() { Rd = Dec(Rd); return 5; }
+    private int DecD() { Rd = Dec(Rd); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecE() { Re = Dec(Re); return 5; }
+    private int DecE() { Re = Dec(Re); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecH() { Rh = Dec(Rh); return 5; }
+    private int DecH() { Rh = Dec(Rh); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecL() { Rl = Dec(Rl); return 5; }
+    private int DecL() { Rl = Dec(Rl); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecA() { Ra = Dec(Ra); return 5; }
+    private int DecA() { Ra = Dec(Ra); return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int DecM()
     {
         _mmu.Write(Rhl, Dec(_mmu.Read(Rhl)));
-        return 10;
+        return 12;
     }
 }

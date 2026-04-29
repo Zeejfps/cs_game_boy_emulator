@@ -8,56 +8,56 @@ public sealed partial class Cpu
     private int MviB()
     {
         Rb = Fetch();
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int MviC()
     {
         Rc = Fetch();
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int MviD()
     {
         Rd = Fetch();
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int MviE()
     {
         Re = Fetch();
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int MviH()
     {
         Rh = Fetch();
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int MviL()
     {
         Rl = Fetch();
-        return 7;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int MviA()
     {
         Ra = Fetch();
-        return 7;
+        return 8;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int MviM()
     {
         var value = Fetch();
         _mmu.Write(Rhl, value);
-        return 10;
+        return 12;
     }
 }
