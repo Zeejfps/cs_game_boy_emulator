@@ -56,8 +56,8 @@ target are omitted.
 
 | Opcode | Handler | Current | Target |
 |--------|---------|--------:|-------:|
-| 0x03/0x13/0x23/0x33 | `InxB/D/H/Sp` (renamed `IncBc`/`IncDe`/`IncHl`/`IncSp` if step 3 did the rename) | 5 | 8 |
-| 0x0B/0x1B/0x2B/0x3B | `DcxB/D/H/Sp` (likewise `DecBc`…) | 5 | 8 |
+| 0x03/0x13/0x23/0x33 | `IncBc/IncDe/IncHl/IncSp` (renamed from `InxB/D/H/Sp` as part of this step) | 5 | 8 |
+| 0x0B/0x1B/0x2B/0x3B | `DecBc/DecDe/DecHl/DecSp` (renamed from `DcxB/D/H/Sp`) | 5 | 8 |
 | 0x09/0x19/0x29/0x39 | `Dad*` (→ `AddHl*`) | 10 | 8 |
 
 ### `Cpu.Alu.Arithmetic.cs`
@@ -165,9 +165,12 @@ green build can be restored quickly.
 - Per-file commit grouping was not done — all changes landed together.
   The audit table above still gives a per-file map for any future
   bisect.
-- `Inx*`/`Dcx*` were not renamed to `Inc*`/`Dec*` reg-pair names — the
-  rename was conditional ("if step 3 did the rename") and step 3 did
-  not.
+- `Inx*`/`Dcx*` → `IncBc/IncDe/IncHl/IncSp` and `DecBc/DecDe/DecHl/DecSp`
+  rename was folded into this step. Step 3's explicit rename list did not
+  include these (`Inx`/`Dcx` weren't called out in the step-3 exit
+  criteria), but leaving 8080 mnemonics next to the already-renamed
+  `Inc*`/`Dec*` 8-bit handlers was inconsistent. Pure rename, no
+  behavior change.
 
 ## Verification
 

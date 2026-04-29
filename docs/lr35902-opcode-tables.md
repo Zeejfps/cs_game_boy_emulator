@@ -28,7 +28,7 @@ Legend:
 | 0x00 | NOP | `Nop` | **Keep** | NOP | 4 T. |
 | 0x01 | LXI B,d16 | `LxiB` | **Keep** | LD BC,d16 | 12 T. |
 | 0x02 | STAX B | `StAb` | **Keep** | LD (BC),A | 8 T. |
-| 0x03 | INX B | `InxB` | **Keep** | INC BC | 8 T, no flags. |
+| 0x03 | INX B | `IncBc` | **Keep** | INC BC | 8 T, no flags. |
 | 0x04 | INR B | `InrB` | **Modify** | INC B | Flags: Z, N=0, H. C is **preserved** (8080 also preserves C, so semantically same — but verify N is now set to 0 instead of being a P flag). |
 | 0x05 | DCR B | `DcrB` | **Modify** | DEC B | Flags: Z, N=1, H. |
 | 0x06 | MVI B,d8 | `MviB` | **Keep** | LD B,d8 | 8 T. |
@@ -36,7 +36,7 @@ Legend:
 | 0x08 | NOP (alias) | `Nop` | **Replace** | LD (a16),SP | Stores SP at the 16-bit immediate address. 20 T. |
 | 0x09 | DAD B | `DadB` | **Modify** | ADD HL,BC | 8 T. Flags: Z **preserved**, N=0, H from bit 11, C from bit 15. |
 | 0x0A | LDAX B | `LdAb` | **Keep** | LD A,(BC) | 8 T. |
-| 0x0B | DCX B | `DcxB` | **Keep** | DEC BC | 8 T, no flags. |
+| 0x0B | DCX B | `DecBc` | **Keep** | DEC BC | 8 T, no flags. |
 | 0x0C | INR C | `InrC` | **Modify** | INC C | See 0x04. |
 | 0x0D | DCR C | `DcrC` | **Modify** | DEC C | See 0x05. |
 | 0x0E | MVI C,d8 | `MviC` | **Keep** | LD C,d8 | 8 T. |
@@ -44,7 +44,7 @@ Legend:
 | 0x10 | NOP (alias) | `Nop` | **Replace** | STOP | 2-byte instruction (0x10 0x00). Halts CPU + LCD until a button is pressed. Implement as a state flag; the second byte must be consumed. |
 | 0x11 | LXI D,d16 | `LxiD` | **Keep** | LD DE,d16 | 12 T. |
 | 0x12 | STAX D | `StAd` | **Keep** | LD (DE),A | 8 T. |
-| 0x13 | INX D | `InxD` | **Keep** | INC DE | 8 T. |
+| 0x13 | INX D | `IncDe` | **Keep** | INC DE | 8 T. |
 | 0x14 | INR D | `InrD` | **Modify** | INC D | See 0x04. |
 | 0x15 | DCR D | `DcrD` | **Modify** | DEC D | See 0x05. |
 | 0x16 | MVI D,d8 | `MviD` | **Keep** | LD D,d8 | 8 T. |
@@ -52,7 +52,7 @@ Legend:
 | 0x18 | NOP (alias) | `Nop` | **Replace** | JR r8 | Unconditional 8-bit signed relative jump. 12 T. |
 | 0x19 | DAD D | `DadD` | **Modify** | ADD HL,DE | 8 T. See 0x09. |
 | 0x1A | LDAX D | `LdAd` | **Keep** | LD A,(DE) | 8 T. |
-| 0x1B | DCX D | `DcxD` | **Keep** | DEC DE | 8 T. |
+| 0x1B | DCX D | `DecDe` | **Keep** | DEC DE | 8 T. |
 | 0x1C | INR E | `InrE` | **Modify** | INC E | See 0x04. |
 | 0x1D | DCR E | `DcrE` | **Modify** | DEC E | See 0x05. |
 | 0x1E | MVI E,d8 | `MviE` | **Keep** | LD E,d8 | 8 T. |
@@ -60,7 +60,7 @@ Legend:
 | 0x20 | NOP (alias) | `Nop` | **Replace** | JR NZ,r8 | 12 T taken, 8 T not taken. |
 | 0x21 | LXI H,d16 | `LxiH` | **Keep** | LD HL,d16 | 12 T. |
 | 0x22 | SHLD a16 | `Shld` | **Replace** | LD (HL+),A | Store A at (HL), then HL++. 8 T. (Old 8080 SHLD with absolute addr is gone.) |
-| 0x23 | INX H | `InxH` | **Keep** | INC HL | 8 T. |
+| 0x23 | INX H | `IncHl` | **Keep** | INC HL | 8 T. |
 | 0x24 | INR H | `InrH` | **Modify** | INC H | See 0x04. |
 | 0x25 | DCR H | `DcrH` | **Modify** | DEC H | See 0x05. |
 | 0x26 | MVI H,d8 | `MviH` | **Keep** | LD H,d8 | 8 T. |
@@ -68,7 +68,7 @@ Legend:
 | 0x28 | NOP (alias) | `Nop` | **Replace** | JR Z,r8 | 12 / 8 T. |
 | 0x29 | DAD H | `DadH` | **Modify** | ADD HL,HL | 8 T. See 0x09. |
 | 0x2A | LHLD a16 | `Lhld` | **Replace** | LD A,(HL+) | 8 T. |
-| 0x2B | DCX H | `DcxH` | **Keep** | DEC HL | 8 T. |
+| 0x2B | DCX H | `DecHl` | **Keep** | DEC HL | 8 T. |
 | 0x2C | INR L | `InrL` | **Modify** | INC L | See 0x04. |
 | 0x2D | DCR L | `DcrL` | **Modify** | DEC L | See 0x05. |
 | 0x2E | MVI L,d8 | `MviL` | **Keep** | LD L,d8 | 8 T. |
@@ -76,7 +76,7 @@ Legend:
 | 0x30 | NOP (alias) | `Nop` | **Replace** | JR NC,r8 | 12 / 8 T. |
 | 0x31 | LXI SP,d16 | `LxiSp` | **Keep** | LD SP,d16 | 12 T. |
 | 0x32 | STA a16 | `StA` | **Replace** | LD (HL-),A | Store A at (HL), then HL--. 8 T. |
-| 0x33 | INX SP | `InxSp` | **Keep** | INC SP | 8 T. |
+| 0x33 | INX SP | `IncSp` | **Keep** | INC SP | 8 T. |
 | 0x34 | INR M | `InrM` | **Modify** | INC (HL) | Z, N=0, H. 12 T. |
 | 0x35 | DCR M | `DcrM` | **Modify** | DEC (HL) | Z, N=1, H. 12 T. |
 | 0x36 | MVI M,d8 | `MviM` | **Keep** | LD (HL),d8 | 12 T. |
@@ -84,7 +84,7 @@ Legend:
 | 0x38 | NOP (alias) | `Nop` | **Replace** | JR C,r8 | 12 / 8 T. |
 | 0x39 | DAD SP | `DadSp` | **Modify** | ADD HL,SP | 8 T. See 0x09. |
 | 0x3A | LDA a16 | `LdA` | **Replace** | LD A,(HL-) | 8 T. |
-| 0x3B | DCX SP | `DcxSp` | **Keep** | DEC SP | 8 T. |
+| 0x3B | DCX SP | `DecSp` | **Keep** | DEC SP | 8 T. |
 | 0x3C | INR A | `InrA` | **Modify** | INC A | See 0x04. |
 | 0x3D | DCR A | `DcrA` | **Modify** | DEC A | See 0x05. |
 | 0x3E | MVI A,d8 | `MviA` | **Keep** | LD A,d8 | 8 T. |

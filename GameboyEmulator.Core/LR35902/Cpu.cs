@@ -201,17 +201,17 @@ public sealed partial class Cpu
         0x29 => AddHlH(),
         0x39 => AddHlSp(),
 
-        // INX
-        0x03 => InxB(),
-        0x13 => InxD(),
-        0x23 => InxH(),
-        0x33 => InxSp(),
+        // INC rr
+        0x03 => IncBc(),
+        0x13 => IncDe(),
+        0x23 => IncHl(),
+        0x33 => IncSp(),
 
-        // DCX
-        0x0B => DcxB(),
-        0x1B => DcxD(),
-        0x2B => DcxH(),
-        0x3B => DcxSp(),
+        // DEC rr
+        0x0B => DecBc(),
+        0x1B => DecDe(),
+        0x2B => DecHl(),
+        0x3B => DecSp(),
 
         // Stack operations
         0xC1 => PopB(),
