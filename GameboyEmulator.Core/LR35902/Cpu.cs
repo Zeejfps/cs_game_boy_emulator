@@ -42,7 +42,7 @@ public sealed partial class Cpu
     }
 
     private int _enableInterruptsTimer;
-    internal bool _haltBugPending;
+    private bool _haltBugPending;
     private readonly IMemoryBus _mmu;
 
     public Cpu(IMemoryBus mmu)
