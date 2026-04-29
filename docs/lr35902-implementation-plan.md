@@ -12,6 +12,7 @@ order — later steps assume the earlier ones are done.
 - [ ] [Step 1 — Flag layout and ALU helpers](plan/step-1-flags-and-alu-helpers.md)
 - [ ] [Step 2 — Strip 8080-only plumbing](plan/step-2-strip-8080-plumbing.md)
 - [ ] [Step 3 — Implement the 21 "Replace" opcodes](plan/step-3-replace-opcodes.md)
+- [ ] [Step 3.1 — Cycle-count audit for Keep/Modify opcodes](plan/step-3.1-cycle-count-audit.md)
 - [ ] [Step 4 — CB-prefix path and the 11 CB operations](plan/step-4-cb-prefix.md)
 - [ ] [Step 5 — Interrupt model, EI/DI/RETI, HALT, STOP](plan/step-5-interrupts-halt-stop.md)
 - [ ] [Step 6 — DAA](plan/step-6-daa.md)
