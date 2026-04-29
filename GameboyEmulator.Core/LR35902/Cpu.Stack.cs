@@ -75,23 +75,6 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Xthl()
-    {
-        var temp = Rhl;
-        Rhl = _mmu.ReadWord(Sp);
-        _mmu.WriteWord(Sp, temp);
-        return 18;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Xchg()
-    {
-        (Rh, Rd) = (Rd, Rh);
-        (Rl, Re) = (Re, Rl);
-        return 4;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Sphl()
     {
         Sp = Rhl;

@@ -40,16 +40,12 @@ public sealed partial class Cpu
         set { Rh = (byte)(value >> 8); Rl = (byte)(value & 0xFF); }
     }
 
-    private bool _isInterruptPending;
-    private byte _pendingInterruptOpcode;
     private int _enableInterruptsTimer;
-    private readonly IIOBus _io;
     private readonly IMemoryBus _mmu;
-    
-    public Cpu(IMemoryBus mmu, IIOBus io)
+
+    public Cpu(IMemoryBus mmu)
     {
         _mmu = mmu;
-        _io = io;
     }
 
     public void Reset()
@@ -60,19 +56,12 @@ public sealed partial class Cpu
         Ra = Rb = Rc = Rd = Re = Rh = Rl = 0;
         InterruptEnabled = true;
         Halted = false;
-        _isInterruptPending = false;
-        _pendingInterruptOpcode = 0;
         _enableInterruptsTimer = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public int Step()
     {
-        if (TryExecuteInterrupt(out var cycles))
-        {
-            return cycles;
-        }
-
         if (Halted)
         {
             UpdateInterruptTimer();
@@ -80,55 +69,27 @@ public sealed partial class Cpu
         }
 
         var opcode = Fetch();
-        cycles = Execute(opcode);
+        var cycles = Execute(opcode);
         UpdateInterruptTimer();
         return cycles;
-    }
-
-    public void Interrupt(byte opcode)
-    {
-        _isInterruptPending = true;
-        _pendingInterruptOpcode = opcode;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void UpdateInterruptTimer()
     {
-        if (_enableInterruptsTimer <= 0) 
+        if (_enableInterruptsTimer <= 0)
             return;
-        
+
         _enableInterruptsTimer--;
         if (_enableInterruptsTimer == 0)
             InterruptEnabled = true;
     }
 
-    private bool TryExecuteInterrupt(out int cycles)
-    {
-        if (InterruptEnabled && _isInterruptPending)
-        {
-            InterruptEnabled = false;
-            Halted = false;
-            _isInterruptPending = false;
-            cycles = Execute(_pendingInterruptOpcode);
-            return true;
-        }
-
-        cycles = 0;
-        return false;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int Execute(byte opcode) => opcode switch
     {
-        // NOP (primary + undocumented aliases)
+        // NOP
         0x00 => Nop(),
-        0x08 => Nop(),
-        0x10 => Nop(),
-        0x18 => Nop(),
-        0x20 => Nop(),
-        0x28 => Nop(),
-        0x30 => Nop(),
-        0x38 => Nop(),
 
         // Mvi
         0x06 => MviB(),
@@ -223,14 +184,10 @@ public sealed partial class Cpu
         // Load
         0x0A => LdAb(),
         0x1A => LdAd(),
-        0x2A => Lhld(),
-        0x3A => LdA(),
 
         // Store
         0x02 => StAb(),
         0x12 => StAd(),
-        0x22 => Shld(),
-        0x32 => StA(),
 
         // Load register pair immediate
         0x01 => LxiB(),
@@ -272,10 +229,6 @@ public sealed partial class Cpu
         0xC8 => Rz(),
         0xD0 => Rnc(),
         0xD8 => Rcy(),
-        0xE0 => Rpo(),
-        0xE8 => Rpe(),
-        0xF0 => Rp(),
-        0xF8 => Rm(),
 
         // ADD
         0x80 => AddB(),
@@ -359,34 +312,21 @@ public sealed partial class Cpu
 
         // Unconditional return, call, pchl
         0xC9 => Ret(),
-        0xD9 => Ret(),  // undocumented alias
         0xCD => Call(),
-        0xDD => Call(), // undocumented alias
-        0xED => Call(), // undocumented alias
-        0xFD => Call(), // undocumented alias
         0xE9 => Pchl(),
 
         // Jumps
         0xC3 => Jmp(),
-        0xCB => Jmp(),  // undocumented alias
         0xC2 => Jnz(),
         0xCA => Jz(),
         0xD2 => Jnc(),
         0xDA => Jc(),
-        0xE2 => Jpo(),
-        0xEA => Jpe(),
-        0xF2 => Jp(),
-        0xFA => Jm(),
 
         // Conditional calls
         0xC4 => Cnz(),
         0xCC => Cz(),
         0xD4 => Cnc(),
         0xDC => Cc(),
-        0xE4 => Cpo(),
-        0xEC => Cpe(),
-        0xF4 => Cp(),
-        0xFC => Cm(),
 
         // Restarts
         0xC7 => Rst0(),
@@ -398,9 +338,7 @@ public sealed partial class Cpu
         0xF7 => Rst6(),
         0xFF => Rst7(),
 
-        // I/O and interrupt control
-        0xD3 => Out(),
-        0xDB => In(),
+        // Interrupt control
         0xF3 => Di(),
         0xFB => Ei(),
 
@@ -444,8 +382,6 @@ public sealed partial class Cpu
         0x35 => DcrM(),
         0x3D => DcrA(),
 
-        0xE3 => Xthl(),
-        0xEB => Xchg(),
         0xF9 => Sphl(),
     };
 

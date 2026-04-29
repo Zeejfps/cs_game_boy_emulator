@@ -9,8 +9,6 @@ public abstract class CpuTestBase
 
     protected CpuTestBase()
     {
-        Cpu = new Cpu(Mmu, new NoOpCpuIO());
+        Cpu = new Cpu(Mmu);
     }
-
-    protected Cpu CreateCpu(CpuState state, IIOBus io) => new Cpu(Mmu, io).WriteState(state);
 }
