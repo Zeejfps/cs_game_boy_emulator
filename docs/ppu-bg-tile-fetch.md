@@ -178,15 +178,40 @@ LCDC bit 4 = 1:  addr = 0x0000 +         index  * 16  (index unsigned 0..255)
 LCDC bit 4 = 0:  addr = 0x1000 + (sbyte) index  * 16  (index signed -128..127)
 ```
 
-In the code:
+**Unified branch-free formula.** Both modes can be expressed as a single arithmetic expression:
 
-```csharp
-var tileAddr = unsignedTileData
-    ? TileData1Base + tileIndex * 16        // 0x0000 + idx*16
-    : TileData0Base + (sbyte)tileIndex * 16;// 0x1000 + (sbyte)idx*16
+```
+addr = base + ((index ^ flip) << 4)
+
+   unsigned mode: base = 0x0000, flip = 0x00   → blocks 0+1
+   signed   mode: base = 0x0800, flip = 0x80   → blocks 1+2
 ```
 
-If `tileIndex == 0xFF` in signed mode, `(sbyte)0xFF == -1`, so `tileAddr = 0x1000 + (-1)*16 = 0x0FF0`. That's correct — index `-1` lives just before the `0x9000` base, in block 1.
+Why it works: in signed mode the high bit of `index` flips meaning (128-255 become *lower* addresses than 0-127). XOR'ing with `0x80` swaps the upper and lower halves of the 0..255 range, after which a plain unsigned multiply produces the right layout — you just need a different base to land in the right region of VRAM.
+
+Verify against the table above:
+
+| Mode | index | `index ^ flip` | `<<4` | `+base` | VRAM offset |
+|---|---|---|---|---|---|
+| unsigned | 0   | 0   | 0x000 | 0x000 | 0x0000 ✓ |
+| unsigned | 255 | 255 | 0xFF0 | 0xFF0 | 0x0FF0 ✓ |
+| signed   | 0   | 128 | 0x800 | 0x1000 | 0x1000 ✓ |
+| signed   | 127 | 255 | 0xFF0 | 0x17F0 | 0x17F0 ✓ |
+| signed   | 128 | 0   | 0x000 | 0x0800 | 0x0800 ✓ |
+| signed   | 255 | 127 | 0x7F0 | 0xFF0  | 0x0FF0 ✓ |
+
+In the code, `base` and `flip` are picked once per scanline:
+
+```csharp
+var (tileDataBase, flipBit) = (_lcdc & LcdcTileData) != 0
+    ? (TileDataUnsignedBase, TileDataUnsignedFlip)
+    : (TileDataSignedBase,   TileDataSignedFlip);
+
+// per tile:
+var rowAddr = tileDataBase + ((tileIndex ^ flipBit) << 4) + pixelRow * 2;
+```
+
+No branch in the inner loop, no signed cast, just XOR + shift + add.
 
 ## A scanline as a movie
 

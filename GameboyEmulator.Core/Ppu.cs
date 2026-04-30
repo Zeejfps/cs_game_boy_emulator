@@ -37,8 +37,14 @@ public sealed class Ppu : IPpu
 
     private const ushort TileMap0Offset = 0x1800; // 0x9800 - 0x8000
     private const ushort TileMap1Offset = 0x1C00; // 0x9C00 - 0x8000
-    private const ushort TileData0Base  = 0x1000; // 0x9000 - 0x8000 (signed mode)
-    private const ushort TileData1Base  = 0x0000; // 0x8000 - 0x8000 (unsigned mode)
+
+    // Unified addressing: addr = base + ((index ^ flip) << 4)
+    //   unsigned mode: base 0x0000, flip 0x00 → block 0+1
+    //   signed   mode: base 0x0800, flip 0x80 → block 1+2 (0x80 swaps the halves)
+    private const ushort TileDataUnsignedBase = 0x0000;
+    private const byte   TileDataUnsignedFlip = 0x00;
+    private const ushort TileDataSignedBase   = 0x0800;
+    private const byte   TileDataSignedFlip   = 0x80;
 
     private const ushort LcdcAddress = 0xFF40;
     private const ushort StatAddress = 0xFF41;
@@ -156,31 +162,35 @@ public sealed class Ppu : IPpu
         }
 
         var tileMapOffset = (_lcdc & LcdcBgTileMap) != 0 ? TileMap1Offset : TileMap0Offset;
-        var unsignedTileData = (_lcdc & LcdcTileData) != 0;
+        var (tileDataBase, flipBit) = (_lcdc & LcdcTileData) != 0
+            ? (TileDataUnsignedBase, TileDataUnsignedFlip)
+            : (TileDataSignedBase,   TileDataSignedFlip);
 
         var worldY = (byte)(_scy + line);
         var tileRow = worldY >> 3;
         var pixelRow = worldY & 7;
 
-        for (var x = 0; x < ScreenWidth; x++)
+        var tileCol = _scx >> 3;
+        var startBit = _scx & 7;            // pixels of the first tile to skip
+
+        var x = 0;
+        while (x < ScreenWidth)
         {
-            var worldX = (byte)(_scx + x);
-            var tileCol = worldX >> 3;
-
             var tileIndex = _vram[tileMapOffset + tileRow * 32 + tileCol];
-            var tileAddr = unsignedTileData
-                ? TileData1Base + tileIndex * 16
-                : TileData0Base + (sbyte)tileIndex * 16;
-
-            var rowAddr = tileAddr + pixelRow * 2;
+            var rowAddr = tileDataBase + ((tileIndex ^ flipBit) << 4) + pixelRow * 2;
             var lo = _vram[rowAddr];
             var hi = _vram[rowAddr + 1];
 
-            var bit = 7 - (worldX & 7);
-            var colorId = (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1);
-            var shade = (byte)((_bgp >> (colorId * 2)) & 0x3);
+            var end = Math.Min(8, startBit + ScreenWidth - x);
+            for (var b = startBit; b < end; b++)
+            {
+                var bit = 7 - b;
+                var colorId = (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1);
+                _frameBuffer[rowBase + x++] = (byte)((_bgp >> (colorId * 2)) & 0x3);
+            }
 
-            _frameBuffer[rowBase + x] = shade;
+            startBit = 0;
+            tileCol = (tileCol + 1) & 31;   // wrap horizontally across the 32-tile map
         }
     }
 
