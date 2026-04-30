@@ -38,40 +38,63 @@ public sealed class Mmu : IMemoryBus
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Write(ushort address, byte value)
     {
-        switch (address)
+        switch (address >> 12)
         {
-            case <= 0x3FFF:
+            case 0x0:
+            case 0x1:
+            case 0x2:
+            case 0x3:
                 _mbc.WriteBank0(address, value);
                 return;
-            case <= 0x7FFF:
+            case 0x4:
+            case 0x5:
+            case 0x6:
+            case 0x7:
                 _mbc.WriteBankN(address, value);
                 return;
-            case <= 0x9FFF:
+            case 0x8:
+            case 0x9:
                 _ppu.WriteVram((ushort)(address - 0x8000), value);
                 return;
-            case <= 0xBFFF:
+            case 0xA:
+            case 0xB:
                 _mbc.WriteExternalRam((ushort)(address - 0xA000), value);
                 return;
-            case <= 0xDFFF:
+            case 0xC:
+            case 0xD:
                 _wram[address - 0xC000] = value;
                 return;
-            case <= 0xFDFF:
+            case 0xE:
                 _wram[address - 0xE000] = value;
                 return;
-            case <= 0xFE9F:
+            default:
+                WriteHigh(address, value);
+                return;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private void WriteHigh(ushort address, byte value)
+    {
+        switch (address)
+        {
+            case < 0xFE00:
+                _wram[address - 0xE000] = value;
+                return;
+            case < 0xFEA0:
                 _ppu.WriteOam((ushort)(address - 0xFE00), value);
                 return;
-            case <= 0xFEFF:
+            case < 0xFF00:
                 return;
-            case <= 0xFF7F:
+            case < 0xFF80:
                 WriteIO(address, value);
                 return;
-            case <= 0xFFFE:
+            case < Cpu.InterruptEnableAddress:
                 _hram[address - 0xFF80] = value;
                 return;
-            case Cpu.InterruptEnableAddress:
+            default:
                 _interrupts.InterruptEnable = value;
-                return;
+                break;
         }
     }
 
@@ -122,19 +145,45 @@ public sealed class Mmu : IMemoryBus
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public byte Read(ushort address)
     {
+        switch (address >> 12)
+        {
+            case 0x0:
+            case 0x1:
+            case 0x2:
+            case 0x3:
+                return _mbc.ReadBank0(address);
+            case 0x4:
+            case 0x5:
+            case 0x6:
+            case 0x7:
+                return _mbc.ReadBankN(address);
+            case 0x8:
+            case 0x9:
+                return _ppu.ReadVram((ushort)(address - 0x8000));
+            case 0xA:
+            case 0xB:
+                return _mbc.ReadExternalRam((ushort)(address - 0xA000));
+            case 0xC:
+            case 0xD:
+                return _wram[address - 0xC000];
+            case 0xE:
+                return _wram[address - 0xE000];
+            default:
+                return ReadHigh(address);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private byte ReadHigh(ushort address)
+    {
         return address switch
         {
-            <= 0x3FFF => _mbc.ReadBank0(address),
-            <= 0x7FFF => _mbc.ReadBankN(address),
-            <= 0x9FFF => _ppu.ReadVram((ushort)(address - 0x8000)),
-            <= 0xBFFF => _mbc.ReadExternalRam((ushort)(address - 0xA000)),
-            <= 0xDFFF => _wram[address - 0xC000],
-            <= 0xFDFF => _wram[address - 0xE000],
-            <= 0xFE9F => _ppu.ReadOam((ushort)(address - 0xFE00)),
-            <= 0xFEFF => 0xFF,
-            <= 0xFF7F => ReadIO(address),
-            <= 0xFFFE => _hram[address - 0xFF80],
-            Cpu.InterruptEnableAddress => _interrupts.InterruptEnable
+            < 0xFE00 => _wram[address - 0xE000],
+            < 0xFEA0 => _ppu.ReadOam((ushort)(address - 0xFE00)),
+            < 0xFF00 => 0xFF,
+            < 0xFF80 => ReadIO(address),
+            < Cpu.InterruptEnableAddress => _hram[address - 0xFF80],
+            _ => _interrupts.InterruptEnable
         };
     }
 
