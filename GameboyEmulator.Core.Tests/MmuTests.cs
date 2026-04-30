@@ -6,11 +6,12 @@ public class MmuTests
     private readonly FakePpu _ppu = new();
     private readonly FakeJoypad _joypad = new();
     private readonly FakeTimer _timer = new();
+    private readonly FakeApu _apu = new();
     private readonly Mmu _mmu;
 
     public MmuTests()
     {
-        _mmu = new Mmu(_mbc, _ppu, _joypad, _timer);
+        _mmu = new Mmu(_mbc, _ppu, _joypad, _timer, _apu);
     }
 
     [Theory]
@@ -381,6 +382,13 @@ public class MmuTests
     {
         public byte? LastSelect { get; private set; }
         public void Select(byte value) => LastSelect = value;
+    }
+
+    private sealed class FakeApu : IApu
+    {
+        public (ushort address, byte value)? LastRegisterWrite { get; private set; }
+        public void WriteRegister(ushort address, byte value) => LastRegisterWrite = (address, value);
+        public byte ReadRegister(ushort address) => 0;
     }
 
     private sealed class FakeTimer : ITimer

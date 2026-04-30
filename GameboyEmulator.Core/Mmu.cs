@@ -46,13 +46,15 @@ public sealed class Mmu : IMemoryBus
     private readonly IPpu _ppu;
     private readonly IJoypad _joypad;
     private readonly ITimer _timer;
+    private readonly IApu _apu;
 
-    public Mmu(IMbc mbc, IPpu ppu, IJoypad joypad, ITimer timer)
+    public Mmu(IMbc mbc, IPpu ppu, IJoypad joypad, ITimer timer, IApu apu)
     {
         _mbc = mbc;
         _ppu = ppu;
         _joypad = joypad;
         _timer = timer;
+        _apu = apu;
     }
 
     public void Write(ushort address, byte value)
@@ -122,7 +124,7 @@ public sealed class Mmu : IMemoryBus
                 _interruptFlag = value;
                 break;
             case >= 0xFF10 and <= 0xFF3F:
-                // TODO: APU
+                _apu.WriteRegister(address, value);
                 break;
             case >= 0xFF40 and <= 0xFF4B:
                 _ppu.WriteRegister(address, value);
