@@ -87,7 +87,7 @@ public sealed class Ppu : IPpu
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
 
-    public void Tick(int tStates)
+    public void Step(int tStates)
     {
         if ((_lcdc & LcdEnableMask) == 0) return;
         for (var i = 0; i < tStates; i++) StepDot();

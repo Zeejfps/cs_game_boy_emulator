@@ -7,18 +7,25 @@ public sealed class GameBoy
     public bool IsPoweredOn { get; private set; }
     
     private const int CpuFrequency = 4_194_304;
+    private const double CyclesPerFrame = CpuFrequency / 60.0;
     
     private readonly IClock _clock;
-    
     private readonly ICpu _cpu;
-    
+    private readonly Ppu _ppu;
+    private readonly double _cyclesPerTick;
+
     private long _lastTimestamp;
-    private double _cycleCount;
-    private double _cyclesPerTick;
-    
+    private double _tCount;
+
     public GameBoy(IClock clock)
     {
         _clock = clock;
+        
+        var interrupts = new Interrupts();
+        _ppu = new Ppu(interrupts);
+        var mmu = new Mmu(_ppu, interrupts);
+        _cpu = new Cpu(mmu, interrupts);
+        
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }
 
@@ -47,11 +54,12 @@ public sealed class GameBoy
         var elapsedTime = timestamp - _lastTimestamp;
         _lastTimestamp = timestamp;
         
-        _cycleCount += elapsedTime * _cyclesPerTick;
-        while (_cycleCount > 0)
+        _tCount += elapsedTime * _cyclesPerTick;
+        while (_tCount > 0)
         {
-            var cycles = _cpu.Step();
-            _cycleCount -= cycles;
+            var ts = _cpu.Step();
+            _ppu.Step(ts);
+            _tCount -= ts;
         }
     }
 }
