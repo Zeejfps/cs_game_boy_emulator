@@ -1,6 +1,6 @@
 namespace GameboyEmulator.Core;
 
-public sealed class Ppu
+public sealed class Ppu : IPpu
 {
     public void WriteVram(ushort address, byte value)
     {

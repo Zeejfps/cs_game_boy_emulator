@@ -41,10 +41,10 @@ public sealed class Mmu : IMemoryBus
     private readonly byte[] _ioRegisters = new byte[0x80];
     private byte _interruptEnable;
 
-    private readonly Mbc _mbc;
-    private readonly Ppu _ppu;
+    private readonly IMbc _mbc;
+    private readonly IPpu _ppu;
 
-    public Mmu(Mbc mbc, Ppu ppu)
+    public Mmu(IMbc mbc, IPpu ppu)
     {
         _mbc = mbc;
         _ppu = ppu;

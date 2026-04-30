@@ -1,6 +1,6 @@
 namespace GameboyEmulator.Core;
 
-public sealed class Mbc
+public sealed class Mbc : IMbc
 {
     public void WriteBank0(ushort address, byte value)
     {
