@@ -12,19 +12,19 @@ public sealed class Timer : ITimer
     //   TAC=11 → 16384 Hz  (bit 7, period 256  T)
     private static readonly byte[] TimaBitIndex = [9, 3, 5, 7];
 
-    private readonly IInterruptBus _interrupts;
+    private readonly IInterruptsBus _interrupts;
 
     private ushort _counter;
     private byte _tima;
     private byte _tma;
     private byte _tac;
     private byte _timaBitIndex = TimaBitIndex[0]; // matches TAC=0 default
-    private bool _timaEnabled;
+    private bool _isTimaEnabled;
 
     private bool _prevSignal;
     private int _reloadDelay;
 
-    public Timer(IInterruptBus interrupts)
+    public Timer(IInterruptsBus interrupts)
     {
         _interrupts = interrupts;
     }
@@ -53,7 +53,7 @@ public sealed class Timer : ITimer
     {
         _tac = (byte)(value & 0x07);
         _timaBitIndex = TimaBitIndex[_tac & 0x03];
-        _timaEnabled = (_tac & 0x04) != 0;
+        _isTimaEnabled = (_tac & 0x04) != 0;
         DetectTimaEdge();
     }
 
@@ -86,7 +86,7 @@ public sealed class Timer : ITimer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool ComputeTimaSignal()
     {
-        return _timaEnabled && ((_counter >> _timaBitIndex) & 1) != 0;
+        return _isTimaEnabled && ((_counter >> _timaBitIndex) & 1) != 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

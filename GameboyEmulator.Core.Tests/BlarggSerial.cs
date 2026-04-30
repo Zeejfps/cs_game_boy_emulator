@@ -5,12 +5,12 @@ namespace GameBoyEmulator.Core.Tests;
 
 internal sealed class BlarggSerial : ISerial
 {
-    private readonly IInterruptBus _interrupts;
+    private readonly IInterruptsBus _interrupts;
     private readonly StringBuilder _output = new();
     private byte _data;
     private byte _control;
 
-    public BlarggSerial(IInterruptBus interrupts)
+    public BlarggSerial(IInterruptsBus interrupts)
     {
         _interrupts = interrupts;
     }

@@ -2,7 +2,7 @@ using GameBoyEmulator.Core.LR35902;
 
 namespace GameBoyEmulator.Core;
 
-public sealed class Interrupts : IInterruptRegisters, IInterruptBus
+public sealed class Interrupts : IInterruptsRegisters, IInterruptsBus
 {
     private byte _flag;
     private byte _enable;

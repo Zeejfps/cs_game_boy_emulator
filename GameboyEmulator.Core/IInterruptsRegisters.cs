@@ -1,6 +1,6 @@
 namespace GameBoyEmulator.Core;
 
-public interface IInterruptRegisters
+public interface IInterruptsRegisters
 {
     byte InterruptFlag { get; set; }
     byte InterruptEnable { get; set; }
