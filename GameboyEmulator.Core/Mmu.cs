@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using GameboyEmulator.Core.LR35902;
 
 namespace GameboyEmulator.Core;
@@ -43,12 +44,14 @@ public sealed class Mmu : IMemoryBus
     private readonly IMbc _mbc;
     private readonly IPpu _ppu;
     private readonly IJoypad _joypad;
+    private readonly ITimer _timer;
 
-    public Mmu(IMbc mbc, IPpu ppu, IJoypad joypad)
+    public Mmu(IMbc mbc, IPpu ppu, IJoypad joypad, ITimer timer)
     {
         _mbc = mbc;
         _ppu = ppu;
         _joypad = joypad;
+        _timer = timer;
     }
 
     public void Write(ushort address, byte value)
@@ -90,6 +93,7 @@ public sealed class Mmu : IMemoryBus
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void WriteIO(ushort address, byte value)
     {
         switch (address)
@@ -100,6 +104,18 @@ public sealed class Mmu : IMemoryBus
             case 0xFF01:
             case 0xFF02:
                 // TODO: serial
+                break;
+            case 0xFF04:
+                _timer.WriteDiv(value);
+                break;
+            case 0xFF05:
+                _timer.WriteTima(value);
+                break;
+            case 0xFF06:
+                _timer.WriteTma(value);
+                break;
+            case 0xFF07:
+                _timer.WriteTac(value);
                 break;
         }
     }
