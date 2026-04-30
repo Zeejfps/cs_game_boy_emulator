@@ -137,6 +137,58 @@ public class MmuTests
     }
 
     [Fact]
+    public void Write_JoypadRegister_DispatchesToJoypad()
+    {
+        _mmu.Write(0xFF00, 0x20);
+
+        Assert.Equal((byte)0x20, _joypad.LastSelect);
+    }
+
+    [Fact]
+    public void Write_TimerDiv_DispatchesToTimer()
+    {
+        _mmu.Write(0xFF04, 0xAB);
+
+        Assert.Equal((byte)0xAB, _timer.LastDivWrite);
+        Assert.Null(_timer.LastTimaWrite);
+        Assert.Null(_timer.LastTmaWrite);
+        Assert.Null(_timer.LastTacWrite);
+    }
+
+    [Fact]
+    public void Write_TimerTima_DispatchesToTimer()
+    {
+        _mmu.Write(0xFF05, 0xCD);
+
+        Assert.Equal((byte)0xCD, _timer.LastTimaWrite);
+        Assert.Null(_timer.LastDivWrite);
+        Assert.Null(_timer.LastTmaWrite);
+        Assert.Null(_timer.LastTacWrite);
+    }
+
+    [Fact]
+    public void Write_TimerTma_DispatchesToTimer()
+    {
+        _mmu.Write(0xFF06, 0xEF);
+
+        Assert.Equal((byte)0xEF, _timer.LastTmaWrite);
+        Assert.Null(_timer.LastDivWrite);
+        Assert.Null(_timer.LastTimaWrite);
+        Assert.Null(_timer.LastTacWrite);
+    }
+
+    [Fact]
+    public void Write_TimerTac_DispatchesToTimer()
+    {
+        _mmu.Write(0xFF07, 0x07);
+
+        Assert.Equal((byte)0x07, _timer.LastTacWrite);
+        Assert.Null(_timer.LastDivWrite);
+        Assert.Null(_timer.LastTimaWrite);
+        Assert.Null(_timer.LastTmaWrite);
+    }
+
+    [Fact]
     public void WriteWord_WritesLittleEndian()
     {
         _mmu.WriteWord(0x8000, 0xBEEF);
