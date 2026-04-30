@@ -32,7 +32,7 @@ public sealed class GameBoy
 
         var interrupts = new Interrupts();
         _ppu = new Ppu(interrupts);
-        var mbc = new Mbc();
+        var mbc = new NoCartridgeMbc();
         var joypad = new Joypad();
         var timer = new Timer(interrupts);
         var apu = new Apu();
@@ -44,6 +44,15 @@ public sealed class GameBoy
         _cpu = new Cpu(mmu, interrupts);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
+    }
+
+    public void LoadRom(byte[] rom)
+    {
+        if (IsPoweredOn)
+            throw new InvalidOperationException("Cannot load a ROM while the GameBoy is powered on");
+
+        var mbc = MbcFactory.Create(rom);
+        _mmu.SetMbc(mbc);
     }
 
     public void PowerOn()

@@ -12,7 +12,7 @@ public sealed class Mmu : IMemoryBus
     private readonly byte[] _hram = new byte[0x7F];
     private byte _dmaSource;
 
-    private readonly IMbc _mbc;
+    private IMbc _mbc;
     private readonly IPpu _ppu;
     private readonly IJoypad _joypad;
     private readonly ITimer _timer;
@@ -255,6 +255,11 @@ public sealed class Mmu : IMemoryBus
         Array.Clear(_wram);
         Array.Clear(_hram);
         _dmaSource = 0;
+    }
+
+    public void SetMbc(IMbc mbc)
+    {
+        _mbc = mbc;
     }
 
     public void WriteWord(ushort address, ushort value)
