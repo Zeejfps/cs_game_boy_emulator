@@ -42,7 +42,17 @@ public class BlarggCpuInstrTests
             "See GameboyEmulator.Core.Tests/TestRoms/blargg/README.md for fetch instructions.");
 
         var rom = File.ReadAllBytes(path);
-        var mmu = new BlarggMmu(rom);
+        var interrupts = new Interrupts();
+        var timer = new BlarggTimer(interrupts);
+        var serial = new BlarggSerial(interrupts);
+        var mmu = new Mmu(
+            new BlarggMbc(rom),
+            new NullPpu(),
+            new NullJoypad(),
+            timer,
+            new NullApu(),
+            serial,
+            interrupts);
         var cpu = new Cpu(mmu);
         cpu.SkipBoot();
 
@@ -50,16 +60,16 @@ public class BlarggCpuInstrTests
         while (total < CycleBudget)
         {
             var t = cpu.Step();
-            mmu.Tick(t);
+            timer.Tick(t);
             total += t;
 
-            var output = mmu.SerialOutput;
+            var output = serial.Output;
             if (output.Contains("Passed", StringComparison.Ordinal) ||
                 output.Contains("Failed", StringComparison.Ordinal))
                 break;
         }
 
-        var final = mmu.SerialOutput;
+        var final = serial.Output;
         Assert.True(
             final.Contains("Passed", StringComparison.Ordinal),
             $"Blargg ROM '{relativePath}' did not pass within {CycleBudget} T-states.\n" +
