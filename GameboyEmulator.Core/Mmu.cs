@@ -38,16 +38,17 @@ public sealed class Mmu : IMemoryBus
 
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
-    private readonly byte[] _ioRegisters = new byte[0x80];
     private byte _interruptEnable;
 
     private readonly IMbc _mbc;
     private readonly IPpu _ppu;
+    private readonly IJoypad _joypad;
 
-    public Mmu(IMbc mbc, IPpu ppu)
+    public Mmu(IMbc mbc, IPpu ppu, IJoypad joypad)
     {
         _mbc = mbc;
         _ppu = ppu;
+        _joypad = joypad;
     }
 
     public void Write(ushort address, byte value)
@@ -78,7 +79,7 @@ public sealed class Mmu : IMemoryBus
             case >= UnusableStartAddress and <= UnusableEndAddress:
                 return;
             case >= IoRegistersStartAddress and <= IoRegistersEndAddress:
-                WriteIoRegisters(address, value);
+                WriteIO(address, value);
                 return;
             case >= HRamStartAddress and <= HRamEndAddress:
                 _hram[address - HRamStartAddress] = value;
@@ -89,10 +90,12 @@ public sealed class Mmu : IMemoryBus
         }
     }
 
-    private void WriteIoRegisters(ushort address, byte value)
+    private void WriteIO(ushort address, byte value)
     {
-        // TODO: Implement IO registers
-        _ioRegisters[address - IoRegistersStartAddress] = value;
+        if (address == 0xFF00)
+        {
+            _joypad.Select(value);
+        }
     }
 
     public void WriteWord(ushort address, ushort value)
