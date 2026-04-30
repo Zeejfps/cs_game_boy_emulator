@@ -122,7 +122,37 @@ public sealed class Mmu : IMemoryBus
     
     public byte Read(ushort address)
     {
-        return 0;
+        switch (address)
+        {
+            case >= Bank0StartAddress and <= Bank0EndAddress:
+                return _mbc.ReadBank0(address);
+            case >= BankNStartAddress and <= BankNEndAddress:
+                return _mbc.ReadBankN(address);
+            case >= VRamStartAddress and <= VRamEndAddress:
+                return _ppu.ReadVram((ushort)(address - VRamStartAddress));
+            case >= ExternalRamStartAddress and <= ExternalRamEndAddress:
+                return _mbc.ReadExternalRam((ushort)(address - ExternalRamStartAddress));
+            case >= WRamStartAddress and <= WRamEndAddress:
+                return _wram[address - WRamStartAddress];
+            case >= EchoRamStartAddress and <= EchoRamEndAddress:
+                return _wram[address - EchoRamStartAddress];
+            case >= OamStartAddress and <= OamEndAddress:
+                return _ppu.ReadOam((ushort)(address - OamStartAddress));
+            case >= UnusableStartAddress and <= UnusableEndAddress:
+                return 0xFF;
+            case >= IoRegistersStartAddress and <= IoRegistersEndAddress:
+                return ReadIO(address);
+            case >= HRamStartAddress and <= HRamEndAddress:
+                return _hram[address - HRamStartAddress];
+            case InterruptEnableAddress:
+                return _interruptEnable;
+        }
+    }
+
+    private byte ReadIO(ushort address)
+    {
+        // TODO: dispatch to joypad/timer/etc
+        return 0xFF;
     }
 
     public void WriteWord(ushort address, ushort value)
