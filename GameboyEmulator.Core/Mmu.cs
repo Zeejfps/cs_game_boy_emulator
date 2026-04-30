@@ -4,8 +4,14 @@ namespace GameboyEmulator.Core;
 
 public sealed class Mmu : IMemoryBus
 {
+    private const ushort Bank0StartAddress = 0x0000;
+    private const ushort Bank0EndAddress = 0x3FFF;
+    
     private const ushort VRamStartAddress = 0x8000;
     private const ushort VRamEndAddress = 0x9FFF;
+    
+    private const ushort OamStartAddress = 0xFE00;
+    private const ushort OamEndAddress = 0xFE9F;
     
     private readonly Mbc _mbc;
     private readonly Ppu _ppu;
@@ -18,13 +24,20 @@ public sealed class Mmu : IMemoryBus
 
     public void Write(ushort address, byte value)
     {
-        if (address is >= VRamStartAddress and <= VRamEndAddress)
+        switch (address)
         {
-            _ppu.WriteVram((ushort)(address - VRamStartAddress), value);
-            return;
+            case >= Bank0StartAddress and <= Bank0EndAddress:
+                _mbc.WriteBank0(address, value);
+                return;
+            case >= VRamStartAddress and <= VRamEndAddress:
+                _ppu.WriteVram((ushort)(address - VRamStartAddress), value);
+                return;
+            case >= OamStartAddress and <= OamEndAddress:
+                _ppu.WriteOam((ushort)(address - OamStartAddress), value);
+                return;
+            default:
+                throw new NotImplementedException();
         }
-
-        throw new NotImplementedException();
     }
 
     public void WriteWord(ushort address, ushort value)

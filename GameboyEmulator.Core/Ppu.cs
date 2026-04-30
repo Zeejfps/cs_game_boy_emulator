@@ -12,22 +12,22 @@ public sealed class Ppu
         return 0;
     }
 
-    public byte ReadOam(byte index)
+    public byte ReadOam(ushort address)
     {
         return 0;
     }
 
-    public void WriteOam(byte index, byte value)
+    public void WriteOam(ushort address, byte value)
     {
         
     }
     
-    public void WriteRegister(byte index, byte value)
+    public void WriteRegister(ushort address, byte value)
     {
         
     }
     
-    public byte ReadRegister(byte index)
+    public byte ReadRegister(ushort address)
     {
         return 0;
     }
