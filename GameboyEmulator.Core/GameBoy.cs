@@ -10,6 +10,7 @@ public sealed class GameBoy
     
     private const int CpuFrequency = 4_194_304;
     private const double CyclesPerFrame = CpuFrequency / 60.0;
+    private const double MaxCatchUpCycles = CpuFrequency / 10.0;
     
     private readonly IClock _clock;
     private readonly ICpu _cpu;
@@ -18,7 +19,7 @@ public sealed class GameBoy
     private readonly double _cyclesPerTick;
 
     private long _lastTimestamp;
-    private double _tCount;
+    private double _tCycles;
 
     public GameBoy(IClock clock)
     {
@@ -64,13 +65,16 @@ public sealed class GameBoy
         var elapsedTime = timestamp - _lastTimestamp;
         _lastTimestamp = timestamp;
         
-        _tCount += elapsedTime * _cyclesPerTick;
-        while (_tCount > 0)
+        _tCycles += elapsedTime * _cyclesPerTick;
+        if (_tCycles > MaxCatchUpCycles)
+            _tCycles = MaxCatchUpCycles;
+
+        while (_tCycles > 0)
         {
             var ts = _cpu.Step();
             _ppu.Step(ts);
             _timer.Tick(ts);
-            _tCount -= ts;
+            _tCycles -= ts;
         }
     }
 }
