@@ -2,7 +2,7 @@
 
 namespace GameBoyEmulator.Core.LR35902;
 
-public sealed partial class Cpu
+public sealed partial class Cpu : ICpu
 {
     private CpuFlags _flags;
     public CpuFlags Flags
