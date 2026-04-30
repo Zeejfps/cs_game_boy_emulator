@@ -20,12 +20,17 @@ public sealed class GameBoy
     public GameBoy(IClock clock)
     {
         _clock = clock;
-        
+
         var interrupts = new Interrupts();
         _ppu = new Ppu(interrupts);
-        var mmu = new Mmu(_ppu, interrupts);
+        var mbc = new Mbc();
+        var joypad = new Joypad();
+        var timer = new Timer(interrupts);
+        var apu = new Apu();
+        var serial = new Serial(interrupts);
+        var mmu = new Mmu(mbc, _ppu, joypad, timer, apu, serial, interrupts);
         _cpu = new Cpu(mmu, interrupts);
-        
+
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }
 
