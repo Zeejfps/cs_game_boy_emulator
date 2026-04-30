@@ -12,7 +12,7 @@ public sealed class Timer : ITimer
     //   TAC=11 → 16384 Hz  (bit 7, period 256  T)
     private static readonly byte[] TimaBitIndex = [9, 3, 5, 7];
 
-    private readonly IInterruptsRequester _interrupts;
+    private readonly IInterruptsBus _interrupts;
 
     private ushort _counter;
     private byte _tima;
@@ -24,7 +24,7 @@ public sealed class Timer : ITimer
     private bool _prevSignal;
     private int _reloadDelay;
 
-    public Timer(IInterruptsRequester interrupts)
+    public Timer(IInterruptsBus interrupts)
     {
         _interrupts = interrupts;
     }

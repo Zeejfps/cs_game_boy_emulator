@@ -4,11 +4,11 @@ namespace GameBoyEmulator.Core;
 
 public sealed class Serial : ISerial
 {
-    private readonly IInterruptsRequester _interrupts;
+    private readonly IInterruptsBus _interrupts;
     private byte _data;
     private byte _control;
 
-    public Serial(IInterruptsRequester interrupts)
+    public Serial(IInterruptsBus interrupts)
     {
         _interrupts = interrupts;
     }

@@ -6,7 +6,7 @@ public interface IInterruptsBus
     void Clear(InterruptType kind);
     bool IsRequested(InterruptType kind);
     InterruptType GetPending();
-
+    
     InterruptType ReadRequestedInterrupts();
     void WriteRequestedInterrupts(InterruptType requestedInterrupts);
 

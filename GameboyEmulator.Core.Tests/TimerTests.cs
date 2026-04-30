@@ -4,15 +4,31 @@ namespace GameBoyEmulator.Core.Tests;
 
 public class TimerTests
 {
-    private sealed class FakeInterruptBus : IInterruptsRequester
+    private sealed class FakeInterruptBus : IInterruptsBus
     {
+        private InterruptType _requested;
+        private InterruptType _enabled;
+
         public int TimerCount { get; private set; }
 
         public void Request(InterruptType kind)
         {
+            _requested |= kind;
             if (kind == InterruptType.Timer)
                 TimerCount++;
         }
+
+        public void Clear(InterruptType kind) => _requested &= ~kind;
+
+        public bool IsRequested(InterruptType kind) => (_requested & kind) != 0;
+
+        public InterruptType GetPending() => _requested & _enabled;
+
+        public InterruptType ReadRequestedInterrupts() => _requested;
+        public void WriteRequestedInterrupts(InterruptType requestedInterrupts) => _requested = requestedInterrupts;
+
+        public InterruptType ReadEnabledInterrupts() => _enabled;
+        public void WriteEnabledInterrupts(InterruptType enabledInterrupts) => _enabled = enabledInterrupts;
     }
 
     private readonly FakeInterruptBus _interrupts = new();
