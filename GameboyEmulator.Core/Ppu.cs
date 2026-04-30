@@ -64,13 +64,13 @@ public sealed class Ppu : IPpu
 
     public byte ReadOam(ushort address)
     {
-        if (_mode == PpuMode.OamScan || _mode == PpuMode.Drawing) return 0xFF;
+        if (_mode is PpuMode.OamScan or PpuMode.Drawing) return 0xFF;
         return _oam[address];
     }
 
     public void WriteOam(ushort address, byte value)
     {
-        if (_mode == PpuMode.OamScan || _mode == PpuMode.Drawing) return;
+        if (_mode is PpuMode.OamScan or PpuMode.Drawing) return;
         _oam[address] = value;
     }
 
