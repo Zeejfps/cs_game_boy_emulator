@@ -207,6 +207,144 @@ public class MmuTests
         Assert.Equal(((ushort)0x0000, (byte)0xBE), _ppu.LastVramWrite);
     }
 
+    [Theory]
+    [InlineData((ushort)0x0000)]
+    [InlineData((ushort)0x1234)]
+    [InlineData((ushort)0x3FFF)]
+    public void Read_RomBank0_DispatchesToMbcWithOriginalAddress(ushort address)
+    {
+        _mbc.Bank0ReadStub = _ => 0xAB;
+
+        var result = _mmu.Read(address);
+
+        Assert.Equal(address, _mbc.LastBank0ReadAddress);
+        Assert.Equal(0xAB, result);
+    }
+
+    [Theory]
+    [InlineData((ushort)0x4000)]
+    [InlineData((ushort)0x5555)]
+    [InlineData((ushort)0x7FFF)]
+    public void Read_RomBankN_DispatchesToMbcWithOriginalAddress(ushort address)
+    {
+        _mbc.BankNReadStub = _ => 0xCD;
+
+        var result = _mmu.Read(address);
+
+        Assert.Equal(address, _mbc.LastBankNReadAddress);
+        Assert.Equal(0xCD, result);
+    }
+
+    [Theory]
+    [InlineData((ushort)0x8000, (ushort)0x0000)]
+    [InlineData((ushort)0x8123, (ushort)0x0123)]
+    [InlineData((ushort)0x9FFF, (ushort)0x1FFF)]
+    public void Read_VRam_DispatchesToPpuWithOffsetAddress(ushort address, ushort expectedOffset)
+    {
+        _ppu.VramReadStub = _ => 0x42;
+
+        var result = _mmu.Read(address);
+
+        Assert.Equal(expectedOffset, _ppu.LastVramReadAddress);
+        Assert.Equal(0x42, result);
+    }
+
+    [Theory]
+    [InlineData((ushort)0xA000, (ushort)0x0000)]
+    [InlineData((ushort)0xABCD, (ushort)0x0BCD)]
+    [InlineData((ushort)0xBFFF, (ushort)0x1FFF)]
+    public void Read_ExternalRam_DispatchesToMbcWithOffsetAddress(ushort address, ushort expectedOffset)
+    {
+        _mbc.ExternalRamReadStub = _ => 0x99;
+
+        var result = _mmu.Read(address);
+
+        Assert.Equal(expectedOffset, _mbc.LastExternalRamReadAddress);
+        Assert.Equal(0x99, result);
+    }
+
+    [Theory]
+    [InlineData((ushort)0xFE00, (ushort)0x0000)]
+    [InlineData((ushort)0xFE50, (ushort)0x0050)]
+    [InlineData((ushort)0xFE9F, (ushort)0x009F)]
+    public void Read_Oam_DispatchesToPpuWithOffsetAddress(ushort address, ushort expectedOffset)
+    {
+        _ppu.OamReadStub = _ => 0x77;
+
+        var result = _mmu.Read(address);
+
+        Assert.Equal(expectedOffset, _ppu.LastOamReadAddress);
+        Assert.Equal(0x77, result);
+    }
+
+    [Theory]
+    [InlineData((ushort)0xC000)]
+    [InlineData((ushort)0xCDEF)]
+    [InlineData((ushort)0xDFFF)]
+    public void Read_WRam_RoundTripsValueWritten(ushort address)
+    {
+        _mmu.Write(address, 0x11);
+
+        Assert.Equal(0x11, _mmu.Read(address));
+    }
+
+    [Theory]
+    [InlineData((ushort)0xE000, (ushort)0xC000)]
+    [InlineData((ushort)0xEFAB, (ushort)0xCFAB)]
+    [InlineData((ushort)0xFDFF, (ushort)0xDDFF)]
+    public void Read_EchoRam_ReturnsValueWrittenToCorrespondingWRamAddress(ushort echoAddress, ushort wramAddress)
+    {
+        _mmu.Write(wramAddress, 0x55);
+
+        Assert.Equal(0x55, _mmu.Read(echoAddress));
+    }
+
+    [Theory]
+    [InlineData((ushort)0xFEA0)]
+    [InlineData((ushort)0xFED0)]
+    [InlineData((ushort)0xFEFF)]
+    public void Read_UnusableRegion_ReturnsFF(ushort address)
+    {
+        Assert.Equal(0xFF, _mmu.Read(address));
+    }
+
+    [Theory]
+    [InlineData((ushort)0xFF80)]
+    [InlineData((ushort)0xFFC0)]
+    [InlineData((ushort)0xFFFE)]
+    public void Read_HRam_RoundTripsValueWritten(ushort address)
+    {
+        _mmu.Write(address, 0x44);
+
+        Assert.Equal(0x44, _mmu.Read(address));
+    }
+
+    [Fact]
+    public void Read_InterruptEnable_RoundTripsValueWritten()
+    {
+        _mmu.Write(0xFFFF, 0x1F);
+
+        Assert.Equal(0x1F, _mmu.Read(0xFFFF));
+    }
+
+    [Fact]
+    public void ReadWord_AssemblesLittleEndian()
+    {
+        _mmu.Write(0xC000, 0xEF);
+        _mmu.Write(0xC001, 0xBE);
+
+        Assert.Equal(0xBEEF, _mmu.ReadWord(0xC000));
+    }
+
+    [Fact]
+    public void ReadWord_AcrossRegionBoundary_AssemblesFromEachRegion()
+    {
+        _mbc.BankNReadStub = addr => addr == 0x7FFF ? (byte)0xEF : (byte)0;
+        _ppu.VramReadStub = addr => addr == 0x0000 ? (byte)0xBE : (byte)0;
+
+        Assert.Equal(0xBEEF, _mmu.ReadWord(0x7FFF));
+    }
+
     private void AssertNoExternalDispatch()
     {
         Assert.Null(_mbc.LastBank0Write);
@@ -222,13 +360,21 @@ public class MmuTests
         public (ushort address, byte value)? LastBankNWrite { get; private set; }
         public (ushort address, byte value)? LastExternalRamWrite { get; private set; }
 
+        public ushort? LastBank0ReadAddress { get; private set; }
+        public ushort? LastBankNReadAddress { get; private set; }
+        public ushort? LastExternalRamReadAddress { get; private set; }
+
+        public Func<ushort, byte> Bank0ReadStub { get; set; } = _ => 0;
+        public Func<ushort, byte> BankNReadStub { get; set; } = _ => 0;
+        public Func<ushort, byte> ExternalRamReadStub { get; set; } = _ => 0;
+
         public void WriteBank0(ushort address, byte value) => LastBank0Write = (address, value);
         public void WriteBankN(ushort address, byte value) => LastBankNWrite = (address, value);
         public void WriteExternalRam(ushort address, byte value) => LastExternalRamWrite = (address, value);
 
-        public byte ReadBank0(ushort address) => 0;
-        public byte ReadBankN(ushort address) => 0;
-        public byte ReadExternalRam(ushort address) => 0;
+        public byte ReadBank0(ushort address) { LastBank0ReadAddress = address; return Bank0ReadStub(address); }
+        public byte ReadBankN(ushort address) { LastBankNReadAddress = address; return BankNReadStub(address); }
+        public byte ReadExternalRam(ushort address) { LastExternalRamReadAddress = address; return ExternalRamReadStub(address); }
     }
 
     private sealed class FakeJoypad : IJoypad
@@ -258,12 +404,18 @@ public class MmuTests
         public (ushort address, byte value)? LastVramWrite => VramWrites.Count == 0 ? null : VramWrites[^1];
         public (ushort address, byte value)? LastOamWrite => OamWrites.Count == 0 ? null : OamWrites[^1];
 
+        public ushort? LastVramReadAddress { get; private set; }
+        public ushort? LastOamReadAddress { get; private set; }
+
+        public Func<ushort, byte> VramReadStub { get; set; } = _ => 0;
+        public Func<ushort, byte> OamReadStub { get; set; } = _ => 0;
+
         public void WriteVram(ushort address, byte value) => VramWrites.Add((address, value));
         public void WriteOam(ushort address, byte value) => OamWrites.Add((address, value));
         public void WriteRegister(ushort address, byte value) { }
 
-        public byte ReadVram(ushort address) => 0;
-        public byte ReadOam(ushort address) => 0;
+        public byte ReadVram(ushort address) { LastVramReadAddress = address; return VramReadStub(address); }
+        public byte ReadOam(ushort address) { LastOamReadAddress = address; return OamReadStub(address); }
         public byte ReadRegister(ushort address) => 0;
     }
 }
