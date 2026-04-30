@@ -61,6 +61,7 @@ public sealed class GameBoy
             throw new InvalidOperationException("GameBoy is already powered on");
         
         IsPoweredOn = true;
+        _cpu.SkipBoot();
         _lastTimestamp = _clock.GetTimestamp();
         _clock.Ticked += Clock_OnTicked;
     }
