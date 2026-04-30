@@ -7,6 +7,9 @@ public sealed class Mmu : IMemoryBus
     private const ushort Bank0StartAddress = 0x0000;
     private const ushort Bank0EndAddress = 0x3FFF;
     
+    private const ushort BankNStartAddress = 0x4000;
+    private const ushort BankNEndAddress = 0x7FFF;
+    
     private const ushort VRamStartAddress = 0x8000;
     private const ushort VRamEndAddress = 0x9FFF;
     
@@ -28,6 +31,9 @@ public sealed class Mmu : IMemoryBus
         {
             case >= Bank0StartAddress and <= Bank0EndAddress:
                 _mbc.WriteBank0(address, value);
+                return;
+            case >= BankNStartAddress and <= BankNEndAddress:
+                _mbc.WriteBankN(address, value);
                 return;
             case >= VRamStartAddress and <= VRamEndAddress:
                 _ppu.WriteVram((ushort)(address - VRamStartAddress), value);
