@@ -35,7 +35,7 @@ public class FakeMmu : IMemoryBus
         switch (address)
         {
             case 0xFF0F:
-                Interrupts.WriteRequestedInterrupt((InterruptType)value);
+                Interrupts.WriteRequestedInterrupts((InterruptType)value);
                 return;
             case 0xFFFF:
                 Interrupts.WriteEnabledInterrupts((InterruptType)value);
@@ -54,7 +54,7 @@ public class FakeMmu : IMemoryBus
 
     public byte Read(ushort address) => address switch
     {
-        0xFF0F => (byte)Interrupts.ReadRequestedInterrupt(),
+        0xFF0F => (byte)Interrupts.ReadRequestedInterrupts(),
         0xFFFF => (byte)Interrupts.ReadEnabledInterrupts(),
         _ => _ram[address],
     };

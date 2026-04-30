@@ -128,7 +128,7 @@ public sealed class Mmu : IMemoryBus
                 _timer.WriteTac(value);
                 break;
             case Mmu.InterruptFlagAddress:
-                _interrupts.WriteRequestedInterrupt((InterruptType)value);
+                _interrupts.WriteRequestedInterrupts((InterruptType)value);
                 break;
             case >= 0xFF10 and <= 0xFF3F:
                 _apu.WriteRegister(address, value);
@@ -202,7 +202,7 @@ public sealed class Mmu : IMemoryBus
             0xFF05 => _timer.ReadTima(),
             0xFF06 => _timer.ReadTma(),
             0xFF07 => _timer.ReadTac(),
-            InterruptFlagAddress => (byte)((byte)_interrupts.ReadRequestedInterrupt() | 0xE0),
+            InterruptFlagAddress => (byte)((byte)_interrupts.ReadRequestedInterrupts() | 0xE0),
             0xFF46 => _dmaSource,
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),

@@ -36,7 +36,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Halt()
     {
-        var pending = GetPendingInterrupts();
+        var pending = _interrupts.GetPending();
         if (InterruptMasterEnable)
         {
             IsWaitingForInterrupt = true;
@@ -68,7 +68,7 @@ public sealed partial class Cpu
     private int ServicePendingInterrupt(InterruptType pending)
     {
         var serviced = GetHighestPriority(pending);
-        ClearInterruptRequest(serviced);
+        _interrupts.Clear(serviced);
         InterruptMasterEnable = false;
 
         Sp -= 2;
@@ -77,28 +77,6 @@ public sealed partial class Cpu
 
         Pc = GetInterruptVector(serviced);
         return 20;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private InterruptType GetPendingInterrupts()
-    {
-        var ie = _interrupts.ReadEnabledInterrupts();
-        var iff = _interrupts.ReadRequestedInterrupt();
-        return ie & iff & InterruptType.All;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsInterruptRequested(InterruptType interrupt)
-    {
-        var iff = _interrupts.ReadRequestedInterrupt();
-        return (iff & interrupt) != 0;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ClearInterruptRequest(InterruptType interrupt)
-    {
-        var iff = _interrupts.ReadRequestedInterrupt();
-        _interrupts.WriteRequestedInterrupt(iff & ~interrupt);
     }
 
     // Lowest bit wins: VBlank > LcdStat > Timer > Serial > Joypad.

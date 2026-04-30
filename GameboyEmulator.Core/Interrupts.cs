@@ -12,12 +12,27 @@ public sealed class Interrupts : IInterruptsBus, IInterruptsRequester
         _requestedInterrupts |= kind;
     }
 
-    public InterruptType ReadRequestedInterrupt()
+    public void Clear(InterruptType kind)
+    {
+        _requestedInterrupts &= ~kind;
+    }
+
+    public bool IsRequested(InterruptType kind)
+    {
+        return (_requestedInterrupts & kind) != 0;
+    }
+
+    public InterruptType GetPending()
+    {
+        return _requestedInterrupts & _enabledInterrupts & InterruptType.All;
+    }
+
+    public InterruptType ReadRequestedInterrupts()
     {
         return _requestedInterrupts;
     }
 
-    public void WriteRequestedInterrupt(InterruptType requestedInterrupts)
+    public void WriteRequestedInterrupts(InterruptType requestedInterrupts)
     {
         _requestedInterrupts =  requestedInterrupts;
     }

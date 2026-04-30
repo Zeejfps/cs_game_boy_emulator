@@ -99,14 +99,14 @@ public sealed partial class Cpu
             // Joypad interrupt request wakes from IsSleeping. The wake step itself
             // does not dispatch and does not fetch — the next Step() prologue
             // handles dispatch (if IME=1) or normal fetch.
-            if (IsInterruptRequested(InterruptType.Joypad))
+            if (_interrupts.IsRequested(InterruptType.Joypad))
             {
                 IsSleeping = false;
             }
             return 4;
         }
 
-        var pending = GetPendingInterrupts();
+        var pending = _interrupts.GetPending();
         if (IsWaitingForInterrupt && pending == InterruptType.None)
             return 4;
         
