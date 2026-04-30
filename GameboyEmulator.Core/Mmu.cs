@@ -166,8 +166,31 @@ public sealed class Mmu : IMemoryBus
 
     private byte ReadIO(ushort address)
     {
-        // TODO: dispatch to joypad/timer/etc
-        return 0xFF;
+        switch (address)
+        {
+            case 0xFF00:
+                return _joypad.Read();
+            case 0xFF01:
+            case 0xFF02:
+                // TODO: serial
+                return 0xFF;
+            case 0xFF04:
+                return _timer.ReadDiv();
+            case 0xFF05:
+                return _timer.ReadTima();
+            case 0xFF06:
+                return _timer.ReadTma();
+            case 0xFF07:
+                return _timer.ReadTac();
+            case 0xFF0F:
+                return _interruptFlag;
+            case >= 0xFF10 and <= 0xFF3F:
+                return _apu.ReadRegister(address);
+            case >= 0xFF40 and <= 0xFF4B:
+                return _ppu.ReadRegister(address);
+            default:
+                return 0xFF;
+        }
     }
 
     public void WriteWord(ushort address, ushort value)

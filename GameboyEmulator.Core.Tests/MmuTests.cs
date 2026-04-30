@@ -381,7 +381,9 @@ public class MmuTests
     private sealed class FakeJoypad : IJoypad
     {
         public byte? LastSelect { get; private set; }
+        public byte ReadStub { get; set; }
         public void Select(byte value) => LastSelect = value;
+        public byte Read() => ReadStub;
     }
 
     private sealed class FakeApu : IApu
@@ -398,10 +400,20 @@ public class MmuTests
         public byte? LastTmaWrite { get; private set; }
         public byte? LastTacWrite { get; private set; }
 
+        public byte DivReadStub { get; set; }
+        public byte TimaReadStub { get; set; }
+        public byte TmaReadStub { get; set; }
+        public byte TacReadStub { get; set; }
+
         public void WriteDiv(byte value) => LastDivWrite = value;
         public void WriteTima(byte value) => LastTimaWrite = value;
         public void WriteTma(byte value) => LastTmaWrite = value;
         public void WriteTac(byte value) => LastTacWrite = value;
+
+        public byte ReadDiv() => DivReadStub;
+        public byte ReadTima() => TimaReadStub;
+        public byte ReadTma() => TmaReadStub;
+        public byte ReadTac() => TacReadStub;
     }
 
     private sealed class FakePpu : IPpu
