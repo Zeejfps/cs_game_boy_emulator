@@ -14,6 +14,7 @@ public sealed class GameBoy
     private readonly IClock _clock;
     private readonly ICpu _cpu;
     private readonly Ppu _ppu;
+    private readonly Timer _timer;
     private readonly double _cyclesPerTick;
 
     private long _lastTimestamp;
@@ -31,6 +32,8 @@ public sealed class GameBoy
         var apu = new Apu();
         var serial = new Serial(interrupts);
         var mmu = new Mmu(mbc, _ppu, joypad, timer, apu, serial, interrupts);
+        
+        _timer = timer;
         _cpu = new Cpu(mmu, interrupts);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
@@ -66,6 +69,7 @@ public sealed class GameBoy
         {
             var ts = _cpu.Step();
             _ppu.Step(ts);
+            _timer.Tick(ts);
             _tCount -= ts;
         }
     }
