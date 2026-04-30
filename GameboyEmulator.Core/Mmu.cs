@@ -92,10 +92,21 @@ public sealed class Mmu : IMemoryBus
 
     private void WriteIO(ushort address, byte value)
     {
-        if (address == 0xFF00)
+        switch (address)
         {
-            _joypad.Select(value);
+            case 0xFF00:
+                _joypad.Select(value);
+                break;
+            case 0xFF01:
+            case 0xFF02:
+                // TODO: serial
+                break;
         }
+    }
+    
+    public byte Read(ushort address)
+    {
+        return 0;
     }
 
     public void WriteWord(ushort address, ushort value)
@@ -104,11 +115,6 @@ public sealed class Mmu : IMemoryBus
         var hi = (byte)(value >> 8);
         Write(address, lo);
         Write((ushort)(address + 1), hi);
-    }
-
-    public byte Read(ushort address)
-    {
-        return 0;
     }
 
     public ushort ReadWord(ushort address)
