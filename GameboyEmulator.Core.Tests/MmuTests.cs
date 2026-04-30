@@ -7,12 +7,13 @@ public class MmuTests
     private readonly FakeJoypad _joypad = new();
     private readonly FakeTimer _timer = new();
     private readonly FakeApu _apu = new();
+    private readonly FakeSerial _serial = new();
     private readonly Interrupts _interrupts = new();
     private readonly Mmu _mmu;
 
     public MmuTests()
     {
-        _mmu = new Mmu(_mbc, _ppu, _joypad, _timer, _apu, _interrupts);
+        _mmu = new Mmu(_mbc, _ppu, _joypad, _timer, _apu, _serial, _interrupts);
     }
 
     [Theory]
@@ -419,6 +420,16 @@ public class MmuTests
         public byte ReadTima() => TimaReadStub;
         public byte ReadTma() => TmaReadStub;
         public byte ReadTac() => TacReadStub;
+    }
+
+    private sealed class FakeSerial : ISerial
+    {
+        public byte? LastDataWrite { get; private set; }
+        public byte? LastControlWrite { get; private set; }
+        public void WriteData(byte value) => LastDataWrite = value;
+        public void WriteControl(byte value) => LastControlWrite = value;
+        public byte ReadData() => 0xFF;
+        public byte ReadControl() => 0xFF;
     }
 
     private sealed class FakePpu : IPpu

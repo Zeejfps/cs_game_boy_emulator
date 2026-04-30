@@ -14,14 +14,16 @@ public sealed class Mmu : IMemoryBus
     private readonly IJoypad _joypad;
     private readonly ITimer _timer;
     private readonly IApu _apu;
+    private readonly ISerial _serial;
     private readonly IInterruptRegisters _interrupts;
 
     public Mmu(
         IMbc mbc,
         IPpu ppu,
-        IJoypad joypad, 
-        ITimer timer, 
-        IApu apu, 
+        IJoypad joypad,
+        ITimer timer,
+        IApu apu,
+        ISerial serial,
         IInterruptRegisters interrupts
     ) {
         _mbc = mbc;
@@ -29,6 +31,7 @@ public sealed class Mmu : IMemoryBus
         _joypad = joypad;
         _timer = timer;
         _apu = apu;
+        _serial = serial;
         _interrupts = interrupts;
     }
 
@@ -81,8 +84,10 @@ public sealed class Mmu : IMemoryBus
                 _joypad.Select(value);
                 break;
             case 0xFF01:
+                _serial.WriteData(value);
+                break;
             case 0xFF02:
-                // TODO: serial
+                _serial.WriteControl(value);
                 break;
             case 0xFF04:
                 _timer.WriteDiv(value);
@@ -139,9 +144,8 @@ public sealed class Mmu : IMemoryBus
         return address switch
         {
             0xFF00 => _joypad.Read(),
-            0xFF01 or 0xFF02 =>
-                // TODO: serial
-                0xFF,
+            0xFF01 => _serial.ReadData(),
+            0xFF02 => _serial.ReadControl(),
             0xFF04 => _timer.ReadDiv(),
             0xFF05 => _timer.ReadTima(),
             0xFF06 => _timer.ReadTma(),
