@@ -136,7 +136,7 @@ public sealed class Mmu : IMemoryBus
             0xFF05 => _timer.ReadTima(),
             0xFF06 => _timer.ReadTma(),
             0xFF07 => _timer.ReadTac(),
-            0xFF0F => _interruptFlag,
+            0xFF0F => (byte)(_interruptFlag | 0xE0),
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
             _ => 0xFF
