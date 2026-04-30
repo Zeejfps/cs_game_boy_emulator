@@ -7,8 +7,6 @@ public sealed class Mmu : IMemoryBus
 {
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
-    private byte _interruptEnable;
-    private byte _interruptFlag;
     private byte _dmaSource;
 
     private readonly IMbc _mbc;
@@ -16,14 +14,22 @@ public sealed class Mmu : IMemoryBus
     private readonly IJoypad _joypad;
     private readonly ITimer _timer;
     private readonly IApu _apu;
+    private readonly IInterruptController _interrupts;
 
-    public Mmu(IMbc mbc, IPpu ppu, IJoypad joypad, ITimer timer, IApu apu)
-    {
+    public Mmu(
+        IMbc mbc,
+        IPpu ppu,
+        IJoypad joypad, 
+        ITimer timer, 
+        IApu apu, 
+        IInterruptController interrupts
+    ) {
         _mbc = mbc;
         _ppu = ppu;
         _joypad = joypad;
         _timer = timer;
         _apu = apu;
+        _interrupts = interrupts;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -61,7 +67,7 @@ public sealed class Mmu : IMemoryBus
                 _hram[address - 0xFF80] = value;
                 return;
             case 0xFFFF:
-                _interruptEnable = value;
+                _interrupts.InterruptEnable = value;
                 return;
         }
     }
@@ -91,7 +97,7 @@ public sealed class Mmu : IMemoryBus
                 _timer.WriteTac(value);
                 break;
             case 0xFF0F:
-                _interruptFlag = value;
+                _interrupts.InterruptFlag = value;
                 break;
             case >= 0xFF10 and <= 0xFF3F:
                 _apu.WriteRegister(address, value);
@@ -123,7 +129,7 @@ public sealed class Mmu : IMemoryBus
             <= 0xFEFF => 0xFF,
             <= 0xFF7F => ReadIO(address),
             <= 0xFFFE => _hram[address - 0xFF80],
-            0xFFFF => _interruptEnable
+            0xFFFF => _interrupts.InterruptEnable
         };
     }
 
@@ -140,7 +146,7 @@ public sealed class Mmu : IMemoryBus
             0xFF05 => _timer.ReadTima(),
             0xFF06 => _timer.ReadTma(),
             0xFF07 => _timer.ReadTac(),
-            0xFF0F => (byte)(_interruptFlag | 0xE0),
+            0xFF0F => _interrupts.InterruptFlag,
             0xFF46 => _dmaSource,
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
