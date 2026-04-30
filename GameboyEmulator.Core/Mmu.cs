@@ -250,6 +250,13 @@ public sealed class Mmu : IMemoryBus
         }
     }
 
+    public void Reset()
+    {
+        Array.Clear(_wram);
+        Array.Clear(_hram);
+        _dmaSource = 0;
+    }
+
     public void WriteWord(ushort address, ushort value)
     {
         var lo = (byte)(value & 0xFF);

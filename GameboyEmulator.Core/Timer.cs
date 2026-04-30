@@ -102,4 +102,16 @@ public sealed class Timer : ITimer
             _tima++;
         }
     }
+
+    public void Reset()
+    {
+        _counter = 0;
+        _tima = 0;
+        _tma = 0;
+        _tac = 0;
+        _timaBitIndex = TimaBitIndex[0];
+        _isTimaEnabled = false;
+        _prevSignal = false;
+        _reloadDelay = 0;
+    }
 }

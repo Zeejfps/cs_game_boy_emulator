@@ -87,6 +87,8 @@ public sealed class Ppu : IPpu
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
 
+    public event Action? FrameCompleted;
+
     public void Step(int tStates)
     {
         if ((_lcdc & LcdEnableMask) == 0) return;
@@ -122,6 +124,7 @@ public sealed class Ppu : IPpu
                 case VisibleLines:
                     _mode = PpuMode.VBlank;
                     _interrupts.Request(InterruptType.VBlank);
+                    FrameCompleted?.Invoke();
                     break;
                 case LinesPerFrame:
                     _ly = 0;

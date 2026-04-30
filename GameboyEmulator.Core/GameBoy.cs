@@ -5,16 +5,21 @@ namespace GameBoyEmulator.Core;
 public sealed class GameBoy
 {
     public ReadOnlyMemory<byte> FrameBuffer => _ppu.FrameBuffer;
-    
+    public event Action? FrameCompleted
+    {
+        add => _ppu.FrameCompleted += value;
+        remove => _ppu.FrameCompleted -= value;
+    }
+
     public bool IsPoweredOn { get; private set; }
     
     private const int CpuFrequency = 4_194_304;
-    private const double CyclesPerFrame = CpuFrequency / 60.0;
     private const double MaxCatchUpCycles = CpuFrequency / 10.0;
     
     private readonly IClock _clock;
-    private readonly ICpu _cpu;
+    private readonly Cpu _cpu;
     private readonly Ppu _ppu;
+    private readonly Mmu _mmu;
     private readonly Timer _timer;
     private readonly double _cyclesPerTick;
 
@@ -35,6 +40,7 @@ public sealed class GameBoy
         var mmu = new Mmu(mbc, _ppu, joypad, timer, apu, serial, interrupts);
         
         _timer = timer;
+        _mmu = mmu;
         _cpu = new Cpu(mmu, interrupts);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
@@ -54,9 +60,12 @@ public sealed class GameBoy
     {
         if (!IsPoweredOn)
             return;
-        
-        IsPoweredOn = false;
+
+        _mmu.Reset();
+        _timer.Reset();
+        _cpu.Reset();
         _clock.Ticked -= Clock_OnTicked;
+        IsPoweredOn = false;
     }
     
     private void Clock_OnTicked()
