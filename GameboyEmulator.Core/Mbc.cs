@@ -21,5 +21,14 @@ public sealed class Mbc
     {
         throw new NotImplementedException();
     }
-    
+
+    public void WriteExternalRam(ushort address, byte value)
+    {
+        throw new NotImplementedException();
+    }
+
+    public byte ReadExternalRam(ushort address)
+    {
+        throw new NotImplementedException();
+    }
 }

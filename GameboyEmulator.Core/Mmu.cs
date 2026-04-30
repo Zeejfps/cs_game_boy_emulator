@@ -13,9 +13,34 @@ public sealed class Mmu : IMemoryBus
     private const ushort VRamStartAddress = 0x8000;
     private const ushort VRamEndAddress = 0x9FFF;
     
+    private const ushort ExternalRamStartAddress = 0xA000;
+    private const ushort ExternalRamEndAddress = 0xBFFF;
+
+    private const ushort WRamStartAddress = 0xC000;
+    private const ushort WRamEndAddress = 0xDFFF;
+
+    private const ushort EchoRamStartAddress = 0xE000;
+    private const ushort EchoRamEndAddress = 0xFDFF;
+
     private const ushort OamStartAddress = 0xFE00;
     private const ushort OamEndAddress = 0xFE9F;
-    
+
+    private const ushort UnusableStartAddress = 0xFEA0;
+    private const ushort UnusableEndAddress = 0xFEFF;
+
+    private const ushort IoRegistersStartAddress = 0xFF00;
+    private const ushort IoRegistersEndAddress = 0xFF7F;
+
+    private const ushort HRamStartAddress = 0xFF80;
+    private const ushort HRamEndAddress = 0xFFFE;
+
+    private const ushort InterruptEnableAddress = 0xFFFF;
+
+    private readonly byte[] _wram = new byte[0x2000];
+    private readonly byte[] _hram = new byte[0x7F];
+    private readonly byte[] _ioRegisters = new byte[0x80];
+    private byte _interruptEnable;
+
     private readonly Mbc _mbc;
     private readonly Ppu _ppu;
 
@@ -38,11 +63,29 @@ public sealed class Mmu : IMemoryBus
             case >= VRamStartAddress and <= VRamEndAddress:
                 _ppu.WriteVram((ushort)(address - VRamStartAddress), value);
                 return;
+            case >= ExternalRamStartAddress and <= ExternalRamEndAddress:
+                _mbc.WriteExternalRam((ushort)(address - ExternalRamStartAddress), value);
+                return;
+            case >= WRamStartAddress and <= WRamEndAddress:
+                _wram[address - WRamStartAddress] = value;
+                return;
+            case >= EchoRamStartAddress and <= EchoRamEndAddress:
+                _wram[address - EchoRamStartAddress] = value;
+                return;
             case >= OamStartAddress and <= OamEndAddress:
                 _ppu.WriteOam((ushort)(address - OamStartAddress), value);
                 return;
-            default:
-                throw new NotImplementedException();
+            case >= UnusableStartAddress and <= UnusableEndAddress:
+                return;
+            case >= IoRegistersStartAddress and <= IoRegistersEndAddress:
+                _ioRegisters[address - IoRegistersStartAddress] = value;
+                return;
+            case >= HRamStartAddress and <= HRamEndAddress:
+                _hram[address - HRamStartAddress] = value;
+                return;
+            case InterruptEnableAddress:
+                _interruptEnable = value;
+                return;
         }
     }
 
