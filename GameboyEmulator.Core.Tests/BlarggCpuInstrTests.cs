@@ -53,7 +53,7 @@ public class BlarggCpuInstrTests
             new NullApu(),
             serial,
             interrupts);
-        var cpu = new Cpu(mmu);
+        var cpu = new Cpu(mmu, interrupts);
         cpu.SkipBoot();
 
         long total = 0;

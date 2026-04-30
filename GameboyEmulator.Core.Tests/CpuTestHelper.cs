@@ -28,17 +28,37 @@ public static class CpuExtensions
 public class FakeMmu : IMemoryBus
 {
     private readonly byte[] _ram = new byte[64 * 1024];
+    public Interrupts Interrupts { get; } = new();
 
-    public void Write(ushort address, byte value) => _ram[address] = value;
+    public void Write(ushort address, byte value)
+    {
+        switch (address)
+        {
+            case 0xFF0F:
+                Interrupts.WriteRequestedInterrupt((InterruptType)value);
+                return;
+            case 0xFFFF:
+                Interrupts.WriteEnabledInterrupts((InterruptType)value);
+                return;
+            default:
+                _ram[address] = value;
+                return;
+        }
+    }
 
     public void WriteWord(ushort address, ushort value)
     {
-        _ram[address] = (byte)(value & 0xFF);
-        _ram[(ushort)(address + 1)] = (byte)(value >> 8);
+        Write(address, (byte)(value & 0xFF));
+        Write((ushort)(address + 1), (byte)(value >> 8));
     }
 
-    public byte Read(ushort address) => _ram[address];
+    public byte Read(ushort address) => address switch
+    {
+        0xFF0F => (byte)Interrupts.ReadRequestedInterrupt(),
+        0xFFFF => (byte)Interrupts.ReadEnabledInterrupts(),
+        _ => _ram[address],
+    };
 
     public ushort ReadWord(ushort address) =>
-        (ushort)((_ram[(ushort)(address + 1)] << 8) | _ram[address]);
+        (ushort)((Read((ushort)(address + 1)) << 8) | Read(address));
 }

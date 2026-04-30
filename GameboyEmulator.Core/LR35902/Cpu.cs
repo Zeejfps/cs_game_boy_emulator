@@ -44,10 +44,12 @@ public sealed partial class Cpu
     private int _enableInterruptsTimer;
     private bool _haltBugPending;
     private readonly IMemoryBus _mmu;
+    private readonly IInterruptsBus _interrupts;
 
-    public Cpu(IMemoryBus mmu)
+    public Cpu(IMemoryBus mmu, IInterruptsBus interrupts)
     {
         _mmu = mmu;
+        _interrupts = interrupts;
     }
 
     public void Reset()

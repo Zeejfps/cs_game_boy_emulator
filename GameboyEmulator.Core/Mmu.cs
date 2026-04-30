@@ -5,10 +5,12 @@ namespace GameBoyEmulator.Core;
 
 public sealed class Mmu : IMemoryBus
 {
+    private const ushort InterruptFlagAddress = 0xFF0F;
+    private const ushort InterruptEnableAddress = 0xFFFF;
+
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
     private byte _dmaSource;
-    private byte _interruptEnable;
 
     private readonly IMbc _mbc;
     private readonly IPpu _ppu;
@@ -16,7 +18,7 @@ public sealed class Mmu : IMemoryBus
     private readonly ITimer _timer;
     private readonly IApu _apu;
     private readonly ISerial _serial;
-    private readonly IInterruptsRegisters _interrupts;
+    private readonly IInterruptsBus _interrupts;
 
     public Mmu(
         IMbc mbc,
@@ -25,7 +27,7 @@ public sealed class Mmu : IMemoryBus
         ITimer timer,
         IApu apu,
         ISerial serial,
-        IInterruptsRegisters interrupts
+        IInterruptsBus interrupts
     ) {
         _mbc = mbc;
         _ppu = ppu;
@@ -90,12 +92,12 @@ public sealed class Mmu : IMemoryBus
             case < 0xFF80:
                 WriteIO(address, value);
                 return;
-            case < Cpu.InterruptEnableAddress:
+            case < InterruptEnableAddress:
                 _hram[address - 0xFF80] = value;
                 return;
-            default:
-                _interruptEnable = value;
-                break;
+            case InterruptEnableAddress:
+                _interrupts.WriteEnabledInterrupts((InterruptType)value);
+                return;
         }
     }
 
@@ -125,8 +127,8 @@ public sealed class Mmu : IMemoryBus
             case 0xFF07:
                 _timer.WriteTac(value);
                 break;
-            case Cpu.InterruptFlagAddress:
-                _interrupts.RequestedInterrupts = (InterruptType)value;
+            case Mmu.InterruptFlagAddress:
+                _interrupts.WriteRequestedInterrupt((InterruptType)value);
                 break;
             case >= 0xFF10 and <= 0xFF3F:
                 _apu.WriteRegister(address, value);
@@ -183,8 +185,8 @@ public sealed class Mmu : IMemoryBus
             < 0xFEA0 => _ppu.ReadOam((ushort)(address - 0xFE00)),
             < 0xFF00 => 0xFF,
             < 0xFF80 => ReadIO(address),
-            < Cpu.InterruptEnableAddress => _hram[address - 0xFF80],
-            _ => _interruptEnable
+            < InterruptEnableAddress => _hram[address - 0xFF80],
+            InterruptEnableAddress => (byte)_interrupts.ReadEnabledInterrupts()
         };
     }
 
@@ -200,7 +202,7 @@ public sealed class Mmu : IMemoryBus
             0xFF05 => _timer.ReadTima(),
             0xFF06 => _timer.ReadTma(),
             0xFF07 => _timer.ReadTac(),
-            Cpu.InterruptFlagAddress => (byte)((byte)_interrupts.RequestedInterrupts | 0xE0),
+            InterruptFlagAddress => (byte)((byte)_interrupts.ReadRequestedInterrupt() | 0xE0),
             0xFF46 => _dmaSource,
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),

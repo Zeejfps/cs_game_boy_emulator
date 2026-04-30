@@ -15,8 +15,8 @@ public class CpuInterruptTests : CpuTestBase
         ushort start = 0x0200;
         ushort sp = 0x4000;
         Mmu.Write(start, 0x00); // NOP (unreached)
-        Mmu.Write(Cpu.InterruptEnableAddress, bit);
-        Mmu.Write(Cpu.InterruptFlagAddress, bit);
+        Mmu.Write(0xFFFF, bit);
+        Mmu.Write(0xFF0F, bit);
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = sp });
         Cpu.InterruptMasterEnable = true;
@@ -26,7 +26,7 @@ public class CpuInterruptTests : CpuTestBase
         Assert.Equal(20, cycles);
         Assert.Equal(vector, Cpu.Pc);
         Assert.False(Cpu.InterruptMasterEnable);
-        Assert.Equal(0x00, Mmu.Read(Cpu.InterruptFlagAddress));
+        Assert.Equal(0x00, Mmu.Read(0xFF0F));
         Assert.Equal((ushort)(sp - 2), Cpu.Sp);
         Assert.Equal(start, Mmu.ReadWord(Cpu.Sp));
     }
@@ -37,8 +37,8 @@ public class CpuInterruptTests : CpuTestBase
         // VBlank (bit 0) and Timer (bit 2) both pending → VBlank wins.
         ushort start = 0x0200;
         Mmu.Write(start, 0x00);
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x05); // IE: VBlank | Timer
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x05);
+        Mmu.Write(0xFFFF, 0x05); // IE: VBlank | Timer
+        Mmu.Write(0xFF0F, 0x05);
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
         Cpu.InterruptMasterEnable = true;
@@ -47,7 +47,7 @@ public class CpuInterruptTests : CpuTestBase
 
         Assert.Equal(0x0040, Cpu.Pc);
         // Only the serviced bit (VBlank) is cleared; Timer remains asserted.
-        Assert.Equal(0x04, Mmu.Read(Cpu.InterruptFlagAddress));
+        Assert.Equal(0x04, Mmu.Read(0xFF0F));
     }
 
     [Fact]
@@ -55,8 +55,8 @@ public class CpuInterruptTests : CpuTestBase
     {
         ushort start = 0x0200;
         Mmu.Write(start, 0x3C); // INC A
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01);
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x01);
+        Mmu.Write(0xFFFF, 0x01);
+        Mmu.Write(0xFF0F, 0x01);
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000, Ra = 0x10 });
         Cpu.InterruptMasterEnable = false;
@@ -66,7 +66,7 @@ public class CpuInterruptTests : CpuTestBase
         Assert.Equal(4, cycles);
         Assert.Equal(0x11, Cpu.Ra);
         Assert.Equal((ushort)(start + 1), Cpu.Pc);
-        Assert.Equal(0x01, Mmu.Read(Cpu.InterruptFlagAddress)); // unchanged
+        Assert.Equal(0x01, Mmu.Read(0xFF0F)); // unchanged
     }
 
     [Fact]
@@ -74,8 +74,8 @@ public class CpuInterruptTests : CpuTestBase
     {
         ushort start = 0x0200;
         Mmu.Write(start, 0x3C); // INC A
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01); // IE VBlank
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x02); // IF LCD STAT — no overlap
+        Mmu.Write(0xFFFF, 0x01); // IE VBlank
+        Mmu.Write(0xFF0F, 0x02); // IF LCD STAT — no overlap
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000, Ra = 0x10 });
         Cpu.InterruptMasterEnable = true;
@@ -117,8 +117,8 @@ public class CpuInterruptTests : CpuTestBase
         Mmu.Write(start, 0xFB);              // EI
         Mmu.Write((ushort)(start + 1), 0x3C); // INC A
         Mmu.Write((ushort)(start + 2), 0x00); // NOP
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01);
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x01);
+        Mmu.Write(0xFFFF, 0x01);
+        Mmu.Write(0xFF0F, 0x01);
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000, Ra = 0x00 });
         Cpu.InterruptMasterEnable = false;
@@ -177,7 +177,7 @@ public class CpuInterruptTests : CpuTestBase
     {
         ushort start = 0x0200;
         Mmu.Write(start, 0x76); // HALT
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01);
+        Mmu.Write(0xFFFF, 0x01);
         // IF = 0 at HALT time — pending request arrives from a peripheral later.
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
@@ -188,7 +188,7 @@ public class CpuInterruptTests : CpuTestBase
         Assert.True(Cpu.IsWaitingForInterrupt);
 
         // Peripheral asserts VBlank.
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x01);
+        Mmu.Write(0xFF0F, 0x01);
 
         var cycles2 = Cpu.Step();
         Assert.Equal(20, cycles2);
@@ -202,8 +202,8 @@ public class CpuInterruptTests : CpuTestBase
         ushort start = 0x0100;
         Mmu.Write(start, 0x76);             // HALT at 0x100
         Mmu.Write((ushort)(start + 1), 0x3C); // INC A at 0x101
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01);
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x01);
+        Mmu.Write(0xFFFF, 0x01);
+        Mmu.Write(0xFF0F, 0x01);
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000, Ra = 0x00 });
         Cpu.InterruptMasterEnable = false;
@@ -242,8 +242,8 @@ public class CpuInterruptTests : CpuTestBase
         Assert.Equal((ushort)(start + 1), Cpu.Pc);
 
         // Pending interrupt enables: wakes and runs INC A *without* dispatching.
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01);
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x01);
+        Mmu.Write(0xFFFF, 0x01);
+        Mmu.Write(0xFF0F, 0x01);
 
         var c3 = Cpu.Step();
         Assert.False(Cpu.IsWaitingForInterrupt);
@@ -274,7 +274,7 @@ public class CpuInterruptTests : CpuTestBase
         Assert.Equal((ushort)(start + 2), Cpu.Pc);
 
         // Set IF joypad bit to wake.
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x10);
+        Mmu.Write(0xFF0F, 0x10);
 
         var c3 = Cpu.Step(); // wake step — clears Stopped, does not run INC A
         Assert.False(Cpu.IsSleeping);
@@ -321,8 +321,8 @@ public class CpuInterruptTests : CpuTestBase
         Mmu.Write(start, 0x76);             // HALT
         Mmu.Write((ushort)(start + 1), 0x3E); // LD A,d8 (opcode)
         Mmu.Write((ushort)(start + 2), 0x42); // intended immediate
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01);
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x01);
+        Mmu.Write(0xFFFF, 0x01);
+        Mmu.Write(0xFF0F, 0x01);
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000, Ra = 0x00 });
         Cpu.InterruptMasterEnable = false;
@@ -347,8 +347,8 @@ public class CpuInterruptTests : CpuTestBase
         Mmu.Write((ushort)(start + 1), 0xC3); // JP a16
         Mmu.Write((ushort)(start + 2), 0x34); // low (intended)
         Mmu.Write((ushort)(start + 3), 0x12); // high (intended)
-        Mmu.Write(Cpu.InterruptEnableAddress, 0x01);
-        Mmu.Write(Cpu.InterruptFlagAddress, 0x01);
+        Mmu.Write(0xFFFF, 0x01);
+        Mmu.Write(0xFF0F, 0x01);
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
         Cpu.InterruptMasterEnable = false;

@@ -9,6 +9,6 @@ public abstract class CpuTestBase
 
     protected CpuTestBase()
     {
-        Cpu = new Cpu(Mmu);
+        Cpu = new Cpu(Mmu, Mmu.Interrupts);
     }
 }
