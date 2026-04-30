@@ -1,6 +1,6 @@
 namespace GameboyEmulator.Core;
 
-public interface IMbc
+public sealed class Mbc
 {
     
 }

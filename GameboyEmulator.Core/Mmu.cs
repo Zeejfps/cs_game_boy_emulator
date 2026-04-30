@@ -7,9 +7,9 @@ public sealed class Mmu : IMemoryBus
     private const ushort VRamStartAddress = 0x8000;
     private const ushort VRamEndAddress = 0x9FFF;
     
-    private readonly IPpu _ppu;
+    private readonly Ppu _ppu;
 
-    public Mmu(IPpu ppu)
+    public Mmu(Ppu ppu)
     {
         _ppu = ppu;
     }
@@ -18,7 +18,7 @@ public sealed class Mmu : IMemoryBus
     {
         if (address is >= VRamStartAddress and <= VRamEndAddress)
         {
-            _ppu.Write(address, value);
+            _ppu.WriteVram((ushort)(address - VRamStartAddress), value);
             return;
         }
 
