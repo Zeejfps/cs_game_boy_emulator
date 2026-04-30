@@ -4,6 +4,9 @@ namespace GameBoyEmulator.Core.LR35902;
 
 public sealed partial class Cpu
 {
+    public const ushort InterruptFlagAddress = 0xFF0F;
+    public const ushort InterruptEnableAddress = 0xFFFF;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Di()
     {
@@ -82,23 +85,23 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private InterruptType GetPendingInterrupts()
     {
-        var ie = (InterruptType)_mmu.Read(IoRegisters.InterruptEnableAddress);
-        var iff = (InterruptType)_mmu.Read(IoRegisters.InterruptFlagAddress);
+        var ie = (InterruptType)_mmu.Read(InterruptEnableAddress);
+        var iff = (InterruptType)_mmu.Read(InterruptFlagAddress);
         return ie & iff & InterruptType.All;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsInterruptRequested(InterruptType interrupt)
     {
-        var iff = (InterruptType)_mmu.Read(IoRegisters.InterruptFlagAddress);
+        var iff = (InterruptType)_mmu.Read(InterruptFlagAddress);
         return (iff & interrupt) != 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ClearInterruptRequest(InterruptType interrupt)
     {
-        var iff = (InterruptType)_mmu.Read(IoRegisters.InterruptFlagAddress);
-        _mmu.Write(IoRegisters.InterruptFlagAddress, (byte)(iff & ~interrupt));
+        var iff = (InterruptType)_mmu.Read(InterruptFlagAddress);
+        _mmu.Write(InterruptFlagAddress, (byte)(iff & ~interrupt));
     }
 
     // Lowest bit wins: VBlank > LcdStat > Timer > Serial > Joypad.

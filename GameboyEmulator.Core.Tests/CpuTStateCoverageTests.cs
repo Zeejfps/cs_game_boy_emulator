@@ -79,8 +79,8 @@ public class CpuTStateCoverageTests : CpuTestBase
     {
         ushort start = 0x0100;
         Mmu.Write(start, 0x00); // NOP under PC — unreached if dispatch fires
-        Mmu.Write(IoRegisters.InterruptEnableAddress, 0x01); // IE: VBlank
-        Mmu.Write(IoRegisters.InterruptFlagAddress, 0x01); // IF: VBlank
+        Mmu.Write(Cpu.InterruptEnableAddress, 0x01); // IE: VBlank
+        Mmu.Write(Cpu.InterruptFlagAddress, 0x01); // IF: VBlank
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
         Cpu.InterruptMasterEnable = true;
