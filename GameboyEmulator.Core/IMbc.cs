@@ -1,4 +1,4 @@
-namespace GameboyEmulator.Core;
+namespace GameBoyEmulator.Core;
 
 public interface IMbc
 {

@@ -1,6 +1,6 @@
-using GameboyEmulator.Core.LR35902;
+using GameBoyEmulator.Core.LR35902;
 
-namespace GameboyEmulator.Core.Tests;
+namespace GameBoyEmulator.Core.Tests;
 
 public class CpuLdTests : CpuTestBase
 {

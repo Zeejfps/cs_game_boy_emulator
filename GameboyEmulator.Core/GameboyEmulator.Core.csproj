@@ -4,6 +4,8 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyName>GameBoyEmulator.Core</AssemblyName>
+        <RootNamespace>GameBoyEmulator.Core</RootNamespace>
     </PropertyGroup>
 
 </Project>

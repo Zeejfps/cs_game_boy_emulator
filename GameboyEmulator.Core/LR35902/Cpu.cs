@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace GameboyEmulator.Core.LR35902;
+namespace GameBoyEmulator.Core.LR35902;
 
 public sealed partial class Cpu
 {

@@ -5,6 +5,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
+        <AssemblyName>GameBoyEmulator.Core.Tests</AssemblyName>
+        <RootNamespace>GameBoyEmulator.Core.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

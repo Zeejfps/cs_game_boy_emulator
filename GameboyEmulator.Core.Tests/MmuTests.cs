@@ -1,4 +1,4 @@
-namespace GameboyEmulator.Core.Tests;
+namespace GameBoyEmulator.Core.Tests;
 
 public class MmuTests
 {

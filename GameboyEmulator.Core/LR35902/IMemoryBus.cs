@@ -1,4 +1,4 @@
-namespace GameboyEmulator.Core.LR35902;
+namespace GameBoyEmulator.Core.LR35902;
 
 public interface IMemoryBus
 {

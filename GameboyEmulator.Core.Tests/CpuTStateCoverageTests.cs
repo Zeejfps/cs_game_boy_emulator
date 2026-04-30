@@ -1,6 +1,6 @@
-using GameboyEmulator.Core.LR35902;
+using GameBoyEmulator.Core.LR35902;
 
-namespace GameboyEmulator.Core.Tests;
+namespace GameBoyEmulator.Core.Tests;
 
 // One representative opcode per category, asserting the LR35902 T-state count
 // that Step() must publish. Cheap insurance against drift introduced by future
