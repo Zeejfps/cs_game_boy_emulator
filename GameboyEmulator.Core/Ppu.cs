@@ -92,9 +92,23 @@ public sealed class Ppu : IPpu
 
     private readonly IInterrupts _interrupts;
 
+    private readonly Memory<byte> _tileMap0;
+    private readonly Memory<byte> _tileMap1;
+    private readonly Memory<byte> _tilePixels0;
+    private readonly Memory<byte> _tilePixels1;
+
+    private Memory<byte> _bgTileMap;
+    private Memory<byte> _bgTilePixels;
+    private byte _bgTileFlipBit;
+
     public Ppu(IInterrupts interrupts)
     {
         _interrupts = interrupts;
+        _tileMap0 = _vram.AsMemory(0x1800, 1024);
+        _tileMap1 = _vram.AsMemory(0x1C00, 1024);
+        _tilePixels0 = _vram.AsMemory(0x0000, 4096);
+        _tilePixels1 = _vram.AsMemory(0x0800, 4096);
+        UpdateLcdcCache();
     }
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
@@ -188,10 +202,9 @@ public sealed class Ppu : IPpu
         }
         else
         {
-            var tileMapOffset = (_lcdc & LcdcBgTileMap) != 0 ? TileMap1Offset : TileMap0Offset;
-            var (tileDataBase, flipBit) = (_lcdc & LcdcTileData) != 0
-                ? (TileDataUnsignedBase, TileDataUnsignedFlip)
-                : (TileDataSignedBase,   TileDataSignedFlip);
+            var tileMap = _bgTileMap.Span;
+            var tilePixels = _bgTilePixels.Span;
+            var flipBit = _bgTileFlipBit;
 
             var worldY = (byte)(_scy + line);
             var tileRow = worldY >> 3;
@@ -203,10 +216,10 @@ public sealed class Ppu : IPpu
             var x = 0;
             while (x < ScreenWidth)
             {
-                var tileIndex = _vram[tileMapOffset + tileRow * 32 + tileCol];
-                var rowAddr = tileDataBase + ((tileIndex ^ flipBit) << 4) + pixelRow * 2;
-                var lo = _vram[rowAddr];
-                var hi = _vram[rowAddr + 1];
+                var tileIndex = tileMap[tileRow * 32 + tileCol];
+                var rowAddr = ((tileIndex ^ flipBit) << 4) + pixelRow * 2;
+                var lo = tilePixels[rowAddr];
+                var hi = tilePixels[rowAddr + 1];
 
                 var end = Math.Min(8, startBit + ScreenWidth - x);
                 for (var b = startBit; b < end; b++)
@@ -322,12 +335,28 @@ public sealed class Ppu : IPpu
         var wasOn = (_lcdc & LcdEnableMask) != 0;
         var nowOn = (value & LcdEnableMask) != 0;
         _lcdc = value;
+        UpdateLcdcCache();
         if (wasOn && !nowOn)
         {
             _ly = 0;
             _dot = 0;
             _mode = PpuMode.HBlank;
             _statLine = false;
+        }
+    }
+
+    private void UpdateLcdcCache()
+    {
+        _bgTileMap = (_lcdc & LcdcBgTileMap) != 0 ? _tileMap1 : _tileMap0;
+        if ((_lcdc & LcdcTileData) != 0)
+        {
+            _bgTilePixels = _tilePixels0;
+            _bgTileFlipBit = TileDataUnsignedFlip;
+        }
+        else
+        {
+            _bgTilePixels = _tilePixels1;
+            _bgTileFlipBit = TileDataSignedFlip;
         }
     }
 
