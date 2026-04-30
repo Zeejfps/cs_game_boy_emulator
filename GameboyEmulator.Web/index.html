@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GameBoy Emulator</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #081820;
+        color: #e0f8d0;
+        font-family: system-ui, sans-serif;
+        min-height: 100vh;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+      }
+      canvas {
+        width: 640px;
+        height: 576px;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        background: #081820;
+        display: block;
+      }
+      input[type="file"] {
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>GameBoy Emulator</h1>
+      <input id="rom" type="file" accept=".gb" />
+      <canvas id="screen" width="160" height="144"></canvas>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
