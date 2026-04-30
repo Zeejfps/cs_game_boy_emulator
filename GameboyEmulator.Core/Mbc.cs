@@ -31,4 +31,19 @@ public sealed class Mbc : IMbc
     {
         throw new NotImplementedException();
     }
+
+    public ReadOnlySpan<byte> ReadBank0Range(ushort address, int length)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ReadOnlySpan<byte> ReadBankNRange(ushort address, int length)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length)
+    {
+        throw new NotImplementedException();
+    }
 }

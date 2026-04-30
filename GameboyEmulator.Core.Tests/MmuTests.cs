@@ -376,6 +376,10 @@ public class MmuTests
         public byte ReadBank0(ushort address) { LastBank0ReadAddress = address; return Bank0ReadStub(address); }
         public byte ReadBankN(ushort address) { LastBankNReadAddress = address; return BankNReadStub(address); }
         public byte ReadExternalRam(ushort address) { LastExternalRamReadAddress = address; return ExternalRamReadStub(address); }
+
+        public ReadOnlySpan<byte> ReadBank0Range(ushort address, int length) => ReadOnlySpan<byte>.Empty;
+        public ReadOnlySpan<byte> ReadBankNRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
+        public ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
     }
 
     private sealed class FakeJoypad : IJoypad
@@ -432,9 +436,13 @@ public class MmuTests
 
         public void WriteVram(ushort address, byte value) => VramWrites.Add((address, value));
         public void WriteOam(ushort address, byte value) => OamWrites.Add((address, value));
+        public void WriteOam(ReadOnlySpan<byte> data) => LastOamBulkWrite = data.ToArray();
         public void WriteRegister(ushort address, byte value) { }
 
+        public byte[]? LastOamBulkWrite { get; private set; }
+
         public byte ReadVram(ushort address) { LastVramReadAddress = address; return VramReadStub(address); }
+        public ReadOnlySpan<byte> ReadVramRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
         public byte ReadOam(ushort address) { LastOamReadAddress = address; return OamReadStub(address); }
         public byte ReadRegister(ushort address) => 0;
     }

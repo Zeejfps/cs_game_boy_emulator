@@ -9,6 +9,7 @@ public sealed class Mmu : IMemoryBus
     private readonly byte[] _hram = new byte[0x7F];
     private byte _interruptEnable;
     private byte _interruptFlag;
+    private byte _dmaSource;
 
     private readonly IMbc _mbc;
     private readonly IPpu _ppu;
@@ -95,6 +96,9 @@ public sealed class Mmu : IMemoryBus
             case >= 0xFF10 and <= 0xFF3F:
                 _apu.WriteRegister(address, value);
                 break;
+            case 0xFF46:
+                WriteDma(value);
+                break;
             case >= 0xFF40 and <= 0xFF4B:
                 _ppu.WriteRegister(address, value);
                 break;
@@ -137,9 +141,32 @@ public sealed class Mmu : IMemoryBus
             0xFF06 => _timer.ReadTma(),
             0xFF07 => _timer.ReadTac(),
             0xFF0F => (byte)(_interruptFlag | 0xE0),
+            0xFF46 => _dmaSource,
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
             _ => 0xFF
+        };
+    }
+
+    private void WriteDma(byte sourcePage)
+    {
+        _dmaSource = sourcePage;
+        var sourceAddress = (ushort)(sourcePage << 8);
+        var data = ReadRange(sourceAddress, 0xA0);
+        _ppu.WriteOam(data);
+    }
+
+    private ReadOnlySpan<byte> ReadRange(ushort address, int length)
+    {
+        return address switch
+        {
+            <= 0x3FFF => _mbc.ReadBank0Range(address, length),
+            <= 0x7FFF => _mbc.ReadBankNRange(address, length),
+            <= 0x9FFF => _ppu.ReadVramRange((ushort)(address - 0x8000), length),
+            <= 0xBFFF => _mbc.ReadExternalRamRange((ushort)(address - 0xA000), length),
+            <= 0xDFFF => _wram.AsSpan(address - 0xC000, length),
+            <= 0xFDFF => _wram.AsSpan(address - 0xE000, length),
+            _ => throw new InvalidOperationException($"ReadRange unsupported source 0x{address:X4}")
         };
     }
 
