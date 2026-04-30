@@ -110,26 +110,11 @@ public sealed class Ppu : IPpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void StepDot()
     {
-        _dot++;
-
-        if (_ly < VisibleLines)
-        {
-            switch (_dot)
-            {
-                case OamScanEndDot:
-                    _mode = PpuMode.Drawing;
-                    break;
-                case DrawingEndDot:
-                    _mode = PpuMode.HBlank;
-                    RenderScanline(_ly);
-                    break;
-            }
-        }
+        AdvanceDot();
 
         if (_dot == DotsPerLine)
         {
             _dot = 0;
-            _ly++;
             AdvanceLine();
         }
 
@@ -137,8 +122,29 @@ public sealed class Ppu : IPpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AdvanceDot()
+    {
+        _dot++;
+
+        if (_ly >= VisibleLines) 
+            return;
+        
+        switch (_dot)
+        {
+            case OamScanEndDot:
+                _mode = PpuMode.Drawing;
+                break;
+            case DrawingEndDot:
+                _mode = PpuMode.HBlank;
+                RenderScanline(_ly);
+                break;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AdvanceLine()
     {
+        _ly++;
         switch (_ly)
         {
             case VisibleLines:
