@@ -40,6 +40,7 @@ public sealed class Mmu : IMemoryBus
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
     private byte _interruptEnable;
+    private byte _interruptFlag;
 
     private readonly IMbc _mbc;
     private readonly IPpu _ppu;
@@ -116,6 +117,18 @@ public sealed class Mmu : IMemoryBus
                 break;
             case 0xFF07:
                 _timer.WriteTac(value);
+                break;
+            case 0xFF0F:
+                _interruptFlag = value;
+                break;
+            case >= 0xFF10 and <= 0xFF3F:
+                // TODO: APU
+                break;
+            case >= 0xFF40 and <= 0xFF4B:
+                _ppu.WriteRegister(address, value);
+                break;
+            case 0xFF50:
+                // TODO: boot ROM disable
                 break;
         }
     }
