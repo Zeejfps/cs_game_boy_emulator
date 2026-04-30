@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using GameBoyEmulator.Core.LR35902;
 
 namespace GameBoyEmulator.Core;
@@ -17,6 +18,8 @@ public sealed class Timer : ITimer
     private byte _tima;
     private byte _tma;
     private byte _tac;
+    private byte _timaBitIndex = TimaBitIndex[0]; // matches TAC=0 default
+    private bool _timaEnabled;
 
     private bool _prevSignal;
     private int _reloadDelay;
@@ -49,6 +52,8 @@ public sealed class Timer : ITimer
     public void WriteTac(byte value)
     {
         _tac = (byte)(value & 0x07);
+        _timaBitIndex = TimaBitIndex[_tac & 0x03];
+        _timaEnabled = (_tac & 0x04) != 0;
         DetectTimaEdge();
     }
 
@@ -70,23 +75,31 @@ public sealed class Timer : ITimer
 
     private void DetectTimaEdge()
     {
-        var enabled = (_tac & 0x04) != 0;
-        var bit = (_counter >> TimaBitIndex[_tac & 0x03]) & 1;
-        var current = enabled && bit != 0;
+        var signal = ComputeTimaSignal();
 
-        if (_prevSignal && !current)
+        if (_prevSignal && !signal)
+            IncrementTima();
+
+        _prevSignal = signal;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool ComputeTimaSignal()
+    {
+        return _timaEnabled && ((_counter >> _timaBitIndex) & 1) != 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void IncrementTima()
+    {
+        if (_tima == 0xFF)
         {
-            if (_tima == 0xFF)
-            {
-                _tima = 0;
-                _reloadDelay = 4;
-            }
-            else
-            {
-                _tima++;
-            }
+            _tima = 0;
+            _reloadDelay = 4;
         }
-
-        _prevSignal = current;
+        else
+        {
+            _tima++;
+        }
     }
 }
