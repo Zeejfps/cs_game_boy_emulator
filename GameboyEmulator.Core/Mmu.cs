@@ -7,10 +7,12 @@ public sealed class Mmu : IMemoryBus
     private const ushort VRamStartAddress = 0x8000;
     private const ushort VRamEndAddress = 0x9FFF;
     
+    private readonly Mbc _mbc;
     private readonly Ppu _ppu;
 
-    public Mmu(Ppu ppu)
+    public Mmu(Mbc mbc, Ppu ppu)
     {
+        _mbc = mbc;
         _ppu = ppu;
     }
 
@@ -27,7 +29,10 @@ public sealed class Mmu : IMemoryBus
 
     public void WriteWord(ushort address, ushort value)
     {
-        throw new NotImplementedException();
+        var lo = (byte)(value & 0xFF);
+        var hi = (byte)(value >> 8);
+        Write(address, lo);
+        Write((ushort)(address + 1), hi);
     }
 
     public byte Read(ushort address)
@@ -39,6 +44,6 @@ public sealed class Mmu : IMemoryBus
     {
         var lo = Read(address);
         var hi = Read((ushort)(address + 1));
-        return (byte)((hi << 8) | lo);
+        return (ushort)((hi << 8) | lo);
     }
 }
