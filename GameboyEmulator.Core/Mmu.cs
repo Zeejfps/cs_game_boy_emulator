@@ -5,38 +5,6 @@ namespace GameboyEmulator.Core;
 
 public sealed class Mmu : IMemoryBus
 {
-    private const ushort Bank0StartAddress = 0x0000;
-    private const ushort Bank0EndAddress = 0x3FFF;
-    
-    private const ushort BankNStartAddress = 0x4000;
-    private const ushort BankNEndAddress = 0x7FFF;
-    
-    private const ushort VRamStartAddress = 0x8000;
-    private const ushort VRamEndAddress = 0x9FFF;
-    
-    private const ushort ExternalRamStartAddress = 0xA000;
-    private const ushort ExternalRamEndAddress = 0xBFFF;
-
-    private const ushort WRamStartAddress = 0xC000;
-    private const ushort WRamEndAddress = 0xDFFF;
-
-    private const ushort EchoRamStartAddress = 0xE000;
-    private const ushort EchoRamEndAddress = 0xFDFF;
-
-    private const ushort OamStartAddress = 0xFE00;
-    private const ushort OamEndAddress = 0xFE9F;
-
-    private const ushort UnusableStartAddress = 0xFEA0;
-    private const ushort UnusableEndAddress = 0xFEFF;
-
-    private const ushort IoRegistersStartAddress = 0xFF00;
-    private const ushort IoRegistersEndAddress = 0xFF7F;
-
-    private const ushort HRamStartAddress = 0xFF80;
-    private const ushort HRamEndAddress = 0xFFFE;
-
-    private const ushort InterruptEnableAddress = 0xFFFF;
-
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
     private byte _interruptEnable;
@@ -57,40 +25,41 @@ public sealed class Mmu : IMemoryBus
         _apu = apu;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Write(ushort address, byte value)
     {
         switch (address)
         {
-            case >= Bank0StartAddress and <= Bank0EndAddress:
+            case <= 0x3FFF:
                 _mbc.WriteBank0(address, value);
                 return;
-            case >= BankNStartAddress and <= BankNEndAddress:
+            case <= 0x7FFF:
                 _mbc.WriteBankN(address, value);
                 return;
-            case >= VRamStartAddress and <= VRamEndAddress:
-                _ppu.WriteVram((ushort)(address - VRamStartAddress), value);
+            case <= 0x9FFF:
+                _ppu.WriteVram((ushort)(address - 0x8000), value);
                 return;
-            case >= ExternalRamStartAddress and <= ExternalRamEndAddress:
-                _mbc.WriteExternalRam((ushort)(address - ExternalRamStartAddress), value);
+            case <= 0xBFFF:
+                _mbc.WriteExternalRam((ushort)(address - 0xA000), value);
                 return;
-            case >= WRamStartAddress and <= WRamEndAddress:
-                _wram[address - WRamStartAddress] = value;
+            case <= 0xDFFF:
+                _wram[address - 0xC000] = value;
                 return;
-            case >= EchoRamStartAddress and <= EchoRamEndAddress:
-                _wram[address - EchoRamStartAddress] = value;
+            case <= 0xFDFF:
+                _wram[address - 0xE000] = value;
                 return;
-            case >= OamStartAddress and <= OamEndAddress:
-                _ppu.WriteOam((ushort)(address - OamStartAddress), value);
+            case <= 0xFE9F:
+                _ppu.WriteOam((ushort)(address - 0xFE00), value);
                 return;
-            case >= UnusableStartAddress and <= UnusableEndAddress:
+            case <= 0xFEFF:
                 return;
-            case >= IoRegistersStartAddress and <= IoRegistersEndAddress:
+            case <= 0xFF7F:
                 WriteIO(address, value);
                 return;
-            case >= HRamStartAddress and <= HRamEndAddress:
-                _hram[address - HRamStartAddress] = value;
+            case <= 0xFFFE:
+                _hram[address - 0xFF80] = value;
                 return;
-            case InterruptEnableAddress:
+            case 0xFFFF:
                 _interruptEnable = value;
                 return;
         }
@@ -135,62 +104,43 @@ public sealed class Mmu : IMemoryBus
         }
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public byte Read(ushort address)
     {
-        switch (address)
+        return address switch
         {
-            case >= Bank0StartAddress and <= Bank0EndAddress:
-                return _mbc.ReadBank0(address);
-            case >= BankNStartAddress and <= BankNEndAddress:
-                return _mbc.ReadBankN(address);
-            case >= VRamStartAddress and <= VRamEndAddress:
-                return _ppu.ReadVram((ushort)(address - VRamStartAddress));
-            case >= ExternalRamStartAddress and <= ExternalRamEndAddress:
-                return _mbc.ReadExternalRam((ushort)(address - ExternalRamStartAddress));
-            case >= WRamStartAddress and <= WRamEndAddress:
-                return _wram[address - WRamStartAddress];
-            case >= EchoRamStartAddress and <= EchoRamEndAddress:
-                return _wram[address - EchoRamStartAddress];
-            case >= OamStartAddress and <= OamEndAddress:
-                return _ppu.ReadOam((ushort)(address - OamStartAddress));
-            case >= UnusableStartAddress and <= UnusableEndAddress:
-                return 0xFF;
-            case >= IoRegistersStartAddress and <= IoRegistersEndAddress:
-                return ReadIO(address);
-            case >= HRamStartAddress and <= HRamEndAddress:
-                return _hram[address - HRamStartAddress];
-            case InterruptEnableAddress:
-                return _interruptEnable;
-        }
+            <= 0x3FFF => _mbc.ReadBank0(address),
+            <= 0x7FFF => _mbc.ReadBankN(address),
+            <= 0x9FFF => _ppu.ReadVram((ushort)(address - 0x8000)),
+            <= 0xBFFF => _mbc.ReadExternalRam((ushort)(address - 0xA000)),
+            <= 0xDFFF => _wram[address - 0xC000],
+            <= 0xFDFF => _wram[address - 0xE000],
+            <= 0xFE9F => _ppu.ReadOam((ushort)(address - 0xFE00)),
+            <= 0xFEFF => 0xFF,
+            <= 0xFF7F => ReadIO(address),
+            <= 0xFFFE => _hram[address - 0xFF80],
+            0xFFFF => _interruptEnable
+        };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private byte ReadIO(ushort address)
     {
-        switch (address)
+        return address switch
         {
-            case 0xFF00:
-                return _joypad.Read();
-            case 0xFF01:
-            case 0xFF02:
+            0xFF00 => _joypad.Read(),
+            0xFF01 or 0xFF02 =>
                 // TODO: serial
-                return 0xFF;
-            case 0xFF04:
-                return _timer.ReadDiv();
-            case 0xFF05:
-                return _timer.ReadTima();
-            case 0xFF06:
-                return _timer.ReadTma();
-            case 0xFF07:
-                return _timer.ReadTac();
-            case 0xFF0F:
-                return _interruptFlag;
-            case >= 0xFF10 and <= 0xFF3F:
-                return _apu.ReadRegister(address);
-            case >= 0xFF40 and <= 0xFF4B:
-                return _ppu.ReadRegister(address);
-            default:
-                return 0xFF;
-        }
+                0xFF,
+            0xFF04 => _timer.ReadDiv(),
+            0xFF05 => _timer.ReadTima(),
+            0xFF06 => _timer.ReadTma(),
+            0xFF07 => _timer.ReadTac(),
+            0xFF0F => _interruptFlag,
+            >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
+            >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
+            _ => 0xFF
+        };
     }
 
     public void WriteWord(ushort address, ushort value)
