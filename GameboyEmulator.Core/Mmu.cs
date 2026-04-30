@@ -14,7 +14,7 @@ public sealed class Mmu : IMemoryBus
     private readonly IJoypad _joypad;
     private readonly ITimer _timer;
     private readonly IApu _apu;
-    private readonly IInterruptController _interrupts;
+    private readonly IInterruptRegisters _interrupts;
 
     public Mmu(
         IMbc mbc,
@@ -22,7 +22,7 @@ public sealed class Mmu : IMemoryBus
         IJoypad joypad, 
         ITimer timer, 
         IApu apu, 
-        IInterruptController interrupts
+        IInterruptRegisters interrupts
     ) {
         _mbc = mbc;
         _ppu = ppu;

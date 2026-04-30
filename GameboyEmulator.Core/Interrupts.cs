@@ -2,7 +2,7 @@ using GameboyEmulator.Core.LR35902;
 
 namespace GameboyEmulator.Core;
 
-public sealed class InterruptController : IInterruptController
+public sealed class Interrupts : IInterruptRegisters, IInterruptBus
 {
     private byte _flag;
     private byte _enable;
@@ -19,7 +19,7 @@ public sealed class InterruptController : IInterruptController
         set => _enable = value;
     }
 
-    public void Request(InterruptType kind)
+    public void Write(InterruptType kind)
     {
         _flag |= (byte)kind;
     }

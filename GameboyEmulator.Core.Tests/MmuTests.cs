@@ -7,7 +7,7 @@ public class MmuTests
     private readonly FakeJoypad _joypad = new();
     private readonly FakeTimer _timer = new();
     private readonly FakeApu _apu = new();
-    private readonly InterruptController _interrupts = new();
+    private readonly Interrupts _interrupts = new();
     private readonly Mmu _mmu;
 
     public MmuTests()
