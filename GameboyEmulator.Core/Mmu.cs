@@ -78,7 +78,7 @@ public sealed class Mmu : IMemoryBus
             case >= UnusableStartAddress and <= UnusableEndAddress:
                 return;
             case >= IoRegistersStartAddress and <= IoRegistersEndAddress:
-                _ioRegisters[address - IoRegistersStartAddress] = value;
+                WriteIoRegisters(address, value);
                 return;
             case >= HRamStartAddress and <= HRamEndAddress:
                 _hram[address - HRamStartAddress] = value;
@@ -87,6 +87,12 @@ public sealed class Mmu : IMemoryBus
                 _interruptEnable = value;
                 return;
         }
+    }
+
+    private void WriteIoRegisters(ushort address, byte value)
+    {
+        // TODO: Implement IO registers
+        _ioRegisters[address - IoRegistersStartAddress] = value;
     }
 
     public void WriteWord(ushort address, ushort value)
