@@ -4,6 +4,8 @@ namespace GameBoyEmulator.Core;
 
 public sealed class GameBoy
 {
+    public ReadOnlyMemory<byte> FrameBuffer => _ppu.FrameBuffer;
+    
     public bool IsPoweredOn { get; private set; }
     
     private const int CpuFrequency = 4_194_304;
