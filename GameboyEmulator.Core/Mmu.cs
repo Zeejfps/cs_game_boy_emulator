@@ -4,6 +4,9 @@ namespace GameboyEmulator.Core;
 
 public sealed class Mmu : IMemoryBus
 {
+    private const ushort VRamStartAddress = 0x8000;
+    private const ushort VRamEndAddress = 0x9FFF;
+    
     private readonly IPpu _ppu;
 
     public Mmu(IPpu ppu)
@@ -13,6 +16,12 @@ public sealed class Mmu : IMemoryBus
 
     public void Write(ushort address, byte value)
     {
+        if (address is >= VRamStartAddress and <= VRamEndAddress)
+        {
+            _ppu.Write(address, value);
+            return;
+        }
+
         throw new NotImplementedException();
     }
 
@@ -23,11 +32,13 @@ public sealed class Mmu : IMemoryBus
 
     public byte Read(ushort address)
     {
-        throw new NotImplementedException();
+        return 0;
     }
 
     public ushort ReadWord(ushort address)
     {
-        throw new NotImplementedException();
+        var lo = Read(address);
+        var hi = Read((ushort)(address + 1));
+        return (byte)((hi << 8) | lo);
     }
 }
