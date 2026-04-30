@@ -25,11 +25,20 @@ public sealed class Ppu : IPpu
     private const int OamScanEndDot  = 80;
     private const int DrawingEndDot  = 80 + 172;
 
+    private const byte LcdcBgEnable   = 0x01; // LCDC bit 0
+    private const byte LcdcBgTileMap  = 0x08; // LCDC bit 3 (0=0x9800, 1=0x9C00)
+    private const byte LcdcTileData   = 0x10; // LCDC bit 4 (0=signed/0x9000, 1=unsigned/0x8000)
     private const byte LcdEnableMask  = 0x80; // LCDC bit 7
+
     private const byte StatHBlankIrq  = 0x08; // STAT bit 3
     private const byte StatVBlankIrq  = 0x10; // STAT bit 4
     private const byte StatOamIrq     = 0x20; // STAT bit 5
     private const byte StatLycIrq     = 0x40; // STAT bit 6
+
+    private const ushort TileMap0Offset = 0x1800; // 0x9800 - 0x8000
+    private const ushort TileMap1Offset = 0x1C00; // 0x9C00 - 0x8000
+    private const ushort TileData0Base  = 0x1000; // 0x9000 - 0x8000 (signed mode)
+    private const ushort TileData1Base  = 0x0000; // 0x8000 - 0x8000 (unsigned mode)
 
     private const ushort LcdcAddress = 0xFF40;
     private const ushort StatAddress = 0xFF41;
@@ -78,6 +87,7 @@ public sealed class Ppu : IPpu
         for (var i = 0; i < tStates; i++) StepDot();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void StepDot()
     {
         _dot++;
@@ -134,9 +144,44 @@ public sealed class Ppu : IPpu
         _statLine = line;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private void RenderScanline(byte line)
     {
-        // step 3
+        var rowBase = line * ScreenWidth;
+
+        if ((_lcdc & LcdcBgEnable) == 0)
+        {
+            Array.Clear(_frameBuffer, rowBase, ScreenWidth);
+            return;
+        }
+
+        var tileMapOffset = (_lcdc & LcdcBgTileMap) != 0 ? TileMap1Offset : TileMap0Offset;
+        var unsignedTileData = (_lcdc & LcdcTileData) != 0;
+
+        var worldY = (byte)(_scy + line);
+        var tileRow = worldY >> 3;
+        var pixelRow = worldY & 7;
+
+        for (var x = 0; x < ScreenWidth; x++)
+        {
+            var worldX = (byte)(_scx + x);
+            var tileCol = worldX >> 3;
+
+            var tileIndex = _vram[tileMapOffset + tileRow * 32 + tileCol];
+            var tileAddr = unsignedTileData
+                ? TileData1Base + tileIndex * 16
+                : TileData0Base + (sbyte)tileIndex * 16;
+
+            var rowAddr = tileAddr + pixelRow * 2;
+            var lo = _vram[rowAddr];
+            var hi = _vram[rowAddr + 1];
+
+            var bit = 7 - (worldX & 7);
+            var colorId = (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1);
+            var shade = (byte)((_bgp >> (colorId * 2)) & 0x3);
+
+            _frameBuffer[rowBase + x] = shade;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
