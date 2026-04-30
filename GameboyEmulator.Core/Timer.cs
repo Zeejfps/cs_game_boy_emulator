@@ -66,7 +66,7 @@ public sealed class Timer : ITimer
             if (_reloadDelay > 0 && --_reloadDelay == 0)
             {
                 _tima = _tma;
-                _interrupts.Write(InterruptType.Timer);
+                _interrupts.Request(InterruptType.Timer);
             }
 
             DetectTimaEdge();

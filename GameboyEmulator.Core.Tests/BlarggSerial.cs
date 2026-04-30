@@ -26,7 +26,7 @@ internal sealed class BlarggSerial : ISerial
         {
             _output.Append((char)_data);
             _control = 0x01;
-            _interrupts.Write(InterruptType.Serial);
+            _interrupts.Request(InterruptType.Serial);
         }
     }
 

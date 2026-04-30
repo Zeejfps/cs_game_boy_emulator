@@ -1,7 +1,8 @@
+using GameBoyEmulator.Core.LR35902;
+
 namespace GameBoyEmulator.Core;
 
 public interface IInterruptsRegisters
 {
-    byte InterruptFlag { get; set; }
-    byte InterruptEnable { get; set; }
+    InterruptType RequestedInterrupts { get; set; }
 }

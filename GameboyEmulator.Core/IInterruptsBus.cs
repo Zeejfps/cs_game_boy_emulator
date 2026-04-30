@@ -4,5 +4,5 @@ namespace GameBoyEmulator.Core;
 
 public interface IInterruptsBus
 {
-    void Write(InterruptType kind);
+    void Request(InterruptType kind);
 }

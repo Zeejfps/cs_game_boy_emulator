@@ -8,6 +8,7 @@ public sealed class Mmu : IMemoryBus
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
     private byte _dmaSource;
+    private byte _interruptEnable;
 
     private readonly IMbc _mbc;
     private readonly IPpu _ppu;
@@ -93,7 +94,7 @@ public sealed class Mmu : IMemoryBus
                 _hram[address - 0xFF80] = value;
                 return;
             default:
-                _interrupts.InterruptEnable = value;
+                _interruptEnable = value;
                 break;
         }
     }
@@ -125,7 +126,7 @@ public sealed class Mmu : IMemoryBus
                 _timer.WriteTac(value);
                 break;
             case Cpu.InterruptFlagAddress:
-                _interrupts.InterruptFlag = value;
+                _interrupts.RequestedInterrupts = (InterruptType)value;
                 break;
             case >= 0xFF10 and <= 0xFF3F:
                 _apu.WriteRegister(address, value);
@@ -183,7 +184,7 @@ public sealed class Mmu : IMemoryBus
             < 0xFF00 => 0xFF,
             < 0xFF80 => ReadIO(address),
             < Cpu.InterruptEnableAddress => _hram[address - 0xFF80],
-            _ => _interrupts.InterruptEnable
+            _ => _interruptEnable
         };
     }
 
@@ -199,7 +200,7 @@ public sealed class Mmu : IMemoryBus
             0xFF05 => _timer.ReadTima(),
             0xFF06 => _timer.ReadTma(),
             0xFF07 => _timer.ReadTac(),
-            Cpu.InterruptFlagAddress => _interrupts.InterruptFlag,
+            Cpu.InterruptFlagAddress => (byte)((byte)_interrupts.RequestedInterrupts | 0xE0),
             0xFF46 => _dmaSource,
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),

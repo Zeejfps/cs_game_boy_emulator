@@ -8,7 +8,7 @@ public class TimerTests
     {
         public int TimerCount { get; private set; }
 
-        public void Write(InterruptType kind)
+        public void Request(InterruptType kind)
         {
             if (kind == InterruptType.Timer)
                 TimerCount++;

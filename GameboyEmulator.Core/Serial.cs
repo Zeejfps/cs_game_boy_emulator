@@ -23,7 +23,7 @@ public sealed class Serial : ISerial
             Console.Write((char)_data);
             _data = 0xFF;
             _control = 0x01;
-            _interrupts.Write(InterruptType.Serial);
+            _interrupts.Request(InterruptType.Serial);
         }
     }
 
