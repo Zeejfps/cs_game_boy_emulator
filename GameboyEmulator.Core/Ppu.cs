@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using GameBoyEmulator.Core.LR35902;
+
 namespace GameBoyEmulator.Core;
 
 public enum PpuMode : byte
@@ -15,6 +18,18 @@ public sealed class Ppu : IPpu
 
     private const int VramSize = 0x2000;
     private const int OamSize = 0xA0;
+
+    private const int DotsPerLine    = 456;
+    private const int LinesPerFrame  = 154;
+    private const int VisibleLines   = 144;
+    private const int OamScanEndDot  = 80;
+    private const int DrawingEndDot  = 80 + 172;
+
+    private const byte LcdEnableMask  = 0x80; // LCDC bit 7
+    private const byte StatHBlankIrq  = 0x08; // STAT bit 3
+    private const byte StatVBlankIrq  = 0x10; // STAT bit 4
+    private const byte StatOamIrq     = 0x20; // STAT bit 5
+    private const byte StatLycIrq     = 0x40; // STAT bit 6
 
     private const ushort LcdcAddress = 0xFF40;
     private const ushort StatAddress = 0xFF41;
@@ -44,9 +59,100 @@ public sealed class Ppu : IPpu
     private byte _wy;
     private byte _wx;
 
-    private PpuMode _mode; // set by the mode state machine (step 2)
+    private PpuMode _mode;
+    private int _dot;
+    private bool _statLine; // previous OR-of-sources, for stat-blocking edge detection
+
+    private readonly IInterrupts _interrupts;
+
+    public Ppu(IInterrupts interrupts)
+    {
+        _interrupts = interrupts;
+    }
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
+
+    public void Tick(int tStates)
+    {
+        if ((_lcdc & LcdEnableMask) == 0) return;
+        for (var i = 0; i < tStates; i++) StepDot();
+    }
+
+    private void StepDot()
+    {
+        _dot++;
+
+        if (_ly < VisibleLines)
+        {
+            switch (_dot)
+            {
+                case OamScanEndDot:
+                    _mode = PpuMode.Drawing;
+                    break;
+                case DrawingEndDot:
+                    _mode = PpuMode.HBlank;
+                    RenderScanline(_ly);
+                    break;
+            }
+        }
+
+        if (_dot == DotsPerLine)
+        {
+            _dot = 0;
+            _ly++;
+
+            switch (_ly)
+            {
+                case VisibleLines:
+                    _mode = PpuMode.VBlank;
+                    _interrupts.Request(InterruptType.VBlank);
+                    break;
+                case LinesPerFrame:
+                    _ly = 0;
+                    _mode = PpuMode.OamScan;
+                    break;
+                case < VisibleLines:
+                    _mode = PpuMode.OamScan;
+                    break;
+            }
+        }
+
+        UpdateStatLine();
+    }
+
+    private void UpdateStatLine()
+    {
+        var line =
+            ((_statSources & StatLycIrq)    != 0 && _ly == _lyc)         ||
+            ((_statSources & StatOamIrq)    != 0 && _mode == PpuMode.OamScan) ||
+            ((_statSources & StatVBlankIrq) != 0 && _mode == PpuMode.VBlank)  ||
+            ((_statSources & StatHBlankIrq) != 0 && _mode == PpuMode.HBlank);
+
+        if (line && !_statLine)
+            _interrupts.Request(InterruptType.LcdStat);
+
+        _statLine = line;
+    }
+
+    private void RenderScanline(byte line)
+    {
+        // step 3
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteLcdc(byte value)
+    {
+        var wasOn = (_lcdc & LcdEnableMask) != 0;
+        var nowOn = (value & LcdEnableMask) != 0;
+        _lcdc = value;
+        if (wasOn && !nowOn)
+        {
+            _ly = 0;
+            _dot = 0;
+            _mode = PpuMode.HBlank;
+            _statLine = false;
+        }
+    }
 
     public void WriteVram(ushort address, byte value)
     {
@@ -77,11 +183,12 @@ public sealed class Ppu : IPpu
     // DMA path: PPU bus restrictions don't apply — DMA itself drives OAM.
     public void WriteOam(ReadOnlySpan<byte> data) => data.CopyTo(_oam);
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void WriteRegister(ushort address, byte value)
     {
         switch (address)
         {
-            case LcdcAddress: _lcdc = value; break;
+            case LcdcAddress: WriteLcdc(value); break;
             case StatAddress: _statSources = (byte)(value & 0x78); break;
             case ScyAddress:  _scy = value; break;
             case ScxAddress:  _scx = value; break;
