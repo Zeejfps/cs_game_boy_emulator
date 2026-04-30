@@ -18,7 +18,7 @@ public sealed class Mmu : IMemoryBus
     private readonly ITimer _timer;
     private readonly IApu _apu;
     private readonly ISerial _serial;
-    private readonly IInterruptsBus _interrupts;
+    private readonly IInterruptsView _interrupts;
 
     public Mmu(
         IMbc mbc,
@@ -27,7 +27,7 @@ public sealed class Mmu : IMemoryBus
         ITimer timer,
         IApu apu,
         ISerial serial,
-        IInterruptsBus interrupts
+        IInterruptsView interrupts
     ) {
         _mbc = mbc;
         _ppu = ppu;

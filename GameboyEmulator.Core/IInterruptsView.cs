@@ -1,12 +1,9 @@
-namespace GameBoyEmulator.Core.LR35902;
+using GameBoyEmulator.Core.LR35902;
 
-public interface IInterruptsBus
+namespace GameBoyEmulator.Core;
+
+public interface IInterruptsView
 {
-    void Request(InterruptType kind);
-    void Clear(InterruptType kind);
-    bool IsRequested(InterruptType kind);
-    InterruptType GetPending();
-    
     InterruptType ReadRequestedInterrupts();
     void WriteRequestedInterrupts(InterruptType requestedInterrupts);
 

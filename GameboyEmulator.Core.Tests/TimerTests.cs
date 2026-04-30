@@ -4,7 +4,7 @@ namespace GameBoyEmulator.Core.Tests;
 
 public class TimerTests
 {
-    private sealed class FakeInterruptBus : IInterruptsBus
+    private sealed class FakeInterruptBus : IInterrupts
     {
         private InterruptType _requested;
         private InterruptType _enabled;

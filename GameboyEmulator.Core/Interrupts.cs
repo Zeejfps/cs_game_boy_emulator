@@ -2,7 +2,7 @@ using GameBoyEmulator.Core.LR35902;
 
 namespace GameBoyEmulator.Core;
 
-public sealed class Interrupts : IInterruptsBus
+public sealed class Interrupts : IInterrupts, IInterruptsView
 {
     private InterruptType _requestedInterrupts;
     private InterruptType _enabledInterrupts;

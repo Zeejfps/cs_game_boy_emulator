@@ -44,9 +44,9 @@ public sealed partial class Cpu
     private int _enableInterruptsTimer;
     private bool _haltBugPending;
     private readonly IMemoryBus _mmu;
-    private readonly IInterruptsBus _interrupts;
+    private readonly IInterrupts _interrupts;
 
-    public Cpu(IMemoryBus mmu, IInterruptsBus interrupts)
+    public Cpu(IMemoryBus mmu, IInterrupts interrupts)
     {
         _mmu = mmu;
         _interrupts = interrupts;
