@@ -43,7 +43,7 @@ public class BlarggCpuInstrTests
 
         var rom = File.ReadAllBytes(path);
         var interrupts = new Interrupts();
-        var timer = new BlarggTimer(interrupts);
+        var timer = new Timer(interrupts);
         var serial = new BlarggSerial(interrupts);
         var mmu = new Mmu(
             new BlarggMbc(rom),
