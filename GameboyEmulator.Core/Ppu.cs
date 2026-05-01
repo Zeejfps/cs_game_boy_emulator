@@ -168,11 +168,20 @@ public sealed class Ppu : IPpu
             _dot += 2;
             if (_dot >= 80)
             {
-                _mode = PpuMode.Drawing;
+                EnterDrawingMode();
                 break;
             }
         }
         _remainderTStates = totalStates;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnterDrawingMode()
+    {
+        _mode = PpuMode.Drawing;
+        _fetcherState = FetcherState.GetTile;
+        _fetcherX = 0;
+        _bgFifoCount = 0;
     }
 
     private void StepDrawing(int tStates)
@@ -188,6 +197,10 @@ public sealed class Ppu : IPpu
     private byte _fetcherTileId;
     private byte _fetcherTileLow;
     private byte _fetcherTileHigh;
+
+    private byte _bgFifoLow;
+    private byte _bgFifoHigh;
+    private byte _bgFifoCount;
 
     private void StepFetcher(int tStates)
     {
@@ -206,7 +219,7 @@ public sealed class Ppu : IPpu
                     BgPixelsFetcher_GetTilePixelsHigh();
                     break;
                 case FetcherState.Push:
-                    Fetcher_Push();
+                    BgPixelsFetcher_Push();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -216,9 +229,15 @@ public sealed class Ppu : IPpu
         _remainderTStates = totalTStates;
     }
 
-    private void Fetcher_Push()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void BgPixelsFetcher_Push()
     {
-        throw new NotImplementedException();
+        if (_bgFifoCount != 0) return;
+        _bgFifoLow = _fetcherTileLow;
+        _bgFifoHigh = _fetcherTileHigh;
+        _bgFifoCount = 8;
+        _fetcherX++;
+        _fetcherState = FetcherState.GetTile;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
