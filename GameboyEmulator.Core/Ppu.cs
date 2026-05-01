@@ -30,6 +30,8 @@ public sealed class Ppu : IPpu
     private const byte LcdcObjSize    = 0x04; // LCDC bit 2 (0=8x8, 1=8x16)
     private const byte LcdcBgTileMap  = 0x08; // LCDC bit 3 (0=0x9800, 1=0x9C00)
     private const byte LcdcTileData   = 0x10; // LCDC bit 4 (0=signed/0x9000, 1=unsigned/0x8000)
+    private const byte LcdcWinEnable  = 0x20; // LCDC bit 5
+    private const byte LcdcWinTileMap = 0x40; // LCDC bit 6 (0=0x9800, 1=0x9C00)
     private const byte LcdEnableMask  = 0x80; // LCDC bit 7
 
     private const byte StatHBlankIrq  = 0x08; // STAT bit 3
@@ -43,10 +45,7 @@ public sealed class Ppu : IPpu
     private const byte OamAttrBgPrio  = 0x80; // bit 7: 1=BG colors 1-3 hide sprite
 
     private const int MaxSpritesPerLine = 10;
-
-    private const ushort TileMap0Offset = 0x1800; // 0x9800 - 0x8000
-    private const ushort TileMap1Offset = 0x1C00; // 0x9C00 - 0x8000
-
+    
     // Unified addressing: addr = base + ((index ^ flip) << 4)
     //   unsigned mode: base 0x0000, flip 0x00 → block 0+1
     //   signed   mode: base 0x0800, flip 0x80 → block 1+2 (0x80 swaps the halves)
@@ -89,6 +88,14 @@ public sealed class Ppu : IPpu
     private PpuMode _mode;
     private int _dot;
     private bool _statLine; // previous OR-of-sources, for stat-blocking edge detection
+
+    // Window state.
+    // _wyTriggered latches the first time LY == WY in a frame; persists until frame end.
+    // _windowLineCounter (WLY) only advances on scanlines that actually pushed window pixels.
+    private bool _wyTriggered;
+    private bool _inWindow;
+    private bool _windowRenderedThisLine;
+    private byte _windowLineCounter;
 
     private readonly IInterrupts _interrupts;
 
@@ -186,6 +193,9 @@ public sealed class Ppu : IPpu
         _lcdX = 0;
         _lcdDiscard = (byte)(_scx & 0x07);
         _fetchingSprite = false;
+        _inWindow = false;
+        _windowRenderedThisLine = false;
+        if (_ly == _wy) _wyTriggered = true;
         _spriteFifoLow = 0;
         _spriteFifoHigh = 0;
         _spriteFifoPalette = 0;
@@ -259,10 +269,13 @@ public sealed class Ppu : IPpu
     private void EndOfLine()
     {
         _dot = 0;
+        if (_windowRenderedThisLine) _windowLineCounter++;
         _ly++;
         if (_ly >= LinesPerFrame)
         {
             _ly = 0;
+            _wyTriggered = false;
+            _windowLineCounter = 0;
             EnterOamScanMode();
             return;
         }
@@ -355,16 +368,27 @@ public sealed class Ppu : IPpu
         var unsigned = (_lcdc & LcdcTileData) != 0;
         var tileBase = unsigned ? TileDataUnsignedBase : TileDataSignedBase;
         var flip     = unsigned ? TileDataUnsignedFlip : TileDataSignedFlip;
-        var rowY = (_ly + _scy) & 0x07;
+        var rowY = _inWindow ? (_windowLineCounter & 0x07) : ((_ly + _scy) & 0x07);
         return tileBase + ((_fetcherTileId ^ flip) << 4) + (rowY << 1);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_GetTile()
     {
-        var tileMap = (_lcdc & LcdcBgTileMap) != 0 ? _tileMap1.Span : _tileMap0.Span;
-        var tileX = ((_scx >> 3) + _fetcherX) & 0x1F;
-        var tileY = ((_ly + _scy) & 0xFF) >> 3;
+        ReadOnlySpan<byte> tileMap;
+        int tileX, tileY;
+        if (_inWindow)
+        {
+            tileMap = (_lcdc & LcdcWinTileMap) != 0 ? _tileMap1.Span : _tileMap0.Span;
+            tileX = _fetcherX & 0x1F;
+            tileY = _windowLineCounter >> 3;
+        }
+        else
+        {
+            tileMap = (_lcdc & LcdcBgTileMap) != 0 ? _tileMap1.Span : _tileMap0.Span;
+            tileX = ((_scx >> 3) + _fetcherX) & 0x1F;
+            tileY = ((_ly + _scy) & 0xFF) >> 3;
+        }
         _fetcherTileId = tileMap[(tileY << 5) | tileX];
         _fetcherState = BgPixelsFetcherState.GetTilePixelsLow;
     }
@@ -508,6 +532,27 @@ public sealed class Ppu : IPpu
     private void LcdControllerTick()
     {
         if (_fetchingSprite) return;
+
+        // Window activation: once per scanline, when the screen X reaches WX-7
+        // and the WY-condition has latched. This drops any in-flight BG pixels
+        // (window pixels are not subject to SCX discard) and restarts the
+        // fetcher against the window tilemap with WLY as the row source.
+        if (!_inWindow
+            && (_lcdc & LcdcWinEnable) != 0
+            && _wyTriggered
+            && _wx <= 166
+            && _wx >= 7
+            && _lcdX == _wx - 7)
+        {
+            _inWindow = true;
+            _windowRenderedThisLine = true;
+            _bgFifoCount = 0;
+            _fetcherState = BgPixelsFetcherState.GetTile;
+            _fetcherX = 0;
+            _lcdDiscard = 0;
+            return;
+        }
+
         if (_bgFifoCount == 0) return;
 
         // SCX-discard pixels are popped from the BG FIFO without writing to the
@@ -593,11 +638,17 @@ public sealed class Ppu : IPpu
             _dot = 0;
             _mode = PpuMode.HBlank;
             _statLine = false;
+            _wyTriggered = false;
+            _windowLineCounter = 0;
+            _inWindow = false;
+            _windowRenderedThisLine = false;
         }
         else if (!wasEnabled && _isLcdEnabled)
         {
             _ly = 0;
             _dot = 0;
+            _wyTriggered = false;
+            _windowLineCounter = 0;
             EnterOamScanMode();
         }
     }
