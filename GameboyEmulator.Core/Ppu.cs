@@ -182,7 +182,9 @@ public sealed class Ppu : IPpu
     }
     
     private FetcherState _fetcherState;
-    
+    private byte _fetcherX;
+    private byte _fetcherTileId;
+
     private void StepFetcher(int tStates)
     {
         var totalTStates = tStates + _remainderTStates;
@@ -191,13 +193,13 @@ public sealed class Ppu : IPpu
             switch (_fetcherState)
             {
                 case FetcherState.GetTile:
-                    Fetcher_GetTile();
+                    BgPixelsFetcher_GetTile();
                     break;
                 case FetcherState.GetTilePixelsLow:
-                    Fetcher_GetTilePixelsLow();
+                    BgPixelsFetcher_GetTilePixelsLow();
                     break;
                 case FetcherState.GetTilePixelsHigh:
-                    Fetcher_GetTilePixelsHigh();
+                    BgPixelsFetcher_GetTilePixelsHigh();
                     break;
                 case FetcherState.Push:
                     Fetcher_Push();
@@ -215,19 +217,23 @@ public sealed class Ppu : IPpu
         throw new NotImplementedException();
     }
 
-    private void Fetcher_GetTilePixelsHigh()
+    private void BgPixelsFetcher_GetTilePixelsHigh()
     {
         throw new NotImplementedException();
     }
 
-    private void Fetcher_GetTilePixelsLow()
+    private void BgPixelsFetcher_GetTilePixelsLow()
     {
         throw new NotImplementedException();
     }
 
-    private void Fetcher_GetTile()
+    private void BgPixelsFetcher_GetTile()
     {
-        throw new NotImplementedException();
+        var tileMap = (_lcdc & LcdcBgTileMap) != 0 ? _tileMap1.Span : _tileMap0.Span;
+        var tileX = ((_scx >> 3) + _fetcherX) & 0x1F;
+        var tileY = ((_ly + _scy) & 0xFF) >> 3;
+        _fetcherTileId = tileMap[(tileY << 5) | tileX];
+        _fetcherState = FetcherState.GetTilePixelsLow;
     }
 
     private void StepLcd(int tStates)
