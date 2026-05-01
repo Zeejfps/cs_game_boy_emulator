@@ -87,6 +87,16 @@ export async function init(opts: InitOptions): Promise<Emulator> {
 
   await runtime.runMain();
 
+  // Battery-RAM persistence: the C# `LocalStorageBatteryStore` reaches back into
+  // these globals via [JSImport]. Set them up before E.Init() so the bindings
+  // resolve when the store is constructed.
+  const g = globalThis as unknown as {
+    __gbBatteryGet?: (key: string) => string | null;
+    __gbBatterySet?: (key: string, value: string) => void;
+  };
+  g.__gbBatteryGet = (key) => localStorage.getItem(key);
+  g.__gbBatterySet = (key, value) => localStorage.setItem(key, value);
+
   const config = runtime.getConfig();
   const assemblyName: string = config.mainAssemblyName ?? 'GameBoyEmulator.Wasm';
   const exports = await runtime.getAssemblyExports(assemblyName);

@@ -4,6 +4,12 @@ namespace GameBoyEmulator.Core.Tests;
 
 public class Mbc1Tests
 {
+    private sealed class NullBatteryStore : IBatteryStore
+    {
+        public byte[]? Load(string key) => null;
+        public void Save(string key, ReadOnlySpan<byte> data) { }
+    }
+
     private sealed class CapturingBatteryStore : IBatteryStore
     {
         public byte[]? PreloadData { get; set; }

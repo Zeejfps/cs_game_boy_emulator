@@ -20,7 +20,7 @@ public static partial class Emulator
             return;
 
         _clock = new StopwatchClock();
-        _gameBoy = new GameBoy(_clock, new NullBatteryStore());
+        _gameBoy = new GameBoy(_clock, new LocalStorageBatteryStore());
         _gameBoy.FrameCompleted += () => _frameReady = true;
     }
 
