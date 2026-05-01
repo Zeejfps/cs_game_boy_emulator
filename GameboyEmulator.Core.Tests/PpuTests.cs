@@ -12,11 +12,19 @@ public class PpuTests
     private const ushort LY   = 0xFF44;
     private const ushort LYC  = 0xFF45;
     private const ushort BGP  = 0xFF47;
+    private const ushort OBP0 = 0xFF48;
+    private const ushort OBP1 = 0xFF49;
+    private const ushort WY   = 0xFF4A;
+    private const ushort WX   = 0xFF4B;
 
     private const byte LcdOn   = 0x80;
     private const byte BgOn    = 0x01;
-    private const byte UnsignedTileData = 0x10; // LCDC bit 4
-    private const byte IdentityBgp      = 0xE4; // 0→0 1→1 2→2 3→3
+    private const byte ObjOn   = 0x02;           // LCDC bit 1
+    private const byte TallSprites = 0x04;       // LCDC bit 2
+    private const byte UnsignedTileData = 0x10;  // LCDC bit 4
+    private const byte WindowOn    = 0x20;       // LCDC bit 5
+    private const byte WindowMap1  = 0x40;       // LCDC bit 6
+    private const byte IdentityBgp = 0xE4;       // 0→0 1→1 2→2 3→3
 
     private const int DotsPerLine = 456;
 
@@ -264,6 +272,58 @@ public class PpuTests
         Assert.Equal(before, _interrupts.LcdStatCount);
     }
 
+    // ──────────────────────────── STAT bug ──────────────────────────────
+
+    [Fact]
+    public void StatBug_WriteStatWhenSourceActive_FiresSpuriousInterrupt()
+    {
+        // Step into HBlank on line 0.
+        _ppu.Step(80 + 172);
+        Assert.Equal(PpuMode.HBlank, Mode(_ppu.ReadRegister(STAT)));
+
+        var before = _interrupts.LcdStatCount;
+
+        // Enable the HBlank source while already in HBlank — the STAT bug
+        // glitches the internal line low then re-evaluates, producing a rising edge.
+        _ppu.WriteRegister(STAT, 0x08);
+
+        Assert.Equal(before + 1, _interrupts.LcdStatCount);
+    }
+
+    [Fact]
+    public void StatBug_WriteStatWhenNoSourceActive_NoSpuriousInterrupt()
+    {
+        // Step into HBlank on line 0.
+        _ppu.Step(80 + 172);
+        Assert.Equal(PpuMode.HBlank, Mode(_ppu.ReadRegister(STAT)));
+
+        var before = _interrupts.LcdStatCount;
+
+        // Enable OAM source (mode 2), but we're in HBlank (mode 0) — no source
+        // evaluates true, so the line stays low after re-evaluation.
+        _ppu.WriteRegister(STAT, 0x20);
+
+        Assert.Equal(before, _interrupts.LcdStatCount);
+    }
+
+    [Fact]
+    public void LycWrite_MatchingCurrentLy_FiresStatInterrupt()
+    {
+        // Enable LYC interrupt source.
+        _ppu.WriteRegister(STAT, 0x40);
+
+        // Advance to LY=5.
+        _ppu.Step(DotsPerLine * 5);
+        Assert.Equal(5, _ppu.ReadRegister(LY));
+
+        var before = _interrupts.LcdStatCount;
+
+        // Write LYC to match current LY — should trigger immediately.
+        _ppu.WriteRegister(LYC, 5);
+
+        Assert.Equal(before + 1, _interrupts.LcdStatCount);
+    }
+
     // ─────────────────────────── BG rendering ────────────────────────────
 
     [Fact]
@@ -337,5 +397,161 @@ public class PpuTests
         for (var x = 0; x < 8; x++)
             Assert.Equal(3, row[x]);
         Assert.Equal(0, row[8]); // tile 2 at world col 2 is empty
+    }
+
+    // ────────────────────────── Window rendering ─────────────────────────
+
+    [Fact]
+    public void Window_RendersTilesFromWindowTileMap()
+    {
+        // Tile 1 = solid color 2 (high plane only).
+        for (var i = 0; i < 16; i += 2)
+        {
+            _ppu.WriteVram((ushort)(16 + i), 0x00);     // low plane = 0
+            _ppu.WriteVram((ushort)(16 + i + 1), 0xFF);  // high plane = 1
+        }
+
+        // Place tile 1 at window tile map 1 position (0,0).
+        _ppu.WriteVram(0x1C00, 1);
+
+        _ppu.WriteRegister(LCDC, LcdOn | BgOn | UnsignedTileData | WindowOn | WindowMap1);
+        _ppu.WriteRegister(BGP, IdentityBgp);
+        _ppu.WriteRegister(WY, 0);
+        _ppu.WriteRegister(WX, 7); // window starts at screen X=0
+
+        // Render line 0.
+        _ppu.Step(DotsPerLine);
+
+        var row = _ppu.FrameBuffer.Span;
+        for (var x = 0; x < 8; x++)
+            Assert.Equal(2, row[x]);
+    }
+
+    [Fact]
+    public void Window_LineCounterAdvancesOnlyOnActiveLines()
+    {
+        // Tile 0, row 0 = color 3 (both planes set), row 1 = color 1 (low plane only).
+        _ppu.WriteVram(0x0000, 0xFF); // row 0, low
+        _ppu.WriteVram(0x0001, 0xFF); // row 0, high
+        _ppu.WriteVram(0x0002, 0xFF); // row 1, low
+        _ppu.WriteVram(0x0003, 0x00); // row 1, high
+
+        // Window tile map 1 entry (0,0) = tile 0.
+        _ppu.WriteVram(0x1C00, 0);
+
+        _ppu.WriteRegister(LCDC, LcdOn | BgOn | UnsignedTileData | WindowOn | WindowMap1);
+        _ppu.WriteRegister(BGP, IdentityBgp);
+        _ppu.WriteRegister(WY, 2); // window starts at screen line 2
+        _ppu.WriteRegister(WX, 7);
+
+        // Complete lines 0-1 (no window) + line 2 drawing (window line counter 0 → tile row 0).
+        _ppu.Step(DotsPerLine * 3);
+
+        var fb = _ppu.FrameBuffer.Span;
+        Assert.Equal(3, fb[2 * 160]); // line 2, pixel 0 = color 3 (tile row 0)
+
+        // Complete line 3 (window line counter 1 → tile row 1).
+        _ppu.Step(DotsPerLine);
+
+        fb = _ppu.FrameBuffer.Span;
+        Assert.Equal(1, fb[3 * 160]); // line 3, pixel 0 = color 1 (tile row 1)
+    }
+
+    // ──────────────────────── Sprite rendering ───────────────────────────
+
+    [Fact]
+    public void Sprite8x16_RendersBothHalves()
+    {
+        // Tile 0 (top half) = color 1 (low plane only).
+        for (var i = 0; i < 16; i += 2)
+        {
+            _ppu.WriteVram((ushort)i, 0xFF);
+            _ppu.WriteVram((ushort)(i + 1), 0x00);
+        }
+        // Tile 1 (bottom half) = color 2 (high plane only).
+        for (var i = 0; i < 16; i += 2)
+        {
+            _ppu.WriteVram((ushort)(16 + i), 0x00);
+            _ppu.WriteVram((ushort)(16 + i + 1), 0xFF);
+        }
+
+        // OAM entry 0: Y=16 (screen Y=0), X=8 (screen X=0), tile 0, no flags.
+        _ppu.WriteRegister(LCDC, 0x00); // LCD off to write OAM
+        _ppu.WriteOam(0, 16);  // Y
+        _ppu.WriteOam(1, 8);   // X
+        _ppu.WriteOam(2, 0);   // tile ID
+        _ppu.WriteOam(3, 0);   // attributes
+
+        _ppu.WriteRegister(LCDC, LcdOn | BgOn | UnsignedTileData | ObjOn | TallSprites);
+        _ppu.WriteRegister(BGP, IdentityBgp);
+        _ppu.WriteRegister(OBP0, IdentityBgp);
+
+        // Render line 0 (top half of sprite).
+        _ppu.Step(DotsPerLine);
+        Assert.Equal(1, _ppu.FrameBuffer.Span[0]); // color 1
+
+        // Render through line 8 (bottom half of sprite).
+        _ppu.Step(DotsPerLine * 8);
+        Assert.Equal(2, _ppu.FrameBuffer.Span[8 * 160]); // color 2
+    }
+
+    [Fact]
+    public void SpritePriority_LowerXWinsOnDmg()
+    {
+        // Tile 1 = color 1 (low plane), tile 2 = color 2 (high plane).
+        for (var i = 0; i < 16; i += 2)
+        {
+            _ppu.WriteVram((ushort)(16 + i), 0xFF);
+            _ppu.WriteVram((ushort)(16 + i + 1), 0x00);
+        }
+        for (var i = 0; i < 16; i += 2)
+        {
+            _ppu.WriteVram((ushort)(32 + i), 0x00);
+            _ppu.WriteVram((ushort)(32 + i + 1), 0xFF);
+        }
+
+        // Sprite A (OAM 0): X=10, tile 2 (color 2) — covers screen cols 2-9.
+        // Sprite B (OAM 1): X=8, tile 1 (color 1) — covers screen cols 0-7.
+        // Overlap at cols 2-7. Lower X (sprite B, X=8) should win.
+        _ppu.WriteRegister(LCDC, 0x00);
+        _ppu.WriteOam(0, 16); _ppu.WriteOam(1, 10); _ppu.WriteOam(2, 2); _ppu.WriteOam(3, 0);
+        _ppu.WriteOam(4, 16); _ppu.WriteOam(5, 8);  _ppu.WriteOam(6, 1); _ppu.WriteOam(7, 0);
+
+        _ppu.WriteRegister(LCDC, LcdOn | BgOn | UnsignedTileData | ObjOn);
+        _ppu.WriteRegister(BGP, IdentityBgp);
+        _ppu.WriteRegister(OBP0, IdentityBgp);
+
+        _ppu.Step(DotsPerLine);
+
+        var row = _ppu.FrameBuffer.Span;
+        Assert.Equal(1, row[2]); // overlap zone: lower-X sprite (color 1) wins
+        Assert.Equal(1, row[7]); // still in overlap
+        Assert.Equal(2, row[8]); // only sprite A here (color 2)
+    }
+
+    [Fact]
+    public void SpritePartiallyOffScreenLeft_OnlyVisiblePortionRenders()
+    {
+        // Tile 1 = color 3 (both planes set).
+        for (var i = 0; i < 16; i++)
+            _ppu.WriteVram((ushort)(16 + i), 0xFF);
+
+        // Sprite at X=4: left 4 pixels clipped, right 4 visible at screen cols 0-3.
+        _ppu.WriteRegister(LCDC, 0x00);
+        _ppu.WriteOam(0, 16); // Y
+        _ppu.WriteOam(1, 4);  // X
+        _ppu.WriteOam(2, 1);  // tile ID
+        _ppu.WriteOam(3, 0);  // attributes
+
+        _ppu.WriteRegister(LCDC, LcdOn | BgOn | UnsignedTileData | ObjOn);
+        _ppu.WriteRegister(BGP, IdentityBgp);
+        _ppu.WriteRegister(OBP0, IdentityBgp);
+
+        _ppu.Step(DotsPerLine);
+
+        var row = _ppu.FrameBuffer.Span;
+        for (var x = 0; x < 4; x++)
+            Assert.Equal(3, row[x]); // visible portion of sprite
+        Assert.Equal(0, row[4]); // no sprite here — BG color 0
     }
 }

@@ -23,11 +23,21 @@ public sealed partial class Ppu
         switch (address)
         {
             case LcdcAddress: WriteLcdc((LcdControl)value); break;
-            case StatAddress: _statSources = (StatFlags)value & StatFlags.Sources; break;
+            case StatAddress:
+                _statSources = (StatFlags)value & StatFlags.Sources;
+                if (_isLcdEnabled)
+                {
+                    _statLine = false;
+                    UpdateStatLine();
+                }
+                break;
             case ScyAddress:  _scy = value; break;
             case ScxAddress:  _scx = value; break;
             case LyAddress:   /* read-only */ break;
-            case LycAddress:  _lyc = value; break;
+            case LycAddress:
+                _lyc = value;
+                if (_isLcdEnabled) UpdateStatLine();
+                break;
             case BgpAddress:  _bgp = value; break;
             case Obp0Address: _obp0 = value; break;
             case Obp1Address: _obp1 = value; break;
