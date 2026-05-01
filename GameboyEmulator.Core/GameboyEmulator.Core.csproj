@@ -8,4 +8,8 @@
         <RootNamespace>GameBoyEmulator.Core</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="GameBoyEmulator.Benchmarks" />
+    </ItemGroup>
+
 </Project>
