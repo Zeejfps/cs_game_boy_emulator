@@ -177,12 +177,62 @@ public sealed class Ppu : IPpu
 
     private void StepDrawing(int tStates)
     {
-        var totalStates = tStates + _remainderTStates;
-        while (totalStates >= 0)
+        StepFetcher(tStates);
+        StepLcd(tStates);
+    }
+    
+    private FetcherState _fetcherState;
+    
+    private void StepFetcher(int tStates)
+    {
+        var totalTStates = tStates + _remainderTStates;
+        while (totalTStates >= 2)
         {
-            
+            switch (_fetcherState)
+            {
+                case FetcherState.GetTile:
+                    Fetcher_GetTile();
+                    break;
+                case FetcherState.GetTilePixelsLow:
+                    Fetcher_GetTilePixelsLow();
+                    break;
+                case FetcherState.GetTilePixelsHigh:
+                    Fetcher_GetTilePixelsHigh();
+                    break;
+                case FetcherState.Push:
+                    Fetcher_Push();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            totalTStates -= 2;
         }
-        _remainderTStates = totalStates;
+        _remainderTStates = totalTStates;
+    }
+
+    private void Fetcher_Push()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void Fetcher_GetTilePixelsHigh()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void Fetcher_GetTilePixelsLow()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void Fetcher_GetTile()
+    {
+        throw new NotImplementedException();
+    }
+
+    private void StepLcd(int tStates)
+    {
+        
     }
     
     private void UpdateStatLine()
