@@ -1,6 +1,7 @@
 interface EmulatorExports {
   Init(): void;
-  LoadRom(rom: Uint8Array): void;
+  LoadRom(rom: Uint8Array, saveData: Uint8Array | null): void;
+  GetSaveData(): Uint8Array | null;
   PowerOn(): void;
   PowerOff(): void;
   IsPoweredOn(): boolean;
@@ -34,8 +35,23 @@ export interface Emulator {
   /**
    * Load a ROM from raw bytes. Must be called before `powerOn`. Cannot be
    * called while the emulator is powered on.
+   *
+   * `saveData` is the previously-persisted contents of battery-backed
+   * cartridge RAM (as returned by a prior `getSave()`), or undefined if
+   * there's no save to restore. Ignored for cartridges without battery RAM.
    */
-  loadRom(rom: Uint8Array): void;
+  loadRom(rom: Uint8Array, saveData?: Uint8Array): void;
+
+  /**
+   * Returns the current battery-backed cartridge RAM, or null if the
+   * loaded cartridge has no battery RAM. Safe to call at any time —
+   * dirty in-memory data is flushed before the bytes are returned.
+   *
+   * The host owns persistence: write the bytes to localStorage,
+   * IndexedDB, a file, a server, etc. Common pattern is to call this
+   * after `powerOff()` and on a periodic auto-save timer.
+   */
+  getSave(): Uint8Array | null;
 
   powerOn(): void;
   powerOff(): void;
@@ -87,16 +103,6 @@ export async function init(opts: InitOptions): Promise<Emulator> {
 
   await runtime.runMain();
 
-  // Battery-RAM persistence: the C# `LocalStorageBatteryStore` reaches back into
-  // these globals via [JSImport]. Set them up before E.Init() so the bindings
-  // resolve when the store is constructed.
-  const g = globalThis as unknown as {
-    __gbBatteryGet?: (key: string) => string | null;
-    __gbBatterySet?: (key: string, value: string) => void;
-  };
-  g.__gbBatteryGet = (key) => localStorage.getItem(key);
-  g.__gbBatterySet = (key, value) => localStorage.setItem(key, value);
-
   const config = runtime.getConfig();
   const assemblyName: string = config.mainAssemblyName ?? 'GameBoyEmulator.Wasm';
   const exports = await runtime.getAssemblyExports(assemblyName);
@@ -114,7 +120,8 @@ export async function init(opts: InitOptions): Promise<Emulator> {
   return {
     width,
     height,
-    loadRom: (rom: Uint8Array) => E.LoadRom(rom),
+    loadRom: (rom, saveData) => E.LoadRom(rom, saveData ?? null),
+    getSave: () => E.GetSaveData(),
     powerOn: () => E.PowerOn(),
     powerOff: () => E.PowerOff(),
     isPoweredOn: () => E.IsPoweredOn(),

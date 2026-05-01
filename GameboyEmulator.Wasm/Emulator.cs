@@ -9,6 +9,7 @@ public static partial class Emulator
 {
     private static GameBoy? _gameBoy;
     private static StopwatchClock? _clock;
+    private static InMemoryBatteryStore? _battery;
     private static MemoryHandle _frameBufferHandle;
     private static bool _isFrameBufferPinned;
     private static bool _frameReady;
@@ -20,7 +21,8 @@ public static partial class Emulator
             return;
 
         _clock = new StopwatchClock();
-        _gameBoy = new GameBoy(_clock, new LocalStorageBatteryStore());
+        _battery = new InMemoryBatteryStore();
+        _gameBoy = new GameBoy(_clock, _battery);
         _gameBoy.FrameCompleted += () => _frameReady = true;
     }
 
@@ -33,7 +35,18 @@ public static partial class Emulator
     }
 
     [JSExport]
-    public static void LoadRom(byte[] rom) => Gb().LoadRom(rom);
+    public static void LoadRom(byte[] rom, byte[]? saveData)
+    {
+        Battery().Bytes = saveData;
+        Gb().LoadRom(rom);
+    }
+
+    [JSExport]
+    public static byte[]? GetSaveData()
+    {
+        Gb().FlushBatteryRam();
+        return Battery().Bytes;
+    }
 
     [JSExport]
     public static void PowerOn() => Gb().PowerOn();
@@ -76,4 +89,7 @@ public static partial class Emulator
 
     private static StopwatchClock Clock() =>
         _clock ?? throw new InvalidOperationException("Emulator.Init has not been called");
+
+    private static InMemoryBatteryStore Battery() =>
+        _battery ?? throw new InvalidOperationException("Emulator.Init has not been called");
 }

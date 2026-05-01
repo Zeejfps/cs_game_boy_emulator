@@ -28,6 +28,46 @@ const imageData = ctx.createImageData(canvas.width, canvas.height);
 const pixels = new Uint32Array(imageData.data.buffer);
 
 let emu: Emulator | null = null;
+let currentSaveKey: string | null = null;
+
+const SAVE_PREFIX = 'gb-save:';
+
+function readCartTitle(rom: Uint8Array): string {
+  // DMG cart title lives at 0x0134-0x0143, ASCII, null-terminated.
+  let end = 0x0134;
+  for (let i = 0x0134; i <= 0x0143; i++) {
+    if (rom[i] === 0) break;
+    end = i + 1;
+  }
+  let title = '';
+  for (let i = 0x0134; i < end; i++) title += String.fromCharCode(rom[i]);
+  return title.trim() || 'UNTITLED';
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function persistCurrentSave(): void {
+  if (!emu || !currentSaveKey) return;
+  const bytes = emu.getSave();
+  if (bytes && bytes.length > 0) {
+    try {
+      localStorage.setItem(currentSaveKey, bytesToBase64(bytes));
+    } catch (err) {
+      console.warn('Failed to persist save:', err);
+    }
+  }
+}
 
 function paint(): void {
   if (!emu) return;
@@ -97,10 +137,32 @@ async function main(): Promise<void> {
     const file = fileInput.files?.[0];
     if (!file || !emu) return;
     const bytes = new Uint8Array(await file.arrayBuffer());
+
+    // PowerOff flushes the previous cart's dirty RAM into our store; persist
+    // it to localStorage before we let LoadRom overwrite the buffer.
     if (emu.isPoweredOn()) emu.powerOff();
-    emu.loadRom(bytes);
+    persistCurrentSave();
+
+    const title = readCartTitle(bytes);
+    currentSaveKey = SAVE_PREFIX + title;
+    const savedB64 = localStorage.getItem(currentSaveKey);
+    const restored = savedB64 ? base64ToBytes(savedB64) : undefined;
+
+    emu.loadRom(bytes, restored);
     emu.powerOn();
   });
+
+  // Save on tab close / mobile background. pagehide fires reliably on iOS;
+  // visibilitychange covers tab-switching desktop browsers.
+  window.addEventListener('pagehide', persistCurrentSave);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') persistCurrentSave();
+  });
+
+  // Periodic safety net — protects against tab crashes between explicit saves.
+  setInterval(() => {
+    if (emu?.isPoweredOn()) persistCurrentSave();
+  }, 10_000);
 }
 
 main();

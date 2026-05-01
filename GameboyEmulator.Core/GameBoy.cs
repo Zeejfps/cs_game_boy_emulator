@@ -86,6 +86,8 @@ public sealed class GameBoy
     }
 
     public void SetButton(JoypadButton button, bool pressed) => _joypad.SetButton(button, pressed);
+
+    public void FlushBatteryRam() => _mmu.FlushMbc();
     
     private void Clock_OnTicked()
     {
