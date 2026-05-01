@@ -69,7 +69,6 @@ public sealed class Ppu : IPpu
     private readonly byte[] _vram = new byte[VramSize];
     private readonly byte[] _oam = new byte[OamSize];
     private readonly byte[] _frameBuffer = new byte[ScreenWidth * ScreenHeight];
-    private int _spriteCount;
 
     private byte _lcdc;
     private byte _statSources; // bits 6,5,4,3 — interrupt source enables
@@ -82,8 +81,18 @@ public sealed class Ppu : IPpu
     private byte _obp1;
     private byte _wy;
     private byte _wx;
-    private bool _isLcdEnabled;
     private byte _spriteHeight;
+
+    // Cached LCDC-derived state. Refreshed only in WriteLcdc.
+    // Defaults match LCDC = 0 (everything off).
+    private bool _isDrawingEnabled;
+    private bool _isBackgroundDrawingEnabled;
+    private bool _isObjectDrawingEnabled;
+    private bool _isWindowDrawingEnabled;
+    private Memory<byte> _bgTileMap;
+    private Memory<byte> _windowTileMap;
+    private ushort _bgTileDataBase;
+    private byte _bgTileFlipBit;
 
     private PpuMode _mode;
     private int _dot;
@@ -101,12 +110,6 @@ public sealed class Ppu : IPpu
 
     private readonly Memory<byte> _tileMap0;
     private readonly Memory<byte> _tileMap1;
-    private readonly Memory<byte> _tilePixels0;
-    private readonly Memory<byte> _tilePixels1;
-
-    private Memory<byte> _bgTileMap;
-    private Memory<byte> _bgTilePixels;
-    private byte _bgTileFlipBit;
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
 
@@ -118,14 +121,12 @@ public sealed class Ppu : IPpu
         _interrupts = interrupts;
         _tileMap0 = _vram.AsMemory(0x1800, 1024);
         _tileMap1 = _vram.AsMemory(0x1C00, 1024);
-        _tilePixels0 = _vram.AsMemory(0x0000, 4096);
-        _tilePixels1 = _vram.AsMemory(0x0800, 4096);
         _mode = PpuMode.HBlank;
     }
     
     public void Step(int tStates)
     {
-        if (!_isLcdEnabled) return;
+        if (!_isDrawingEnabled) return;
         while (tStates > 0)
         {
             tStates = _mode switch
@@ -140,6 +141,7 @@ public sealed class Ppu : IPpu
     }
 
     private byte _scanSpriteIndex;
+    private int _spriteCount;
     private readonly Sprite[] _sprites = new Sprite[MaxSpritesPerLine];
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -365,11 +367,8 @@ public sealed class Ppu : IPpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int BgTileRowAddress()
     {
-        var unsigned = (_lcdc & LcdcTileData) != 0;
-        var tileBase = unsigned ? TileDataUnsignedBase : TileDataSignedBase;
-        var flip     = unsigned ? TileDataUnsignedFlip : TileDataSignedFlip;
         var rowY = _inWindow ? (_windowLineCounter & 0x07) : ((_ly + _scy) & 0x07);
-        return tileBase + ((_fetcherTileId ^ flip) << 4) + (rowY << 1);
+        return _bgTileDataBase + ((_fetcherTileId ^ _bgTileFlipBit) << 4) + (rowY << 1);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -379,13 +378,13 @@ public sealed class Ppu : IPpu
         int tileX, tileY;
         if (_inWindow)
         {
-            tileMap = (_lcdc & LcdcWinTileMap) != 0 ? _tileMap1.Span : _tileMap0.Span;
+            tileMap = _windowTileMap.Span;
             tileX = _fetcherX & 0x1F;
             tileY = _windowLineCounter >> 3;
         }
         else
         {
-            tileMap = (_lcdc & LcdcBgTileMap) != 0 ? _tileMap1.Span : _tileMap0.Span;
+            tileMap = _bgTileMap.Span;
             tileX = ((_scx >> 3) + _fetcherX) & 0x1F;
             tileY = ((_ly + _scy) & 0xFF) >> 3;
         }
@@ -417,7 +416,7 @@ public sealed class Ppu : IPpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool TryStartSpriteFetch()
     {
-        if ((_lcdc & LcdcObjEnable) == 0) return false;
+        if (!_isObjectDrawingEnabled) return false;
         while (_nextSpriteIndex < _spriteCount)
         {
             var s = _sprites[_nextSpriteIndex];
@@ -538,7 +537,7 @@ public sealed class Ppu : IPpu
         // (window pixels are not subject to SCX discard) and restarts the
         // fetcher against the window tilemap with WLY as the row source.
         if (!_inWindow
-            && (_lcdc & LcdcWinEnable) != 0
+            && _isWindowDrawingEnabled
             && _wyTriggered
             && _wx <= 166
             && _wx >= 7
@@ -592,10 +591,10 @@ public sealed class Ppu : IPpu
             _spriteFifoCount--;
         }
 
-        if ((_lcdc & LcdcBgEnable) == 0) bgPixel = 0;
+        if (!_isBackgroundDrawingEnabled) bgPixel = 0;
 
         byte color;
-        if (spPixel != 0 && (_lcdc & LcdcObjEnable) != 0 && (spBgPrio == 0 || bgPixel == 0))
+        if (spPixel != 0 && _isObjectDrawingEnabled && (spBgPrio == 0 || bgPixel == 0))
         {
             var palette = spPalette == 0 ? _obp0 : _obp1;
             color = (byte)((palette >> (spPixel << 1)) & 0x03);
@@ -628,11 +627,19 @@ public sealed class Ppu : IPpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteLcdc(byte value)
     {
-        var wasEnabled = _isLcdEnabled;
-        _isLcdEnabled = (value & LcdEnableMask) != 0;
-        _spriteHeight = (value & LcdcObjSize) != 0 ? (byte)16 : (byte)8;
+        var wasDrawingEnabled = _isDrawingEnabled;
+        _isDrawingEnabled            = (value & LcdEnableMask)   != 0;
+        _isBackgroundDrawingEnabled  = (value & LcdcBgEnable)    != 0;
+        _isObjectDrawingEnabled      = (value & LcdcObjEnable)   != 0;
+        _isWindowDrawingEnabled      = (value & LcdcWinEnable)   != 0;
+        _spriteHeight                = (value & LcdcObjSize)     != 0 ? (byte)16 : (byte)8;
+        _bgTileMap                   = (value & LcdcBgTileMap)   != 0 ? _tileMap1 : _tileMap0;
+        _windowTileMap               = (value & LcdcWinTileMap)  != 0 ? _tileMap1 : _tileMap0;
+        var unsignedTileData         = (value & LcdcTileData)    != 0;
+        _bgTileDataBase = unsignedTileData ? TileDataUnsignedBase : TileDataSignedBase;
+        _bgTileFlipBit  = unsignedTileData ? TileDataUnsignedFlip : TileDataSignedFlip;
         _lcdc = value;
-        if (wasEnabled && !_isLcdEnabled)
+        if (wasDrawingEnabled && !_isDrawingEnabled)
         {
             _ly = 0;
             _dot = 0;
@@ -643,7 +650,7 @@ public sealed class Ppu : IPpu
             _inWindow = false;
             _windowRenderedThisLine = false;
         }
-        else if (!wasEnabled && _isLcdEnabled)
+        else if (!wasDrawingEnabled && _isDrawingEnabled)
         {
             _ly = 0;
             _dot = 0;
