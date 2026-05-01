@@ -60,14 +60,35 @@ public sealed class GameBoy
         _mmu.SetMbc(mbc);
     }
 
+    // Optional 256-byte DMG boot ROM. When set, PowerOn starts the CPU at
+    // 0x0000 inside the boot ROM (which scrolls the Nintendo logo, verifies
+    // the cart, and writes its own post-boot register state) instead of
+    // skipping straight to the cart's entry point at 0x0100. Pass null to
+    // clear and revert to the SkipBoot path.
+    public void SetBootRom(byte[]? bootRom)
+    {
+        if (IsPoweredOn)
+            throw new InvalidOperationException("Cannot set boot ROM while the GameBoy is powered on");
+        _mmu.SetBootRom(bootRom);
+    }
+
     public void PowerOn()
     {
         if (IsPoweredOn)
             throw new InvalidOperationException("GameBoy is already powered on");
 
         IsPoweredOn = true;
-        _cpu.SkipBoot();
-        SkipBootIo();
+        if (_mmu.IsBootRomEnabled)
+        {
+            // Boot ROM will run from 0x0000 and set its own post-boot state,
+            // so leave the CPU and I/O registers cold.
+            _cpu.Reset();
+        }
+        else
+        {
+            _cpu.SkipBoot();
+            SkipBootIo();
+        }
         _lastTimestamp = _clock.GetTimestamp();
         _clock.Ticked += Clock_OnTicked;
     }

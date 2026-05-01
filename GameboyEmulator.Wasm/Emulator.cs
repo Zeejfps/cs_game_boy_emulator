@@ -42,6 +42,9 @@ public static partial class Emulator
     }
 
     [JSExport]
+    public static void SetBootRom(byte[]? bootRom) => Gb().SetBootRom(bootRom);
+
+    [JSExport]
     public static byte[]? GetSaveData()
     {
         Gb().FlushBatteryRam();

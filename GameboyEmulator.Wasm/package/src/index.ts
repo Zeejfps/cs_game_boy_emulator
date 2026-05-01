@@ -2,6 +2,7 @@ interface EmulatorExports {
   Init(): void;
   LoadRom(rom: Uint8Array, saveData: Uint8Array | null): void;
   GetSaveData(): Uint8Array | null;
+  SetBootRom(bootRom: Uint8Array | null): void;
   PowerOn(): void;
   PowerOff(): void;
   IsPoweredOn(): boolean;
@@ -41,6 +42,15 @@ export interface Emulator {
    * there's no save to restore. Ignored for cartridges without battery RAM.
    */
   loadRom(rom: Uint8Array, saveData?: Uint8Array): void;
+
+  /**
+   * Install an optional 256-byte DMG boot ROM. When set, `powerOn` starts
+   * the CPU at 0x0000 and runs the boot ROM (Nintendo logo scroll, header
+   * verification, then jump to 0x0100); when null/unset, the emulator
+   * fast-paths past the boot sequence with documented post-boot register
+   * values. Must be called when powered off.
+   */
+  setBootRom(bootRom: Uint8Array | null): void;
 
   /**
    * Returns the current battery-backed cartridge RAM, or null if the
@@ -122,6 +132,7 @@ export async function init(opts: InitOptions): Promise<Emulator> {
     height,
     loadRom: (rom, saveData) => E.LoadRom(rom, saveData ?? null),
     getSave: () => E.GetSaveData(),
+    setBootRom: (bootRom) => E.SetBootRom(bootRom),
     powerOn: () => E.PowerOn(),
     powerOff: () => E.PowerOff(),
     isPoweredOn: () => E.IsPoweredOn(),

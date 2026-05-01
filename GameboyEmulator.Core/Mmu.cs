@@ -9,9 +9,14 @@ public sealed class Mmu : IMemoryBus
     private const ushort InterruptFlagAddress = 0xFF0F;
     private const ushort InterruptEnableAddress = 0xFFFF;
 
+    private const int BootRomSize = 0x100;
+
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
     private byte _dmaSource;
+
+    private byte[]? _bootRom;
+    private bool _bootRomEnabled;
 
     private IMbc _mbc;
     private readonly IPpu _ppu;
@@ -141,7 +146,10 @@ public sealed class Mmu : IMemoryBus
                 _ppu.WriteRegister(address, value);
                 break;
             case 0xFF50:
-                // TODO: boot ROM disable
+                // Real hardware locks the boot ROM out permanently on any
+                // non-zero write. The boot ROM does this as its final act
+                // before jumping to 0x0100.
+                if (value != 0) _bootRomEnabled = false;
                 break;
         }
     }
@@ -155,6 +163,8 @@ public sealed class Mmu : IMemoryBus
             case 0x1:
             case 0x2:
             case 0x3:
+                if (_bootRomEnabled && address < BootRomSize)
+                    return _bootRom![address];
                 return _mbc.ReadBank0(address);
             case 0x4:
             case 0x5:
@@ -228,6 +238,8 @@ public sealed class Mmu : IMemoryBus
             case 0x1:
             case 0x2:
             case 0x3:
+                if (_bootRomEnabled && address + length <= BootRomSize)
+                    return _bootRom!.AsSpan(address, length);
                 return _mbc.ReadBank0Range(address, length);
             case 0x4:
             case 0x5:
@@ -256,6 +268,9 @@ public sealed class Mmu : IMemoryBus
         Array.Clear(_wram);
         Array.Clear(_hram);
         _dmaSource = 0;
+        // Power-cycle re-arms the boot ROM if one is loaded — matches what
+        // happens when you turn a real Game Boy off and back on again.
+        _bootRomEnabled = _bootRom != null;
     }
 
     public void SetMbc(IMbc mbc)
@@ -264,6 +279,16 @@ public sealed class Mmu : IMemoryBus
     }
 
     public void FlushMbc() => _mbc.Flush();
+
+    public bool IsBootRomEnabled => _bootRomEnabled;
+
+    public void SetBootRom(byte[]? bootRom)
+    {
+        if (bootRom != null && bootRom.Length != BootRomSize)
+            throw new ArgumentException($"DMG boot ROM must be exactly {BootRomSize} bytes; got {bootRom.Length}", nameof(bootRom));
+        _bootRom = bootRom;
+        _bootRomEnabled = bootRom != null;
+    }
 
     public void WriteWord(ushort address, ushort value)
     {
