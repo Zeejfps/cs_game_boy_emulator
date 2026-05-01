@@ -217,16 +217,19 @@ public sealed class Ppu : IPpu
         throw new NotImplementedException();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_GetTilePixelsHigh()
     {
         throw new NotImplementedException();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_GetTilePixelsLow()
     {
         throw new NotImplementedException();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_GetTile()
     {
         var tileMap = (_lcdc & LcdcBgTileMap) != 0 ? _tileMap1.Span : _tileMap0.Span;
