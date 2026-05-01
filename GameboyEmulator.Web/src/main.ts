@@ -68,6 +68,30 @@ async function main(): Promise<void> {
     emu.setButton(button, false);
   });
 
+  const touchButtons = document.querySelectorAll<HTMLButtonElement>('#touch-controls button[data-btn]');
+  touchButtons.forEach((el) => {
+    const name = el.dataset.btn as keyof typeof JoypadButton | undefined;
+    if (!name) return;
+    const button = JoypadButton[name];
+    const press = (e: Event) => {
+      e.preventDefault();
+      if (!emu) return;
+      emu.setButton(button, true);
+    };
+    const release = (e: Event) => {
+      e.preventDefault();
+      if (!emu) return;
+      emu.setButton(button, false);
+    };
+    el.addEventListener('touchstart', press, { passive: false });
+    el.addEventListener('touchend', release, { passive: false });
+    el.addEventListener('touchcancel', release, { passive: false });
+    el.addEventListener('mousedown', press);
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
+
   const fileInput = document.getElementById('rom') as HTMLInputElement;
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
