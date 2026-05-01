@@ -180,10 +180,14 @@ public sealed class Ppu : IPpu
         StepFetcher(tStates);
         StepLcd(tStates);
     }
+
+    #region BgPixelsFetcher
     
     private FetcherState _fetcherState;
     private byte _fetcherX;
     private byte _fetcherTileId;
+    private byte _fetcherTileLow;
+    private byte _fetcherTileHigh;
 
     private void StepFetcher(int tStates)
     {
@@ -218,15 +222,29 @@ public sealed class Ppu : IPpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BgPixelsFetcher_GetTilePixelsHigh()
+    private void BgPixelsFetcher_GetTilePixelsLow()
     {
-        throw new NotImplementedException();
+        var address = BgTileRowAddress();
+        _fetcherTileLow = _vram[address];
+        _fetcherState = FetcherState.GetTilePixelsHigh;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BgPixelsFetcher_GetTilePixelsLow()
+    private void BgPixelsFetcher_GetTilePixelsHigh()
     {
-        throw new NotImplementedException();
+        var address = BgTileRowAddress() + 1;
+        _fetcherTileHigh = _vram[address];
+        _fetcherState = FetcherState.Push;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int BgTileRowAddress()
+    {
+        var unsigned = (_lcdc & LcdcTileData) != 0;
+        var tileBase = unsigned ? TileDataUnsignedBase : TileDataSignedBase;
+        var flip     = unsigned ? TileDataUnsignedFlip : TileDataSignedFlip;
+        var rowY = (_ly + _scy) & 0x07;
+        return tileBase + ((_fetcherTileId ^ flip) << 4) + (rowY << 1);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -238,6 +256,8 @@ public sealed class Ppu : IPpu
         _fetcherTileId = tileMap[(tileY << 5) | tileX];
         _fetcherState = FetcherState.GetTilePixelsLow;
     }
+    
+    #endregion
 
     private void StepLcd(int tStates)
     {
