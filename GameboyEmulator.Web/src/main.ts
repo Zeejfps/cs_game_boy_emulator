@@ -102,8 +102,11 @@ function loop(): void {
 }
 
 async function main(): Promise<void> {
+  const versionEl = document.getElementById('version');
+  if (versionEl) versionEl.textContent = __APP_VERSION__;
+
   try {
-    emu = await init({ baseUrl: '/wasm/' });
+    emu = await init({ baseUrl: '/wasm/', version: __APP_VERSION__ });
   } catch (err) {
     console.error('Failed to initialize emulator:', err);
     return;

@@ -1,9 +1,22 @@
 import { defineConfig, type Plugin } from 'vite';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// CI sets APP_VERSION to the git tag (e.g. "v0.1.0"). Locally, fall back to a
+// short git description so dev builds still get a unique token.
+function resolveAppVersion(): string {
+  if (process.env.APP_VERSION) return process.env.APP_VERSION;
+  try {
+    return execSync('git describe --tags --always --dirty', { cwd: __dirname }).toString().trim();
+  } catch {
+    return 'dev';
+  }
+}
+const APP_VERSION = resolveAppVersion();
 
 const WASM_PREFIX = '/wasm/';
 const WASM_DIR = path.resolve(__dirname, '../GameboyEmulator.Wasm/package/dist');
@@ -68,4 +81,7 @@ function serveWasmAssets(): Plugin {
 
 export default defineConfig({
   plugins: [serveWasmAssets()],
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
 });

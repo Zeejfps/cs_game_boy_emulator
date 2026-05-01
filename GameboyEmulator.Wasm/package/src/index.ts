@@ -101,14 +101,23 @@ export interface Emulator {
 export interface InitOptions {
   /** URL where the runtime files are hosted (trailing slash optional). */
   baseUrl: string;
+  /**
+   * Optional cache-busting token appended as `?v=…` to runtime URLs. The
+   * dotnet.js bootstrap and individual resource files (.wasm/.dll/.js) are
+   * not content-hashed at this layer, so a stable URL with a stale CDN/browser
+   * copy can persist across deployments. Pass the app version (e.g. a git tag)
+   * to force a fresh fetch on each release.
+   */
+  version?: string;
 }
 
 export async function init(opts: InitOptions): Promise<Emulator> {
   const baseUrl = opts.baseUrl.endsWith('/') ? opts.baseUrl : opts.baseUrl + '/';
-  const { dotnet } = await import(baseUrl + 'dotnet.js');
+  const query = opts.version ? `?v=${encodeURIComponent(opts.version)}` : '';
+  const { dotnet } = await import(baseUrl + 'dotnet.js' + query);
 
   const runtime = await dotnet
-    .withResourceLoader((_type: string, name: string) => baseUrl + name)
+    .withResourceLoader((_type: string, name: string) => baseUrl + name + query)
     .create();
 
   await runtime.runMain();
