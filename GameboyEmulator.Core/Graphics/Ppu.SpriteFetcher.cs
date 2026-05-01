@@ -59,7 +59,7 @@ public sealed partial class Ppu
     private int SpriteTileRowAddress()
     {
         var row = _ly - (_activeSprite.Y - 16);
-        if ((_activeSprite.Attributes & OamAttrYFlip) != 0)
+        if (_activeSprite.Attributes.HasFlag(OamAttributes.YFlip))
             row = _spriteHeight - 1 - row;
         var tileId = _activeSprite.TileId;
         if (_spriteHeight == 16)
@@ -79,7 +79,7 @@ public sealed partial class Ppu
     {
         var low = _spriteFetcherTileLow;
         var high = _spriteFetcherTileHigh;
-        if ((_activeSprite.Attributes & OamAttrXFlip) != 0)
+        if (_activeSprite.Attributes.HasFlag(OamAttributes.XFlip))
         {
             low = ReverseBits(low);
             high = ReverseBits(high);
@@ -94,8 +94,8 @@ public sealed partial class Ppu
         var newHigh = (byte)(high << shift);
         var pixelMask = (byte)(0xFF << shift);
 
-        var paletteByte = (_activeSprite.Attributes & OamAttrPalette) != 0 ? (byte)0xFF : (byte)0x00;
-        var bgPrioByte  = (_activeSprite.Attributes & OamAttrBgPrio)  != 0 ? (byte)0xFF : (byte)0x00;
+        var paletteByte = _activeSprite.Attributes.HasFlag(OamAttributes.Palette)    ? (byte)0xFF : (byte)0x00;
+        var bgPrioByte  = _activeSprite.Attributes.HasFlag(OamAttributes.BgPriority) ? (byte)0xFF : (byte)0x00;
 
         // Slots already holding an opaque sprite pixel (color != 0) within the
         // currently-occupied portion of the FIFO are preserved.
