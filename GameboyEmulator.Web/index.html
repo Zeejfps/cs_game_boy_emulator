@@ -156,6 +156,14 @@
         }
         .ab .b { top: 60px; left: 0; }
         .ab .a { top: 20px; left: 80px; }
+        .ab .ab-combo {
+          width: 50px;
+          height: 50px;
+          top: 90px;
+          left: 70px;
+          font-size: 14px;
+          letter-spacing: 0.5px;
+        }
         .start-select {
           grid-column: 1 / -1;
           display: flex;
@@ -197,10 +205,10 @@
         <div class="ab">
           <button data-btn="B" class="b" aria-label="B">B</button>
           <button data-btn="A" class="a" aria-label="A">A</button>
+          <button data-combo="AB" class="ab-combo" aria-label="A and B together">A+B</button>
         </div>
         <div class="start-select">
           <button data-btn="Select" aria-label="Select">SELECT</button>
-          <button data-combo="AB" aria-label="A and B together">A+B</button>
           <button data-btn="Start" aria-label="Start">START</button>
         </div>
       </div>
