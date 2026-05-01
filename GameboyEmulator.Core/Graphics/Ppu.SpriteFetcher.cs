@@ -99,15 +99,15 @@ public sealed partial class Ppu
 
         // Slots already holding an opaque sprite pixel (color != 0) within the
         // currently-occupied portion of the FIFO are preserved.
-        var occupiedMask = _spriteFifoCount == 0 ? (byte)0 : (byte)(0xFF << (8 - _spriteFifoCount));
-        var existingOpaque = (byte)((_spriteFifoLow | _spriteFifoHigh) & occupiedMask);
+        var occupiedMask = _spriteFifo.Count == 0 ? (byte)0 : (byte)(0xFF << (8 - _spriteFifo.Count));
+        var existingOpaque = (byte)((_spriteFifo.Low | _spriteFifo.High) & occupiedMask);
         var writeMask = (byte)(pixelMask & ~existingOpaque);
 
-        _spriteFifoLow        = (byte)((_spriteFifoLow        & ~writeMask) | (newLow       & writeMask));
-        _spriteFifoHigh       = (byte)((_spriteFifoHigh       & ~writeMask) | (newHigh      & writeMask));
-        _spriteFifoPalette    = (byte)((_spriteFifoPalette    & ~writeMask) | (paletteByte  & writeMask));
-        _spriteFifoBgPriority = (byte)((_spriteFifoBgPriority & ~writeMask) | (bgPrioByte   & writeMask));
-        if (_spriteFifoCount < 8) _spriteFifoCount = 8;
+        _spriteFifo.Low        = (byte)((_spriteFifo.Low        & ~writeMask) | (newLow       & writeMask));
+        _spriteFifo.High       = (byte)((_spriteFifo.High       & ~writeMask) | (newHigh      & writeMask));
+        _spriteFifo.Palette    = (byte)((_spriteFifo.Palette    & ~writeMask) | (paletteByte  & writeMask));
+        _spriteFifo.BgPriority = (byte)((_spriteFifo.BgPriority & ~writeMask) | (bgPrioByte   & writeMask));
+        if (_spriteFifo.Count < 8) _spriteFifo.Count = 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

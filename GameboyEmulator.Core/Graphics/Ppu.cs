@@ -80,9 +80,7 @@ public sealed partial class Ppu : IPpu
     private byte _fetcherTileLow;
     private byte _fetcherTileHigh;
 
-    private byte _bgFifoLow;
-    private byte _bgFifoHigh;
-    private byte _bgFifoCount;
+    private BgFifo _bgFifo;
 
     private byte _lcdX;
     private byte _lcdDiscard;
@@ -95,18 +93,10 @@ public sealed partial class Ppu : IPpu
     private byte _spriteFetcherTileHigh;
     private byte _nextSpriteIndex;
 
-    // Sprite FIFO: MSB = next pixel popped, mirroring BG FIFO layout.
-    // Color is two bitplanes; palette and bg-priority are one bit per slot.
-    private byte _spriteFifoLow;
-    private byte _spriteFifoHigh;
-    private byte _spriteFifoPalette;
-    private byte _spriteFifoBgPriority;
-    private byte _spriteFifoCount;
+    private SpriteFifo _spriteFifo;
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
-
     public event Action? FrameCompleted;
-
 
     public Ppu(IInterrupts interrupts)
     {
@@ -181,18 +171,14 @@ public sealed partial class Ppu : IPpu
         _mode = PpuMode.Drawing;
         _fetcherState = BgPixelsFetcherState.GetTile;
         _fetcherX = 0;
-        _bgFifoCount = 0;
+        _bgFifo.Clear();
         _lcdX = 0;
         _lcdDiscard = (byte)(_scx & 0x07);
         _fetchingSprite = false;
         _inWindow = false;
         _windowRenderedThisLine = false;
         if (_ly == _wy) _wyTriggered = true;
-        _spriteFifoLow = 0;
-        _spriteFifoHigh = 0;
-        _spriteFifoPalette = 0;
-        _spriteFifoBgPriority = 0;
-        _spriteFifoCount = 0;
+        _spriteFifo = default;
         _nextSpriteIndex = 0;
         SortSpritesByX();
         UpdateStatLine();
@@ -316,23 +302,21 @@ public sealed partial class Ppu : IPpu
         {
             _inWindow = true;
             _windowRenderedThisLine = true;
-            _bgFifoCount = 0;
+            _bgFifo.Clear();
             _fetcherState = BgPixelsFetcherState.GetTile;
             _fetcherX = 0;
             _lcdDiscard = 0;
             return;
         }
 
-        if (_bgFifoCount == 0) return;
+        if (_bgFifo.IsEmpty) return;
 
         // SCX-discard pixels are popped from the BG FIFO without writing to the
         // framebuffer. Sprite triggering must wait until discard completes —
         // sprites are positioned in screen space, and _lcdX is still 0 here.
         if (_lcdDiscard != 0)
         {
-            _bgFifoLow  = (byte)(_bgFifoLow  << 1);
-            _bgFifoHigh = (byte)(_bgFifoHigh << 1);
-            _bgFifoCount--;
+            _bgFifo.DropOne();
             _lcdDiscard--;
             return;
         }
@@ -342,25 +326,13 @@ public sealed partial class Ppu : IPpu
         // _lcdX doesn't advance until the FIFO actually pops a pixel.
         if (TryStartSpriteFetch()) return;
 
-        var bgPixel = (((_bgFifoHigh >> 7) & 1) << 1) | ((_bgFifoLow >> 7) & 1);
-        _bgFifoLow  = (byte)(_bgFifoLow  << 1);
-        _bgFifoHigh = (byte)(_bgFifoHigh << 1);
-        _bgFifoCount--;
+        var bgPixel = _bgFifo.Pop();
 
         var spPixel = 0;
         var spPalette = 0;
         var spBgPrio = 0;
-        if (_spriteFifoCount > 0)
-        {
-            spPixel   = (((_spriteFifoHigh >> 7) & 1) << 1) | ((_spriteFifoLow >> 7) & 1);
-            spPalette = (_spriteFifoPalette    >> 7) & 1;
-            spBgPrio  = (_spriteFifoBgPriority >> 7) & 1;
-            _spriteFifoLow        = (byte)(_spriteFifoLow        << 1);
-            _spriteFifoHigh       = (byte)(_spriteFifoHigh       << 1);
-            _spriteFifoPalette    = (byte)(_spriteFifoPalette    << 1);
-            _spriteFifoBgPriority = (byte)(_spriteFifoBgPriority << 1);
-            _spriteFifoCount--;
-        }
+        if (_spriteFifo.Count > 0)
+            (spPixel, spPalette, spBgPrio) = _spriteFifo.Pop();
 
         if (!_isBackgroundDrawingEnabled) bgPixel = 0;
 

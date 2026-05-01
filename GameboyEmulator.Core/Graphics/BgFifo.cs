@@ -1,0 +1,45 @@
+using System.Runtime.CompilerServices;
+
+namespace GameBoyEmulator.Core.Graphics;
+
+// 8-pixel BG/window FIFO. MSB end is the next pixel popped; pixels are stored
+// as two bitplanes (Low/High) like the underlying tile data.
+internal struct BgFifo
+{
+    public byte Low;
+    public byte High;
+    public byte Count;
+
+    public bool IsEmpty
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Count == 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Push(byte low, byte high)
+    {
+        Low = low;
+        High = high;
+        Count = 8;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Clear() => Count = 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Pop()
+    {
+        var pixel = (((High >> 7) & 1) << 1) | ((Low >> 7) & 1);
+        DropOne();
+        return pixel;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void DropOne()
+    {
+        Low = (byte)(Low << 1);
+        High = (byte)(High << 1);
+        Count--;
+    }
+}

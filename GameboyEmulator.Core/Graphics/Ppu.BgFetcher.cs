@@ -8,24 +8,36 @@ public sealed partial class Ppu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelFetcher_Tick()
     {
-        if (_fetchingSprite) { SpriteFetcher_Tick(); return; }
+        if (_fetchingSprite)
+        {
+            SpriteFetcher_Tick(); 
+            return;
+        }
+        
         switch (_fetcherState)
         {
-            case BgPixelsFetcherState.GetTile:          BgPixelsFetcher_GetTile();          break;
-            case BgPixelsFetcherState.GetTilePixelsLow: BgPixelsFetcher_GetTilePixelsLow(); break;
-            case BgPixelsFetcherState.GetTilePixelsHigh:BgPixelsFetcher_GetTilePixelsHigh();break;
-            case BgPixelsFetcherState.Push:             BgPixelsFetcher_Push();             break;
-            default: throw new ArgumentOutOfRangeException();
+            case BgPixelsFetcherState.GetTile:          
+                BgPixelsFetcher_GetTile();         
+                break;
+            case BgPixelsFetcherState.GetTilePixelsLow: 
+                BgPixelsFetcher_GetTilePixelsLow(); 
+                break;
+            case BgPixelsFetcherState.GetTilePixelsHigh:
+                BgPixelsFetcher_GetTilePixelsHigh();
+                break;
+            case BgPixelsFetcherState.Push:             
+                BgPixelsFetcher_Push(); 
+                break;
+            default: 
+                throw new ArgumentOutOfRangeException();
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_Push()
     {
-        if (_bgFifoCount != 0) return;
-        _bgFifoLow = _fetcherTileLow;
-        _bgFifoHigh = _fetcherTileHigh;
-        _bgFifoCount = 8;
+        if (!_bgFifo.IsEmpty) return;
+        _bgFifo.Push(_fetcherTileLow, _fetcherTileHigh);
         _fetcherX++;
         _fetcherState = BgPixelsFetcherState.GetTile;
     }
