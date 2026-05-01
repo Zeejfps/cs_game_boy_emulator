@@ -7,10 +7,7 @@ public sealed partial class Ppu : IPpu
 {
     public const int ScreenWidth = 160;
     public const int ScreenHeight = 144;
-
-    private const int VramSize = 0x2000;
-    private const int OamSize = 0xA0;
-
+    
     private const int DotsPerLine    = 456;
     private const int LinesPerFrame  = 154;
     private const int VisibleLines   = 144;
@@ -18,8 +15,8 @@ public sealed partial class Ppu : IPpu
 
     private const int MaxSpritesPerLine = 10;
 
-    private readonly byte[] _vram = new byte[VramSize];
-    private readonly byte[] _oam = new byte[OamSize];
+    private readonly byte[] _vram = new byte[0x2000];
+    private readonly byte[] _oam = new byte[0xA0];
     private readonly byte[] _frameBuffer = new byte[ScreenWidth * ScreenHeight];
 
     private LcdControl _lcdc;
