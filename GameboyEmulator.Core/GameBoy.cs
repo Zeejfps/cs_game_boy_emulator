@@ -64,11 +64,24 @@ public sealed class GameBoy
     {
         if (IsPoweredOn)
             throw new InvalidOperationException("GameBoy is already powered on");
-        
+
         IsPoweredOn = true;
         _cpu.SkipBoot();
+        SkipBootIo();
         _lastTimestamp = _clock.GetTimestamp();
         _clock.Ticked += Clock_OnTicked;
+    }
+
+    // Apply the I/O register state the DMG boot ROM normally leaves behind.
+    // Without this, LCDC stays 0 (LCD off) and BGP stays 0 (every BG color
+    // maps to white) — games that don't initialize these themselves (Kirby's
+    // Dream Land, many others) render a blank screen.
+    private void SkipBootIo()
+    {
+        _mmu.Write(0xFF40, 0x91); // LCDC: LCD on, BG on, tile data 0x8000, tile map 0x9800
+        _mmu.Write(0xFF47, 0xFC); // BGP
+        _mmu.Write(0xFF48, 0xFF); // OBP0
+        _mmu.Write(0xFF49, 0xFF); // OBP1
     }
 
     public void PowerOff()

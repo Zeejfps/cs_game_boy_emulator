@@ -30,6 +30,16 @@ const pixels = new Uint32Array(imageData.data.buffer);
 let emu: Emulator | null = null;
 let currentSaveKey: string | null = null;
 
+// Backstop for anything that escapes the per-callsite try/catches below
+// (event handlers, microtasks, etc.). Without these listeners, async errors
+// in event callbacks silently disappear into the void.
+window.addEventListener('error', (e) => {
+  console.error('Uncaught error:', e.error ?? e.message);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled promise rejection:', e.reason);
+});
+
 const SAVE_PREFIX = 'gb-save:';
 
 function readCartTitle(rom: Uint8Array): string {
@@ -79,7 +89,15 @@ function paint(): void {
 }
 
 function loop(): void {
-  if (emu && emu.isPoweredOn()) emu.tick();
+  try {
+    if (emu && emu.isPoweredOn()) emu.tick();
+  } catch (err) {
+    console.error('Emulator tick failed — halting CPU loop:', err);
+    if (emu?.isPoweredOn()) {
+      try { emu.powerOff(); } catch (offErr) { console.error('powerOff during recovery failed:', offErr); }
+    }
+    return; // stop scheduling further frames; the user can load another ROM.
+  }
   requestAnimationFrame(loop);
 }
 
@@ -136,20 +154,25 @@ async function main(): Promise<void> {
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
     if (!file || !emu) return;
-    const bytes = new Uint8Array(await file.arrayBuffer());
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
 
-    // PowerOff flushes the previous cart's dirty RAM into our store; persist
-    // it to localStorage before we let LoadRom overwrite the buffer.
-    if (emu.isPoweredOn()) emu.powerOff();
-    persistCurrentSave();
+      // PowerOff flushes the previous cart's dirty RAM into our store; persist
+      // it to localStorage before we let LoadRom overwrite the buffer.
+      if (emu.isPoweredOn()) emu.powerOff();
+      persistCurrentSave();
 
-    const title = readCartTitle(bytes);
-    currentSaveKey = SAVE_PREFIX + title;
-    const savedB64 = localStorage.getItem(currentSaveKey);
-    const restored = savedB64 ? base64ToBytes(savedB64) : undefined;
+      const title = readCartTitle(bytes);
+      currentSaveKey = SAVE_PREFIX + title;
+      const savedB64 = localStorage.getItem(currentSaveKey);
+      const restored = savedB64 ? base64ToBytes(savedB64) : undefined;
 
-    emu.loadRom(bytes, restored);
-    emu.powerOn();
+      console.info(`Loading ROM "${title}" (${bytes.length} bytes, cart type 0x${bytes[0x0147].toString(16).padStart(2, '0')})`);
+      emu.loadRom(bytes, restored);
+      emu.powerOn();
+    } catch (err) {
+      console.error(`Failed to load ROM "${file.name}":`, err);
+    }
   });
 
   // Save on tab close / mobile background. pagehide fires reliably on iOS;
