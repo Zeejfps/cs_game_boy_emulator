@@ -10,6 +10,19 @@ interface EmulatorExports {
   GetFrameBufferHeight(): number;
   GetFrameBufferLength(): number;
   GetFrameBufferPointer(): number;
+  SetButton(button: number, pressed: boolean): void;
+}
+
+/** Mirrors the C# `JoypadButton` enum — values are stable and crossed via WASM. */
+export enum JoypadButton {
+  A      = 0,
+  B      = 1,
+  Select = 2,
+  Start  = 3,
+  Right  = 4,
+  Left   = 5,
+  Up     = 6,
+  Down   = 7,
 }
 
 export interface Emulator {
@@ -50,6 +63,13 @@ export interface Emulator {
    * immediately (e.g. draw to a canvas) or copy it.
    */
   getFrameBuffer(): Uint8Array;
+
+  /**
+   * Set a Game Boy button's pressed state. Edges drive the joypad interrupt;
+   * the host is responsible for translating keyboard / gamepad events into
+   * `setButton(button, true)` on press and `setButton(button, false)` on release.
+   */
+  setButton(button: JoypadButton, pressed: boolean): void;
 }
 
 export interface InitOptions {
@@ -106,5 +126,6 @@ export async function init(opts: InitOptions): Promise<Emulator> {
       const heap = runtime.localHeapViewU8();
       return heap.subarray(ptr, ptr + length);
     },
+    setButton: (button, pressed) => E.SetButton(button, pressed),
   };
 }

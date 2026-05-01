@@ -18,6 +18,8 @@ internal sealed class NullJoypad : IJoypad
 {
     public void Select(byte value) { }
     public byte Read() => 0xFF;
+    public void SetButton(JoypadButton button, bool pressed) { }
+    public void Reset() { }
 }
 
 internal sealed class NullApu : IApu

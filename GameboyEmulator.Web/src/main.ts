@@ -1,4 +1,17 @@
-import { init, type Emulator } from 'gameboy-emulator';
+import { init, JoypadButton, type Emulator } from 'gameboy-emulator';
+
+const KEY_MAP: Record<string, JoypadButton> = {
+  ArrowUp:    JoypadButton.Up,
+  ArrowDown:  JoypadButton.Down,
+  ArrowLeft:  JoypadButton.Left,
+  ArrowRight: JoypadButton.Right,
+  z: JoypadButton.A,
+  Z: JoypadButton.A,
+  x: JoypadButton.B,
+  X: JoypadButton.B,
+  Enter: JoypadButton.Start,
+  Shift: JoypadButton.Select,
+};
 
 // Classic DMG green palette (color IDs 0..3), packed little-endian RGBA so
 // each entry can be written as a single Uint32 into ImageData.
@@ -40,6 +53,20 @@ async function main(): Promise<void> {
 
   emu.onFrame(paint);
   requestAnimationFrame(loop);
+
+  window.addEventListener('keydown', (e) => {
+    const button = KEY_MAP[e.key];
+    if (button === undefined || !emu) return;
+    e.preventDefault();
+    if (e.repeat) return;
+    emu.setButton(button, true);
+  });
+  window.addEventListener('keyup', (e) => {
+    const button = KEY_MAP[e.key];
+    if (button === undefined || !emu) return;
+    e.preventDefault();
+    emu.setButton(button, false);
+  });
 
   const fileInput = document.getElementById('rom') as HTMLInputElement;
   fileInput.addEventListener('change', async () => {

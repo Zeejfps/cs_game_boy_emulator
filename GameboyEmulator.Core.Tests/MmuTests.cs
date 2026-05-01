@@ -392,6 +392,8 @@ public class MmuTests
         public byte ReadStub { get; set; }
         public void Select(byte value) => LastSelect = value;
         public byte Read() => ReadStub;
+        public void SetButton(JoypadButton button, bool pressed) { }
+        public void Reset() { }
     }
 
     private sealed class FakeApu : IApu

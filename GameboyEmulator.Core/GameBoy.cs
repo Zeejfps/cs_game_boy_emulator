@@ -22,6 +22,7 @@ public sealed class GameBoy
     private readonly Ppu _ppu;
     private readonly Mmu _mmu;
     private readonly Timer _timer;
+    private readonly Joypad _joypad;
     private readonly double _cyclesPerTick;
 
     private long _lastTimestamp;
@@ -34,13 +35,14 @@ public sealed class GameBoy
         var interrupts = new Interrupts();
         _ppu = new Ppu(interrupts);
         var mbc = new NoCartridgeMbc();
-        var joypad = new Joypad();
+        var joypad = new Joypad(interrupts);
         var timer = new Timer(interrupts);
         var apu = new Apu();
         var serial = new Serial(interrupts);
         var mmu = new Mmu(mbc, _ppu, joypad, timer, apu, serial, interrupts);
-        
+
         _timer = timer;
+        _joypad = joypad;
         _mmu = mmu;
         _cpu = new Cpu(mmu, interrupts);
 
@@ -74,10 +76,13 @@ public sealed class GameBoy
 
         _mmu.Reset();
         _timer.Reset();
+        _joypad.Reset();
         _cpu.Reset();
         _clock.Ticked -= Clock_OnTicked;
         IsPoweredOn = false;
     }
+
+    public void SetButton(JoypadButton button, bool pressed) => _joypad.SetButton(button, pressed);
     
     private void Clock_OnTicked()
     {

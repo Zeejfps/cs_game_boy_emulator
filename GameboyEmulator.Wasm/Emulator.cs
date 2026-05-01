@@ -48,6 +48,10 @@ public static partial class Emulator
     public static void Tick() => Clock().Tick();
 
     [JSExport]
+    public static void SetButton(int button, bool pressed)
+        => Gb().SetButton((JoypadButton)button, pressed);
+
+    [JSExport]
     public static int GetFrameBufferWidth() => Ppu.ScreenWidth;
 
     [JSExport]
