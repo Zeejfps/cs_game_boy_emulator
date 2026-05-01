@@ -1,3 +1,5 @@
+using GameBoyEmulator.Core.Graphics;
+
 namespace GameBoyEmulator.Core.Tests;
 
 public class MmuTests

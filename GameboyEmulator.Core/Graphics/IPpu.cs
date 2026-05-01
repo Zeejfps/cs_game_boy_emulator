@@ -1,4 +1,4 @@
-namespace GameBoyEmulator.Core;
+namespace GameBoyEmulator.Core.Graphics;
 
 public interface IPpu
 {

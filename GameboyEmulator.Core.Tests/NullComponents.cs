@@ -1,3 +1,5 @@
+using GameBoyEmulator.Core.Graphics;
+
 namespace GameBoyEmulator.Core.Tests;
 
 internal sealed class NullPpu : IPpu

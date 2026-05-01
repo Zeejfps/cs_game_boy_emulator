@@ -1,4 +1,4 @@
-namespace GameBoyEmulator.Core;
+namespace GameBoyEmulator.Core.Graphics;
 
 // Bits 0-1 (mode) are not represented here; they come from PpuMode.
 [Flags]

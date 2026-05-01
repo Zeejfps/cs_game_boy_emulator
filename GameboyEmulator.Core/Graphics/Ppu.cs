@@ -1,17 +1,9 @@
 using System.Runtime.CompilerServices;
 using GameBoyEmulator.Core.LR35902;
 
-namespace GameBoyEmulator.Core;
+namespace GameBoyEmulator.Core.Graphics;
 
-public enum PpuMode : byte
-{
-    HBlank  = 0,
-    VBlank  = 1,
-    OamScan = 2,
-    Drawing = 3,
-}
-
-public sealed class Ppu : IPpu
+public sealed partial class Ppu : IPpu
 {
     public const int ScreenWidth = 160;
     public const int ScreenHeight = 144;
@@ -30,7 +22,7 @@ public sealed class Ppu : IPpu
     private const byte OamAttrBgPrio  = 0x80; // bit 7: 1=BG colors 1-3 hide sprite
 
     private const int MaxSpritesPerLine = 10;
-    
+
     private const ushort LcdcAddress = 0xFF40;
     private const ushort StatAddress = 0xFF41;
     private const ushort ScyAddress  = 0xFF42;
@@ -93,11 +85,46 @@ public sealed class Ppu : IPpu
     private readonly Memory<byte> _tilePixels0;
     private readonly Memory<byte> _tilePixels1;
 
+    // OAM scan state.
+    private byte _scanSpriteIndex;
+    private int _spriteCount;
+    private readonly Sprite[] _sprites = new Sprite[MaxSpritesPerLine];
+
+    // BG fetcher / pusher state. Methods live in Ppu.BgFetcher.cs.
+    private BgPixelsFetcherState _fetcherState;
+    private byte _fetcherX;
+    private byte _fetcherTileId;
+    private byte _fetcherTileLow;
+    private byte _fetcherTileHigh;
+
+    private byte _bgFifoLow;
+    private byte _bgFifoHigh;
+    private byte _bgFifoCount;
+
+    private byte _lcdX;
+    private byte _lcdDiscard;
+
+    // Sprite fetcher state. Methods live in Ppu.SpriteFetcher.cs.
+    private bool _fetchingSprite;
+    private SpriteFetcherState _spriteFetcherState;
+    private Sprite _activeSprite;
+    private byte _spriteFetcherTileLow;
+    private byte _spriteFetcherTileHigh;
+    private byte _nextSpriteIndex;
+
+    // Sprite FIFO: MSB = next pixel popped, mirroring BG FIFO layout.
+    // Color is two bitplanes; palette and bg-priority are one bit per slot.
+    private byte _spriteFifoLow;
+    private byte _spriteFifoHigh;
+    private byte _spriteFifoPalette;
+    private byte _spriteFifoBgPriority;
+    private byte _spriteFifoCount;
+
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
 
     public event Action? FrameCompleted;
 
-    
+
     public Ppu(IInterrupts interrupts)
     {
         _interrupts = interrupts;
@@ -107,7 +134,7 @@ public sealed class Ppu : IPpu
         _tilePixels1 = _vram.AsMemory(0x0800, 4096);
         _mode = PpuMode.HBlank;
     }
-    
+
     public void Step(int tStates)
     {
         if (!_isLcdEnabled) return;
@@ -123,10 +150,6 @@ public sealed class Ppu : IPpu
             };
         }
     }
-
-    private byte _scanSpriteIndex;
-    private int _spriteCount;
-    private readonly Sprite[] _sprites = new Sprite[MaxSpritesPerLine];
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private int StepOamScan(int tStates)
@@ -284,233 +307,13 @@ public sealed class Ppu : IPpu
         while (tStates > 0 && _mode == PpuMode.Drawing)
         {
             // Fetcher advances one step every 2 dots; pusher advances every dot.
-            if ((_dot & 1) == 1) FetcherTick();
+            if ((_dot & 1) == 1) BgPixelFetcher_Tick();
             LcdControllerTick();
             _dot++;
             tStates--;
         }
         return tStates;
     }
-
-    #region BgPixelsFetcher
-    
-    private BgPixelsFetcherState _fetcherState;
-    private byte _fetcherX;
-    private byte _fetcherTileId;
-    private byte _fetcherTileLow;
-    private byte _fetcherTileHigh;
-
-    private byte _bgFifoLow;
-    private byte _bgFifoHigh;
-    private byte _bgFifoCount;
-
-    private byte _lcdX;
-    private byte _lcdDiscard;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FetcherTick()
-    {
-        if (_fetchingSprite) { SpriteFetcherTick(); return; }
-        switch (_fetcherState)
-        {
-            case BgPixelsFetcherState.GetTile:          BgPixelsFetcher_GetTile();          break;
-            case BgPixelsFetcherState.GetTilePixelsLow: BgPixelsFetcher_GetTilePixelsLow(); break;
-            case BgPixelsFetcherState.GetTilePixelsHigh:BgPixelsFetcher_GetTilePixelsHigh();break;
-            case BgPixelsFetcherState.Push:             BgPixelsFetcher_Push();             break;
-            default: throw new ArgumentOutOfRangeException();
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BgPixelsFetcher_Push()
-    {
-        if (_bgFifoCount != 0) return;
-        _bgFifoLow = _fetcherTileLow;
-        _bgFifoHigh = _fetcherTileHigh;
-        _bgFifoCount = 8;
-        _fetcherX++;
-        _fetcherState = BgPixelsFetcherState.GetTile;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BgPixelsFetcher_GetTilePixelsLow()
-    {
-        _fetcherTileLow = _bgTilePixels.Span[BgTileRowOffset()];
-        _fetcherState = BgPixelsFetcherState.GetTilePixelsHigh;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BgPixelsFetcher_GetTilePixelsHigh()
-    {
-        _fetcherTileHigh = _bgTilePixels.Span[BgTileRowOffset() + 1];
-        _fetcherState = BgPixelsFetcherState.Push;
-    }
-
-    // Offset within _bgTilePixels for the current tile id and row.
-    // _bgTileFlipBit (0x00 unsigned, 0x80 signed) swaps the two halves of the
-    // window so a single base + xor handles both addressing modes.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int BgTileRowOffset()
-    {
-        var rowY = _inWindow ? (_windowLineCounter & 0x07) : ((_ly + _scy) & 0x07);
-        return ((_fetcherTileId ^ _bgTileFlipBit) << 4) | (rowY << 1);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BgPixelsFetcher_GetTile()
-    {
-        ReadOnlySpan<byte> tileMap;
-        int tileX, tileY;
-        if (_inWindow)
-        {
-            tileMap = _windowTileMap.Span;
-            tileX = _fetcherX & 0x1F;
-            tileY = _windowLineCounter >> 3;
-        }
-        else
-        {
-            tileMap = _bgTileMap.Span;
-            tileX = ((_scx >> 3) + _fetcherX) & 0x1F;
-            tileY = ((_ly + _scy) & 0xFF) >> 3;
-        }
-        _fetcherTileId = tileMap[(tileY << 5) | tileX];
-        _fetcherState = BgPixelsFetcherState.GetTilePixelsLow;
-    }
-
-    #endregion
-
-    #region SpriteFetcher
-
-    private bool _fetchingSprite;
-    private SpriteFetcherState _spriteFetcherState;
-    private Sprite _activeSprite;
-    private byte _spriteFetcherTileLow;
-    private byte _spriteFetcherTileHigh;
-    private byte _nextSpriteIndex;
-
-    // Sprite FIFO: MSB = next pixel popped, mirroring BG FIFO layout.
-    // Color is two bitplanes; palette and bg-priority are one bit per slot.
-    private byte _spriteFifoLow;
-    private byte _spriteFifoHigh;
-    private byte _spriteFifoPalette;
-    private byte _spriteFifoBgPriority;
-    private byte _spriteFifoCount;
-
-    // Pick the next sprite whose visible column is at or before the current
-    // _lcdX. Lower X wins (sprites are sorted); X==0 / X>=168 are off-screen.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool TryStartSpriteFetch()
-    {
-        if (!_isObjectDrawingEnabled) return false;
-        while (_nextSpriteIndex < _spriteCount)
-        {
-            var s = _sprites[_nextSpriteIndex];
-            if (s.X == 0 || s.X >= 168) { _nextSpriteIndex++; continue; }
-            if (s.X > _lcdX + 8) return false;
-            _activeSprite = s;
-            _nextSpriteIndex++;
-            _fetchingSprite = true;
-            _spriteFetcherState = SpriteFetcherState.GetTile;
-            // Real hardware aborts the BG fetch in flight; the BG FIFO is left
-            // alone but the fetcher restarts at GetTile.
-            _fetcherState = BgPixelsFetcherState.GetTile;
-            return true;
-        }
-        return false;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SpriteFetcherTick()
-    {
-        switch (_spriteFetcherState)
-        {
-            case SpriteFetcherState.GetTile:           _spriteFetcherState = SpriteFetcherState.GetTilePixelsLow; break;
-            case SpriteFetcherState.GetTilePixelsLow:  SpriteFetcher_GetTilePixelsLow();  break;
-            case SpriteFetcherState.GetTilePixelsHigh: SpriteFetcher_GetTilePixelsHigh(); break;
-            default: throw new ArgumentOutOfRangeException();
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SpriteTileRowAddress()
-    {
-        var row = _ly - (_activeSprite.Y - 16);
-        if ((_activeSprite.Attributes & OamAttrYFlip) != 0)
-            row = _spriteHeight - 1 - row;
-        var tileId = _activeSprite.TileId;
-        if (_spriteHeight == 16)
-        {
-            if (row < 8) tileId = (byte)(tileId & 0xFE);
-            else { tileId = (byte)(tileId | 0x01); row -= 8; }
-        }
-        // Sprites always use the unsigned 0x8000 base; in our VRAM layout that's offset 0.
-        return (tileId << 4) + (row << 1);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SpriteFetcher_GetTilePixelsLow()
-    {
-        _spriteFetcherTileLow = _vram[SpriteTileRowAddress()];
-        _spriteFetcherState = SpriteFetcherState.GetTilePixelsHigh;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SpriteFetcher_GetTilePixelsHigh()
-    {
-        _spriteFetcherTileHigh = _vram[SpriteTileRowAddress() + 1];
-        MergeIntoSpriteFifo();
-        _fetchingSprite = false;
-    }
-
-    // Merge the 8 fetched sprite pixels into the sprite FIFO. Existing opaque
-    // pixels (color != 0) are preserved — earlier-fetched sprites win on overlap,
-    // which gives DMG priority for free since we fetch in (X asc, OAM idx) order.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void MergeIntoSpriteFifo()
-    {
-        var low = _spriteFetcherTileLow;
-        var high = _spriteFetcherTileHigh;
-        if ((_activeSprite.Attributes & OamAttrXFlip) != 0)
-        {
-            low = ReverseBits(low);
-            high = ReverseBits(high);
-        }
-
-        // Sprites with X<8 are partially off the left edge: their visible pixels
-        // start at tile-pixel (8 - X) and land in the leading X FIFO slots (MSB end).
-        // Shift the tile bytes left by (8 - X) and restrict the merge to the same bits.
-        var x = _activeSprite.X;
-        var shift = x < 8 ? 8 - x : 0;
-        var newLow = (byte)(low << shift);
-        var newHigh = (byte)(high << shift);
-        var pixelMask = (byte)(0xFF << shift);
-
-        var paletteByte = (_activeSprite.Attributes & OamAttrPalette) != 0 ? (byte)0xFF : (byte)0x00;
-        var bgPrioByte  = (_activeSprite.Attributes & OamAttrBgPrio)  != 0 ? (byte)0xFF : (byte)0x00;
-
-        // Slots already holding an opaque sprite pixel (color != 0) within the
-        // currently-occupied portion of the FIFO are preserved.
-        var occupiedMask = _spriteFifoCount == 0 ? (byte)0 : (byte)(0xFF << (8 - _spriteFifoCount));
-        var existingOpaque = (byte)((_spriteFifoLow | _spriteFifoHigh) & occupiedMask);
-        var writeMask = (byte)(pixelMask & ~existingOpaque);
-
-        _spriteFifoLow        = (byte)((_spriteFifoLow        & ~writeMask) | (newLow       & writeMask));
-        _spriteFifoHigh       = (byte)((_spriteFifoHigh       & ~writeMask) | (newHigh      & writeMask));
-        _spriteFifoPalette    = (byte)((_spriteFifoPalette    & ~writeMask) | (paletteByte  & writeMask));
-        _spriteFifoBgPriority = (byte)((_spriteFifoBgPriority & ~writeMask) | (bgPrioByte   & writeMask));
-        if (_spriteFifoCount < 8) _spriteFifoCount = 8;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static byte ReverseBits(byte b)
-    {
-        b = (byte)(((b & 0xF0) >> 4) | ((b & 0x0F) << 4));
-        b = (byte)(((b & 0xCC) >> 2) | ((b & 0x33) << 2));
-        b = (byte)(((b & 0xAA) >> 1) | ((b & 0x55) << 1));
-        return b;
-    }
-
-    #endregion
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LcdControllerTick()
@@ -594,7 +397,7 @@ public sealed class Ppu : IPpu
 
         if (_lcdX == ScreenWidth) EnterHBlankMode();
     }
-    
+
     private void UpdateStatLine()
     {
         var line =
@@ -625,7 +428,7 @@ public sealed class Ppu : IPpu
         _bgTilePixels  = unsignedTileData ? _tilePixels0 : _tilePixels1;
         _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
         _lcdc = value;
-        
+
         if (wasLcdEnabled && !_isLcdEnabled)
         {
             OnLcdDisabled();
@@ -647,7 +450,7 @@ public sealed class Ppu : IPpu
         _inWindow = false;
         _windowRenderedThisLine = false;
     }
-    
+
     private void OnLcdEnabled()
     {
         _ly = 0;
@@ -722,14 +525,5 @@ public sealed class Ppu : IPpu
             WxAddress   => _wx,
             _ => 0xFF
         };
-    }
-
-    readonly struct Sprite
-    {
-        public byte Y { get; init; }
-        public byte X { get; init; }
-        public byte TileId { get; init; }
-        public byte Attributes { get; init; }
-        public byte OamIndex { get; init; }
     }
 }

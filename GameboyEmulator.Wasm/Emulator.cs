@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Runtime.InteropServices.JavaScript;
 using GameBoyEmulator.Core;
+using GameBoyEmulator.Core.Graphics;
 
 namespace GameBoyEmulator.Wasm;
 

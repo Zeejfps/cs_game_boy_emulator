@@ -1,4 +1,4 @@
-namespace GameBoyEmulator.Core;
+namespace GameBoyEmulator.Core.Graphics;
 
 [Flags]
 public enum LcdControl : byte
