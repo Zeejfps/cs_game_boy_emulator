@@ -31,8 +31,10 @@ public sealed partial class Ppu : IPpu
     private byte _wx;
     private byte _spriteHeight;
 
-    // Cached LCDC-derived state. Refreshed only in WriteLcdc.
-    // Defaults match LCDC = 0 (everything off).
+    // LCDC-derived state. Enable bits and sprite height are live (refreshed in
+    // WriteLcdc) since the predicates that read them run every dot. The BG/window
+    // fetcher fields are latched at EnterDrawingMode so mid-scanline LCDC writes
+    // don't disturb in-flight fetches — real hardware behaves this way.
     private bool _isLcdEnabled;
     private bool _isBackgroundDrawingEnabled;
     private bool _isObjectDrawingEnabled;
@@ -158,6 +160,8 @@ public sealed partial class Ppu : IPpu
         _mode = PpuMode.OamScan;
         _scanSpriteIndex = 0;
         _spriteCount = 0;
+        // WY-condition latch is checked at the start of Mode 2 on real hardware.
+        if (_ly == _wy) _wyTriggered = true;
         UpdateStatLine();
     }
 
@@ -165,6 +169,7 @@ public sealed partial class Ppu : IPpu
     private void EnterDrawingMode()
     {
         _mode = PpuMode.Drawing;
+        LatchBgFetcherLcdc();
         _fetcherState = BgPixelsFetcherState.GetTile;
         _fetcherX = 0;
         _bgFifo.Clear();
@@ -173,11 +178,20 @@ public sealed partial class Ppu : IPpu
         _fetchingSprite = false;
         _inWindow = false;
         _windowRenderedThisLine = false;
-        if (_ly == _wy) _wyTriggered = true;
         _spriteFifo = default;
         _nextSpriteIndex = 0;
         SortSpritesByX();
         UpdateStatLine();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void LatchBgFetcherLcdc()
+    {
+        var unsignedTileData = _lcdc.HasFlag(LcdControl.UseUnsignedTileAddressing);
+        _bgTileMap     = _lcdc.HasFlag(LcdControl.BackgroundUsesTileMap1) ? _tileMap1 : _tileMap0;
+        _windowTileMap = _lcdc.HasFlag(LcdControl.WindowUsesTileMap1)     ? _tileMap1 : _tileMap0;
+        _bgTilePixels  = unsignedTileData ? _tilePixels0 : _tilePixels1;
+        _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
     }
 
     // Stable insertion sort by X ascending; preserves OAM-index order on ties

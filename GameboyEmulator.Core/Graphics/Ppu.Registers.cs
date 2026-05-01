@@ -69,18 +69,15 @@ public sealed partial class Ppu
     private void WriteLcdc(LcdControl value)
     {
         var wasLcdEnabled = _isLcdEnabled;
-        var unsignedTileData = value.HasFlag(LcdControl.UseUnsignedTileAddressing);
 
         _isLcdEnabled = value.HasFlag(LcdControl.LcdEnable);
         _isBackgroundDrawingEnabled = value.HasFlag(LcdControl.BackgroundEnable);
         _isObjectDrawingEnabled = value.HasFlag(LcdControl.ObjectsEnable);
         _isWindowDrawingEnabled = value.HasFlag(LcdControl.WindowEnable);
         _spriteHeight = value.HasFlag(LcdControl.ObjectsUseLargeSize) ? (byte)16 : (byte)8;
-        _bgTileMap = value.HasFlag(LcdControl.BackgroundUsesTileMap1) ? _tileMap1 : _tileMap0;
-        _windowTileMap = value.HasFlag(LcdControl.WindowUsesTileMap1) ? _tileMap1 : _tileMap0;
-        _bgTilePixels  = unsignedTileData ? _tilePixels0 : _tilePixels1;
-        _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
         _lcdc = value;
+        // BG fetcher fields (_bgTileMap, _windowTileMap, _bgTilePixels,
+        // _bgTileFlipBit) are latched at EnterDrawingMode, not here.
 
         if (wasLcdEnabled && !_isLcdEnabled)
         {

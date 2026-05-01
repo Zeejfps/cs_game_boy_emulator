@@ -439,10 +439,14 @@ public class PpuTests
         // Window tile map 1 entry (0,0) = tile 0.
         _ppu.WriteVram(0x1C00, 0);
 
-        _ppu.WriteRegister(LCDC, LcdOn | BgOn | UnsignedTileData | WindowOn | WindowMap1);
-        _ppu.WriteRegister(BGP, IdentityBgp);
+        // Disable LCD so the WY-latch (set at Mode 2 entry) is cleared before
+        // we configure WY=2; otherwise the constructor's LCD-on with default WY=0
+        // would have already latched the trigger at LY=0.
+        _ppu.WriteRegister(LCDC, 0);
         _ppu.WriteRegister(WY, 2); // window starts at screen line 2
         _ppu.WriteRegister(WX, 7);
+        _ppu.WriteRegister(LCDC, LcdOn | BgOn | UnsignedTileData | WindowOn | WindowMap1);
+        _ppu.WriteRegister(BGP, IdentityBgp);
 
         // Complete lines 0-1 (no window) + line 2 drawing (window line counter 0 → tile row 0).
         _ppu.Step(DotsPerLine * 3);
