@@ -162,6 +162,55 @@ async function main(): Promise<void> {
     if (combo === 'AB') bindTouchButton(el, [JoypadButton.A, JoypadButton.B]);
   });
 
+  const ssPill = document.getElementById('ss-pill');
+  if (ssPill) {
+    const leftEl = ssPill.querySelector<HTMLElement>('.ss-left')!;
+    const rightEl = ssPill.querySelector<HTMLElement>('.ss-right')!;
+    let activePointer: number | null = null;
+
+    // Center seam fires both — fat-finger zone for soft-reset / Pokemon menu cheats.
+    const SEAM = 0.2; // 20% of the pill width is "both"
+
+    const apply = (clientX: number) => {
+      const rect = ssPill.getBoundingClientRect();
+      const t = (clientX - rect.left) / rect.width;
+      const sel = t < 0.5 + SEAM / 2;
+      const start = t > 0.5 - SEAM / 2;
+      if (!emu) return;
+      emu.setButton(JoypadButton.Select, sel);
+      emu.setButton(JoypadButton.Start, start);
+      leftEl.classList.toggle('pressed', sel);
+      rightEl.classList.toggle('pressed', start);
+    };
+    const clear = () => {
+      if (emu) {
+        emu.setButton(JoypadButton.Select, false);
+        emu.setButton(JoypadButton.Start, false);
+      }
+      leftEl.classList.remove('pressed');
+      rightEl.classList.remove('pressed');
+    };
+
+    ssPill.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      ssPill.setPointerCapture(e.pointerId);
+      activePointer = e.pointerId;
+      apply(e.clientX);
+    });
+    ssPill.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== activePointer) return;
+      apply(e.clientX);
+    });
+    const end = (e: PointerEvent) => {
+      if (e.pointerId !== activePointer) return;
+      activePointer = null;
+      clear();
+    };
+    ssPill.addEventListener('pointerup', end);
+    ssPill.addEventListener('pointercancel', end);
+    ssPill.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
   const fileInput = document.getElementById('rom') as HTMLInputElement;
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];

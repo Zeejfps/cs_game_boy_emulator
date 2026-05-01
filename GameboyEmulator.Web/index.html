@@ -168,24 +168,31 @@
           grid-column: 1 / -1;
           display: flex;
           justify-content: center;
-          gap: 24px;
         }
-        .start-select button {
+        .ss-pill {
+          display: flex;
+          align-items: stretch;
           background: #346856;
           border: 2px solid #e0f8d0;
           color: #e0f8d0;
-          padding: 8px 20px;
-          font-size: 13px;
-          letter-spacing: 1px;
-          border-radius: 16px;
+          border-radius: 14px;
+          overflow: hidden;
           touch-action: none;
-          transition: background 60ms linear, transform 60ms linear;
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-touch-callout: none;
+          font-size: 11px;
+          letter-spacing: 0.5px;
         }
-        .start-select button.pressed,
-        .start-select button:active {
+        .ss-half {
+          padding: 6px 18px;
+          text-align: center;
+          transition: background 60ms linear, color 60ms linear;
+        }
+        .ss-half.ss-left { border-right: 2px solid #e0f8d0; }
+        .ss-half.pressed {
           background: #e0f8d0;
           color: #081820;
-          transform: scale(0.94);
         }
       }
     </style>
@@ -208,8 +215,10 @@
           <button data-combo="AB" class="ab-combo" aria-label="A and B together">A+B</button>
         </div>
         <div class="start-select">
-          <button data-btn="Select" aria-label="Select">SELECT</button>
-          <button data-btn="Start" aria-label="Start">START</button>
+          <div class="ss-pill" id="ss-pill" role="group" aria-label="Select and Start">
+            <span class="ss-half ss-left" aria-label="Select">SEL</span>
+            <span class="ss-half ss-right" aria-label="Start">STA</span>
+          </div>
         </div>
       </div>
     </main>
