@@ -23,15 +23,14 @@ public sealed class Ppu : IPpu
     private const int LinesPerFrame  = 154;
     private const int VisibleLines   = 144;
     private const int OamScanEndDot  = 80;
-    private const int DrawingEndDot  = 80 + 172;
 
-    private const byte LcdcBgEnable   = 0x01; // LCDC bit 0
-    private const byte LcdcObjEnable  = 0x02; // LCDC bit 1
-    private const byte LcdcObjSize    = 0x04; // LCDC bit 2 (0=8x8, 1=8x16)
-    private const byte LcdcBgTileMap  = 0x08; // LCDC bit 3 (0=0x9800, 1=0x9C00)
-    private const byte LcdcTileData   = 0x10; // LCDC bit 4 (0=signed/0x9000, 1=unsigned/0x8000)
-    private const byte LcdcWinEnable  = 0x20; // LCDC bit 5
-    private const byte LcdcWinTileMap = 0x40; // LCDC bit 6 (0=0x9800, 1=0x9C00)
+    private const byte LcdcBgEnableMask   = 0x01; // LCDC bit 0
+    private const byte LcdcObjEnableMask  = 0x02; // LCDC bit 1
+    private const byte LcdcObjSizeMask    = 0x04; // LCDC bit 2 (0=8x8, 1=8x16)
+    private const byte LcdcBgTileMapMask  = 0x08; // LCDC bit 3 (0=0x9800, 1=0x9C00)
+    private const byte LcdcTileDataMask   = 0x10; // LCDC bit 4 (0=signed/0x9000, 1=unsigned/0x8000)
+    private const byte LcdcWinEnableMask  = 0x20; // LCDC bit 5
+    private const byte LcdcWinTileMapMask = 0x40; // LCDC bit 6 (0=0x9800, 1=0x9C00)
     private const byte LcdEnableMask  = 0x80; // LCDC bit 7
 
     private const byte StatHBlankIrq  = 0x08; // STAT bit 3
@@ -46,9 +45,6 @@ public sealed class Ppu : IPpu
 
     private const int MaxSpritesPerLine = 10;
     
-    private const byte TileDataUnsignedFlip = 0x00;
-    private const byte TileDataSignedFlip   = 0x80;
-
     private const ushort LcdcAddress = 0xFF40;
     private const ushort StatAddress = 0xFF41;
     private const ushort ScyAddress  = 0xFF42;
@@ -633,16 +629,16 @@ public sealed class Ppu : IPpu
         var wasDrawingEnabled = _isDrawingEnabled;
         
         _isDrawingEnabled = (value & LcdEnableMask) != 0;
-        _isBackgroundDrawingEnabled = (value & LcdcBgEnable) != 0;
-        _isObjectDrawingEnabled = (value & LcdcObjEnable) != 0;
-        _isWindowDrawingEnabled = (value & LcdcWinEnable) != 0;
-        _spriteHeight = (value & LcdcObjSize) != 0 ? (byte)16 : (byte)8;
-        _bgTileMap = (value & LcdcBgTileMap) != 0 ? _tileMap1 : _tileMap0;
-        _windowTileMap = (value & LcdcWinTileMap) != 0 ? _tileMap1 : _tileMap0;
+        _isBackgroundDrawingEnabled = (value & LcdcBgEnableMask) != 0;
+        _isObjectDrawingEnabled = (value & LcdcObjEnableMask) != 0;
+        _isWindowDrawingEnabled = (value & LcdcWinEnableMask) != 0;
+        _spriteHeight = (value & LcdcObjSizeMask) != 0 ? (byte)16 : (byte)8;
+        _bgTileMap = (value & LcdcBgTileMapMask) != 0 ? _tileMap1 : _tileMap0;
+        _windowTileMap = (value & LcdcWinTileMapMask) != 0 ? _tileMap1 : _tileMap0;
         
-        var unsignedTileData = (value & LcdcTileData) != 0;
+        var unsignedTileData = (value & LcdcTileDataMask) != 0;
         _bgTilePixels  = unsignedTileData ? _tilePixels0         : _tilePixels1;
-        _bgTileFlipBit = unsignedTileData ? TileDataUnsignedFlip : TileDataSignedFlip;
+        _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
         _lcdc = value;
         
         if (wasDrawingEnabled && !_isDrawingEnabled)
