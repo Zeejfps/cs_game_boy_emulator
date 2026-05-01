@@ -182,12 +182,16 @@ public sealed class Ppu : IPpu
         _fetcherState = FetcherState.GetTile;
         _fetcherX = 0;
         _bgFifoCount = 0;
+        _lcdX = 0;
+        _lcdDiscard = (byte)(_scx & 0x07);
     }
 
     private void StepDrawing(int tStates)
     {
-        StepFetcher(tStates);
-        StepLcd(tStates);
+        var total = tStates + _remainderTStates;
+        _remainderTStates = 0;
+        StepFetcher(total);
+        StepLcdController(total);
     }
 
     #region BgPixelsFetcher
@@ -202,9 +206,12 @@ public sealed class Ppu : IPpu
     private byte _bgFifoHigh;
     private byte _bgFifoCount;
 
+    private byte _lcdX;
+    private byte _lcdDiscard;
+
     private void StepFetcher(int tStates)
     {
-        var totalTStates = tStates + _remainderTStates;
+        var totalTStates = tStates;
         while (totalTStates >= 2)
         {
             switch (_fetcherState)
@@ -278,9 +285,32 @@ public sealed class Ppu : IPpu
     
     #endregion
 
-    private void StepLcd(int tStates)
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private void StepLcdController(int tStates)
     {
-        
+        var frameRow = _ly * ScreenWidth;
+        while (tStates-- > 0)
+        {
+            if (_bgFifoCount == 0) continue;
+
+            var pixel = (((_bgFifoHigh >> 7) & 1) << 1) | ((_bgFifoLow >> 7) & 1);
+            _bgFifoLow  = (byte)(_bgFifoLow  << 1);
+            _bgFifoHigh = (byte)(_bgFifoHigh << 1);
+            _bgFifoCount--;
+
+            if (_lcdDiscard > 0) { _lcdDiscard--; continue; }
+
+            if ((_lcdc & LcdcBgEnable) == 0) pixel = 0;
+            var color = (_bgp >> (pixel << 1)) & 0x03;
+            _frameBuffer[frameRow + _lcdX] = (byte)color;
+            _lcdX++;
+
+            if (_lcdX == ScreenWidth)
+            {
+                _mode = PpuMode.HBlank;
+                return;
+            }
+        }
     }
     
     private void UpdateStatLine()
