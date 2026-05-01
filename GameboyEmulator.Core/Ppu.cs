@@ -24,20 +24,6 @@ public sealed class Ppu : IPpu
     private const int VisibleLines   = 144;
     private const int OamScanEndDot  = 80;
 
-    private const byte LcdcBgEnableMask   = 0x01; // LCDC bit 0
-    private const byte LcdcObjEnableMask  = 0x02; // LCDC bit 1
-    private const byte LcdcObjSizeMask    = 0x04; // LCDC bit 2 (0=8x8, 1=8x16)
-    private const byte LcdcBgTileMapMask  = 0x08; // LCDC bit 3 (0=0x9800, 1=0x9C00)
-    private const byte LcdcTileDataMask   = 0x10; // LCDC bit 4 (0=signed/0x9000, 1=unsigned/0x8000)
-    private const byte LcdcWinEnableMask  = 0x20; // LCDC bit 5
-    private const byte LcdcWinTileMapMask = 0x40; // LCDC bit 6 (0=0x9800, 1=0x9C00)
-    private const byte LcdEnableMask  = 0x80; // LCDC bit 7
-
-    private const byte StatHBlankIrq  = 0x08; // STAT bit 3
-    private const byte StatVBlankIrq  = 0x10; // STAT bit 4
-    private const byte StatOamIrq     = 0x20; // STAT bit 5
-    private const byte StatLycIrq     = 0x40; // STAT bit 6
-
     private const byte OamAttrPalette = 0x10; // bit 4: 0=OBP0, 1=OBP1
     private const byte OamAttrXFlip   = 0x20; // bit 5
     private const byte OamAttrYFlip   = 0x40; // bit 6
@@ -61,8 +47,8 @@ public sealed class Ppu : IPpu
     private readonly byte[] _oam = new byte[OamSize];
     private readonly byte[] _frameBuffer = new byte[ScreenWidth * ScreenHeight];
 
-    private byte _lcdc;
-    private byte _statSources; // bits 6,5,4,3 — interrupt source enables
+    private LcdControl _lcdc;
+    private StatFlags _statSources; // bits 6,5,4,3 — interrupt source enables
     private byte _scy;
     private byte _scx;
     private byte _ly;
@@ -612,10 +598,10 @@ public sealed class Ppu : IPpu
     private void UpdateStatLine()
     {
         var line =
-            ((_statSources & StatLycIrq)    != 0 && _ly == _lyc)         ||
-            ((_statSources & StatOamIrq)    != 0 && _mode == PpuMode.OamScan) ||
-            ((_statSources & StatVBlankIrq) != 0 && _mode == PpuMode.VBlank)  ||
-            ((_statSources & StatHBlankIrq) != 0 && _mode == PpuMode.HBlank);
+            (_statSources.HasFlag(StatFlags.LycIrq)    && _ly == _lyc)              ||
+            (_statSources.HasFlag(StatFlags.OamIrq)    && _mode == PpuMode.OamScan) ||
+            (_statSources.HasFlag(StatFlags.VBlankIrq) && _mode == PpuMode.VBlank)  ||
+            (_statSources.HasFlag(StatFlags.HBlankIrq) && _mode == PpuMode.HBlank);
 
         if (line && !_statLine)
             _interrupts.Request(InterruptType.LcdStat);
@@ -624,19 +610,19 @@ public sealed class Ppu : IPpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void WriteLcdc(byte value)
+    private void WriteLcdc(LcdControl value)
     {
         var wasDrawingEnabled = _isDrawingEnabled;
-        
-        _isDrawingEnabled = (value & LcdEnableMask) != 0;
-        _isBackgroundDrawingEnabled = (value & LcdcBgEnableMask) != 0;
-        _isObjectDrawingEnabled = (value & LcdcObjEnableMask) != 0;
-        _isWindowDrawingEnabled = (value & LcdcWinEnableMask) != 0;
-        _spriteHeight = (value & LcdcObjSizeMask) != 0 ? (byte)16 : (byte)8;
-        _bgTileMap = (value & LcdcBgTileMapMask) != 0 ? _tileMap1 : _tileMap0;
-        _windowTileMap = (value & LcdcWinTileMapMask) != 0 ? _tileMap1 : _tileMap0;
-        
-        var unsignedTileData = (value & LcdcTileDataMask) != 0;
+
+        _isDrawingEnabled = value.HasFlag(LcdControl.LcdEnable);
+        _isBackgroundDrawingEnabled = value.HasFlag(LcdControl.BgEnable);
+        _isObjectDrawingEnabled = value.HasFlag(LcdControl.ObjEnable);
+        _isWindowDrawingEnabled = value.HasFlag(LcdControl.WinEnable);
+        _spriteHeight = value.HasFlag(LcdControl.ObjSize) ? (byte)16 : (byte)8;
+        _bgTileMap = value.HasFlag(LcdControl.BgTileMap) ? _tileMap1 : _tileMap0;
+        _windowTileMap = value.HasFlag(LcdControl.WinTileMap) ? _tileMap1 : _tileMap0;
+
+        var unsignedTileData = value.HasFlag(LcdControl.TileData);
         _bgTilePixels  = unsignedTileData ? _tilePixels0         : _tilePixels1;
         _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
         _lcdc = value;
@@ -696,8 +682,8 @@ public sealed class Ppu : IPpu
     {
         switch (address)
         {
-            case LcdcAddress: WriteLcdc(value); break;
-            case StatAddress: _statSources = (byte)(value & 0x78); break;
+            case LcdcAddress: WriteLcdc((LcdControl)value); break;
+            case StatAddress: _statSources = (StatFlags)value & StatFlags.Sources; break;
             case ScyAddress:  _scy = value; break;
             case ScxAddress:  _scx = value; break;
             case LyAddress:   /* read-only */ break;
@@ -714,8 +700,8 @@ public sealed class Ppu : IPpu
     {
         return address switch
         {
-            LcdcAddress => _lcdc,
-            StatAddress => (byte)(0x80 | _statSources | (_ly == _lyc ? 0x04 : 0x00) | (byte)_mode),
+            LcdcAddress => (byte)_lcdc,
+            StatAddress => (byte)(StatFlags.Unused | _statSources | (_ly == _lyc ? StatFlags.LycEqualLy : 0) | (StatFlags)(byte)_mode),
             ScyAddress  => _scy,
             ScxAddress  => _scx,
             LyAddress   => _ly,
