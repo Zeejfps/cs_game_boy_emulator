@@ -1,6 +1,6 @@
 namespace GameBoyEmulator.Core;
 
-public enum FetcherState : byte
+public enum BgPixelsFetcherState : byte
 {
     GetTile,
     GetTilePixelsLow,

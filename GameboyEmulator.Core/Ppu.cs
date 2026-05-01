@@ -180,7 +180,7 @@ public sealed class Ppu : IPpu
     private void EnterDrawingMode()
     {
         _mode = PpuMode.Drawing;
-        _fetcherState = FetcherState.GetTile;
+        _fetcherState = BgPixelsFetcherState.GetTile;
         _fetcherX = 0;
         _bgFifoCount = 0;
         _lcdX = 0;
@@ -269,7 +269,7 @@ public sealed class Ppu : IPpu
 
     #region BgPixelsFetcher
     
-    private FetcherState _fetcherState;
+    private BgPixelsFetcherState _fetcherState;
     private byte _fetcherX;
     private byte _fetcherTileId;
     private byte _fetcherTileLow;
@@ -287,10 +287,10 @@ public sealed class Ppu : IPpu
     {
         switch (_fetcherState)
         {
-            case FetcherState.GetTile:          BgPixelsFetcher_GetTile();          break;
-            case FetcherState.GetTilePixelsLow: BgPixelsFetcher_GetTilePixelsLow(); break;
-            case FetcherState.GetTilePixelsHigh:BgPixelsFetcher_GetTilePixelsHigh();break;
-            case FetcherState.Push:             BgPixelsFetcher_Push();             break;
+            case BgPixelsFetcherState.GetTile:          BgPixelsFetcher_GetTile();          break;
+            case BgPixelsFetcherState.GetTilePixelsLow: BgPixelsFetcher_GetTilePixelsLow(); break;
+            case BgPixelsFetcherState.GetTilePixelsHigh:BgPixelsFetcher_GetTilePixelsHigh();break;
+            case BgPixelsFetcherState.Push:             BgPixelsFetcher_Push();             break;
             default: throw new ArgumentOutOfRangeException();
         }
     }
@@ -303,7 +303,7 @@ public sealed class Ppu : IPpu
         _bgFifoHigh = _fetcherTileHigh;
         _bgFifoCount = 8;
         _fetcherX++;
-        _fetcherState = FetcherState.GetTile;
+        _fetcherState = BgPixelsFetcherState.GetTile;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -311,7 +311,7 @@ public sealed class Ppu : IPpu
     {
         var address = BgTileRowAddress();
         _fetcherTileLow = _vram[address];
-        _fetcherState = FetcherState.GetTilePixelsHigh;
+        _fetcherState = BgPixelsFetcherState.GetTilePixelsHigh;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -319,7 +319,7 @@ public sealed class Ppu : IPpu
     {
         var address = BgTileRowAddress() + 1;
         _fetcherTileHigh = _vram[address];
-        _fetcherState = FetcherState.Push;
+        _fetcherState = BgPixelsFetcherState.Push;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -339,7 +339,7 @@ public sealed class Ppu : IPpu
         var tileX = ((_scx >> 3) + _fetcherX) & 0x1F;
         var tileY = ((_ly + _scy) & 0xFF) >> 3;
         _fetcherTileId = tileMap[(tileY << 5) | tileX];
-        _fetcherState = FetcherState.GetTilePixelsLow;
+        _fetcherState = BgPixelsFetcherState.GetTilePixelsLow;
     }
     
     #endregion
