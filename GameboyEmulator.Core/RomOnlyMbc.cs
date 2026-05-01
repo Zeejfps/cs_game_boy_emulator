@@ -24,4 +24,6 @@ public sealed class RomOnlyMbc : IMbc
     public ReadOnlySpan<byte> ReadBank0Range(ushort address, int length) => _rom.AsSpan(address, length);
     public ReadOnlySpan<byte> ReadBankNRange(ushort address, int length) => _rom.AsSpan(address, length);
     public ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
+
+    public void Flush() { }
 }

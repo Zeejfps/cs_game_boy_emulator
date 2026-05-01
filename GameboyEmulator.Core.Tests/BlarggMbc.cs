@@ -27,4 +27,6 @@ internal sealed class BlarggMbc : IMbc
         _rom.AsSpan(address, length);
     public ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length) =>
         ReadOnlySpan<byte>.Empty;
+
+    public void Flush() { }
 }

@@ -384,6 +384,8 @@ public class MmuTests
         public ReadOnlySpan<byte> ReadBank0Range(ushort address, int length) => ReadOnlySpan<byte>.Empty;
         public ReadOnlySpan<byte> ReadBankNRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
         public ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
+
+        public void Flush() { }
     }
 
     private sealed class FakeJoypad : IJoypad

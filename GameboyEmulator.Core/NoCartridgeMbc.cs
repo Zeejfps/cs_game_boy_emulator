@@ -16,6 +16,8 @@ public sealed class NoCartridgeMbc : IMbc
     public ReadOnlySpan<byte> ReadBankNRange(ushort address, int length) => OpenBus.AsSpan(0, length);
     public ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length) => OpenBus.AsSpan(0, length);
 
+    public void Flush() { }
+
     private static byte[] CreateOpenBus()
     {
         var buffer = new byte[0xA0];

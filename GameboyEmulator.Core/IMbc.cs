@@ -11,4 +11,5 @@ public interface IMbc
     void WriteExternalRam(ushort address, byte value);
     byte ReadExternalRam(ushort address);
     ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length);
+    void Flush();
 }

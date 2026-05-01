@@ -263,6 +263,8 @@ public sealed class Mmu : IMemoryBus
         _mbc = mbc;
     }
 
+    public void FlushMbc() => _mbc.Flush();
+
     public void WriteWord(ushort address, ushort value)
     {
         var lo = (byte)(value & 0xFF);

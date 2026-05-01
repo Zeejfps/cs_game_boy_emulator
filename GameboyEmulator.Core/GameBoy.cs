@@ -23,14 +23,16 @@ public sealed class GameBoy
     private readonly Mmu _mmu;
     private readonly Timer _timer;
     private readonly Joypad _joypad;
+    private readonly MbcFactory _mbcFactory;
     private readonly double _cyclesPerTick;
 
     private long _lastTimestamp;
     private double _tCycles;
 
-    public GameBoy(IClock clock)
+    public GameBoy(IClock clock, IBatteryStore batteryStore)
     {
         _clock = clock;
+        _mbcFactory = new MbcFactory(batteryStore);
 
         var interrupts = new Interrupts();
         _ppu = new Ppu(interrupts);
@@ -54,7 +56,7 @@ public sealed class GameBoy
         if (IsPoweredOn)
             throw new InvalidOperationException("Cannot load a ROM while the GameBoy is powered on");
 
-        var mbc = MbcFactory.Create(rom);
+        var mbc = _mbcFactory.Create(rom);
         _mmu.SetMbc(mbc);
     }
 
@@ -74,6 +76,7 @@ public sealed class GameBoy
         if (!IsPoweredOn)
             return;
 
+        _mmu.FlushMbc();
         _mmu.Reset();
         _timer.Reset();
         _joypad.Reset();
