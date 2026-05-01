@@ -62,7 +62,7 @@ public sealed class Ppu : IPpu
 
     // Cached LCDC-derived state. Refreshed only in WriteLcdc.
     // Defaults match LCDC = 0 (everything off).
-    private bool _isDrawingEnabled;
+    private bool _isLcdEnabled;
     private bool _isBackgroundDrawingEnabled;
     private bool _isObjectDrawingEnabled;
     private bool _isWindowDrawingEnabled;
@@ -110,7 +110,7 @@ public sealed class Ppu : IPpu
     
     public void Step(int tStates)
     {
-        if (!_isDrawingEnabled) return;
+        if (!_isLcdEnabled) return;
         while (tStates > 0)
         {
             tStates = _mode switch
@@ -612,40 +612,49 @@ public sealed class Ppu : IPpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteLcdc(LcdControl value)
     {
-        var wasDrawingEnabled = _isDrawingEnabled;
+        var wasLcdEnabled = _isLcdEnabled;
+        var unsignedTileData = value.HasFlag(LcdControl.UseUnsignedTileAddressing);
 
-        _isDrawingEnabled = value.HasFlag(LcdControl.LcdEnable);
+        _isLcdEnabled = value.HasFlag(LcdControl.LcdEnable);
         _isBackgroundDrawingEnabled = value.HasFlag(LcdControl.BackgroundEnable);
         _isObjectDrawingEnabled = value.HasFlag(LcdControl.ObjectsEnable);
         _isWindowDrawingEnabled = value.HasFlag(LcdControl.WindowEnable);
         _spriteHeight = value.HasFlag(LcdControl.ObjectsUseLargeSize) ? (byte)16 : (byte)8;
         _bgTileMap = value.HasFlag(LcdControl.BackgroundUsesTileMap1) ? _tileMap1 : _tileMap0;
         _windowTileMap = value.HasFlag(LcdControl.WindowUsesTileMap1) ? _tileMap1 : _tileMap0;
-
-        var unsignedTileData = value.HasFlag(LcdControl.UseUnsignedTileAddressing);
-        _bgTilePixels  = unsignedTileData ? _tilePixels0         : _tilePixels1;
+        _bgTilePixels  = unsignedTileData ? _tilePixels0 : _tilePixels1;
         _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
         _lcdc = value;
         
-        if (wasDrawingEnabled && !_isDrawingEnabled)
+        if (wasLcdEnabled && !_isLcdEnabled)
         {
-            _ly = 0;
-            _dot = 0;
-            _mode = PpuMode.HBlank;
-            _statLine = false;
-            _wyTriggered = false;
-            _windowLineCounter = 0;
-            _inWindow = false;
-            _windowRenderedThisLine = false;
+            OnLcdDisabled();
         }
-        else if (!wasDrawingEnabled && _isDrawingEnabled)
+        else if (!wasLcdEnabled && _isLcdEnabled)
         {
-            _ly = 0;
-            _dot = 0;
-            _wyTriggered = false;
-            _windowLineCounter = 0;
-            EnterOamScanMode();
+            OnLcdEnabled();
         }
+    }
+
+    private void OnLcdDisabled()
+    {
+        _ly = 0;
+        _dot = 0;
+        _mode = PpuMode.HBlank;
+        _statLine = false;
+        _wyTriggered = false;
+        _windowLineCounter = 0;
+        _inWindow = false;
+        _windowRenderedThisLine = false;
+    }
+    
+    private void OnLcdEnabled()
+    {
+        _ly = 0;
+        _dot = 0;
+        _wyTriggered = false;
+        _windowLineCounter = 0;
+        EnterOamScanMode();
     }
 
     public void WriteVram(ushort address, byte value)
