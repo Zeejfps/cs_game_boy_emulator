@@ -70,8 +70,6 @@ public sealed class Ppu : IPpu
     private readonly byte[] _vram = new byte[VramSize];
     private readonly byte[] _oam = new byte[OamSize];
     private readonly byte[] _frameBuffer = new byte[ScreenWidth * ScreenHeight];
-    private readonly byte[] _bgColorIds = new byte[ScreenWidth];
-    private readonly SpriteEntry[] _spriteBuffer = new SpriteEntry[MaxSpritesPerLine];
     private int _spriteCount;
 
     private byte _lcdc;
@@ -85,6 +83,8 @@ public sealed class Ppu : IPpu
     private byte _obp1;
     private byte _wy;
     private byte _wx;
+    private bool _isLcdEnabled;
+    private byte _spriteHeight;
 
     private PpuMode _mode;
     private int _dot;
@@ -101,6 +101,11 @@ public sealed class Ppu : IPpu
     private Memory<byte> _bgTilePixels;
     private byte _bgTileFlipBit;
 
+    public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
+
+    public event Action? FrameCompleted;
+
+    
     public Ppu(IInterrupts interrupts)
     {
         _interrupts = interrupts;
@@ -108,72 +113,65 @@ public sealed class Ppu : IPpu
         _tileMap1 = _vram.AsMemory(0x1C00, 1024);
         _tilePixels0 = _vram.AsMemory(0x0000, 4096);
         _tilePixels1 = _vram.AsMemory(0x0800, 4096);
-        UpdateLcdcCache();
+        _mode = PpuMode.OamScan;
     }
-
-    public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
-
-    public event Action? FrameCompleted;
-
+    
     public void Step(int tStates)
     {
-        if ((_lcdc & LcdEnableMask) == 0) return;
-        for (var i = 0; i < tStates; i++) StepDot();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void StepDot()
-    {
-        AdvanceDot();
-
-        if (_dot == DotsPerLine)
+        if (!_isLcdEnabled) return;
+        switch (_mode)
         {
-            _dot = 0;
-            AdvanceLine();
+            case PpuMode.HBlank:
+                break;
+            case PpuMode.VBlank:
+                break;
+            case PpuMode.OamScan:
+                StepOamScan(tStates);
+                break;
+            case PpuMode.Drawing:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
-
-        UpdateStatLine();
     }
+    
+    private int _remainderTStates;
+    private byte _scanSpriteIndex;
+    private readonly Sprite[] _sprites = new Sprite[MaxSpritesPerLine];
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AdvanceDot()
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private void StepOamScan(int tStates)
     {
-        _dot++;
-
-        if (_ly >= VisibleLines) 
-            return;
-        
-        switch (_dot)
+        var totalStates = tStates + _remainderTStates;
+        var lineY = _ly + 16;
+        while (totalStates >= 2)
         {
-            case OamScanEndDot:
+            var address = _scanSpriteIndex * 4;
+            var spriteY = _oam[address];
+
+            if (lineY >= spriteY && lineY < spriteY + _spriteHeight && _spriteCount < MaxSpritesPerLine)
+            {
+                _sprites[_spriteCount] = new Sprite
+                {
+                    Y = spriteY,
+                    X = _oam[address + 1],
+                    TileId = _oam[address + 2],
+                    Attributes = _oam[address + 3],
+                    OamIndex = _scanSpriteIndex
+                };
+                _spriteCount++;
+            }
+            
+            _scanSpriteIndex++;
+            totalStates -= 2;
+            _dot += 2;
+            if (_dot >= 80)
+            {
                 _mode = PpuMode.Drawing;
                 break;
-            case DrawingEndDot:
-                _mode = PpuMode.HBlank;
-                RenderScanline(_ly);
-                break;
+            }
         }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AdvanceLine()
-    {
-        _ly++;
-        switch (_ly)
-        {
-            case VisibleLines:
-                _mode = PpuMode.VBlank;
-                _interrupts.Request(InterruptType.VBlank);
-                FrameCompleted?.Invoke();
-                break;
-            case LinesPerFrame:
-                _ly = 0;
-                _mode = PpuMode.OamScan;
-                break;
-            case < VisibleLines:
-                _mode = PpuMode.OamScan;
-                break;
-        }
+        _remainderTStates = totalStates;
     }
 
     private void UpdateStatLine()
@@ -190,175 +188,19 @@ public sealed class Ppu : IPpu
         _statLine = line;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void RenderScanline(byte line)
-    {
-        var rowBase = line * ScreenWidth;
-
-        if ((_lcdc & LcdcBgEnable) == 0)
-        {
-            Array.Clear(_frameBuffer, rowBase, ScreenWidth);
-            Array.Clear(_bgColorIds, 0, ScreenWidth);
-        }
-        else
-        {
-            var tileMap = _bgTileMap.Span;
-            var tilePixels = _bgTilePixels.Span;
-            var flipBit = _bgTileFlipBit;
-
-            var worldY = (byte)(_scy + line);
-            var tileRow = worldY >> 3;
-            var pixelRow = worldY & 7;
-
-            var tileCol = _scx >> 3;
-            var startBit = _scx & 7;            // pixels of the first tile to skip
-
-            var x = 0;
-            while (x < ScreenWidth)
-            {
-                var tileIndex = tileMap[tileRow * 32 + tileCol];
-                var rowAddr = ((tileIndex ^ flipBit) << 4) + pixelRow * 2;
-                var lo = tilePixels[rowAddr];
-                var hi = tilePixels[rowAddr + 1];
-
-                var end = Math.Min(8, startBit + ScreenWidth - x);
-                for (var b = startBit; b < end; b++)
-                {
-                    var bit = 7 - b;
-                    var colorId = (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1);
-                    var shade = (_bgp >> (colorId * 2)) & 0x3;
-                    _bgColorIds[x] = (byte)colorId;
-                    var fbIndex = rowBase + x++;
-                    _frameBuffer[fbIndex] = (byte)shade;
-                }
-
-                startBit = 0;
-                tileCol = (tileCol + 1) & 31;   // wrap horizontally across the 32-tile map
-            }
-        }
-
-        if ((_lcdc & LcdcObjEnable) != 0)
-            RenderSprites(line, rowBase);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void RenderSprites(byte line, int rowBase)
-    {
-        var height = (_lcdc & LcdcObjSize) != 0 ? 16 : 8;
-
-        // OAM scan: collect first 10 Y-overlapping sprites, insertion-sorted into
-        // descending priority (losers first). OAM index increases monotonically,
-        // so an equal-X new entry is always the bigger loser and goes earlier.
-        _spriteCount = 0;
-        for (var i = 0; i < 40; i++)
-        {
-            var oamBase = i * 4;
-            var spriteY = _oam[oamBase];
-            var rowInSprite = line - (spriteY - 16);
-            if (rowInSprite < 0 || rowInSprite >= height) continue;
-
-            var attr = _oam[oamBase + 3];
-            if ((attr & OamAttrYFlip) != 0)
-                rowInSprite = height - 1 - rowInSprite;
-
-            var entry = new SpriteEntry
-            {
-                X = _oam[oamBase + 1],
-                Tile = _oam[oamBase + 2],
-                Attr = attr,
-                OamIndex = (byte)i,
-                LineOffset = (byte)rowInSprite,
-            };
-
-            var pos = 0;
-            while (pos < _spriteCount && _spriteBuffer[pos].X > entry.X) pos++;
-            for (var j = _spriteCount; j > pos; j--)
-                _spriteBuffer[j] = _spriteBuffer[j - 1];
-            _spriteBuffer[pos] = entry;
-            _spriteCount++;
-
-            if (_spriteCount == MaxSpritesPerLine) break;
-        }
-
-        for (var s = 0; s < _spriteCount; s++)
-        {
-            ref var spr = ref _spriteBuffer[s];
-
-            int tileIndex, rowInTile;
-            if (height == 16)
-            {
-                // 8x16: bit 0 of tile index is forced; LineOffset already has Y-flip applied.
-                tileIndex = spr.LineOffset < 8 ? spr.Tile & 0xFE : spr.Tile | 0x01;
-                rowInTile = spr.LineOffset & 7;
-            }
-            else
-            {
-                tileIndex = spr.Tile;
-                rowInTile = spr.LineOffset;
-            }
-
-            // Sprites always use unsigned 0x8000 base, regardless of LCDC bit 4.
-            var rowAddr = (tileIndex << 4) + rowInTile * 2;
-            var lo = _vram[rowAddr];
-            var hi = _vram[rowAddr + 1];
-
-            var palette = (spr.Attr & OamAttrPalette) != 0 ? _obp1 : _obp0;
-            var xFlip   = (spr.Attr & OamAttrXFlip) != 0;
-            var bgPrio  = (spr.Attr & OamAttrBgPrio) != 0;
-            var baseX   = spr.X - 8;
-
-            for (var p = 0; p < 8; p++)
-            {
-                var screenX = baseX + p;
-                if ((uint)screenX >= ScreenWidth) continue;
-
-                var bit = xFlip ? p : 7 - p;
-                var colorId = (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1);
-                if (colorId == 0) continue;
-                if (bgPrio && _bgColorIds[screenX] != 0) continue;
-
-                _frameBuffer[rowBase + screenX] = (byte)((palette >> (colorId * 2)) & 0x3);
-            }
-        }
-    }
-
-    private struct SpriteEntry
-    {
-        public byte X;
-        public byte Tile;
-        public byte Attr;
-        public byte OamIndex;
-        public byte LineOffset;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteLcdc(byte value)
     {
-        var wasOn = (_lcdc & LcdEnableMask) != 0;
-        var nowOn = (value & LcdEnableMask) != 0;
+        var wasEnabled = _isLcdEnabled;
+        _isLcdEnabled = (value & LcdEnableMask) != 0;
+        _spriteHeight = (value & LcdcObjSize) != 0 ? (byte)16 : (byte)8;
         _lcdc = value;
-        UpdateLcdcCache();
-        if (wasOn && !nowOn)
+        if (wasEnabled && !_isLcdEnabled)
         {
             _ly = 0;
             _dot = 0;
             _mode = PpuMode.HBlank;
             _statLine = false;
-        }
-    }
-
-    private void UpdateLcdcCache()
-    {
-        _bgTileMap = (_lcdc & LcdcBgTileMap) != 0 ? _tileMap1 : _tileMap0;
-        if ((_lcdc & LcdcTileData) != 0)
-        {
-            _bgTilePixels = _tilePixels0;
-            _bgTileFlipBit = TileDataUnsignedFlip;
-        }
-        else
-        {
-            _bgTilePixels = _tilePixels1;
-            _bgTileFlipBit = TileDataSignedFlip;
         }
     }
 
@@ -427,5 +269,14 @@ public sealed class Ppu : IPpu
             WxAddress   => _wx,
             _ => 0xFF
         };
+    }
+
+    readonly struct Sprite
+    {
+        public byte Y { get; init; }
+        public byte X { get; init; }
+        public byte TileId { get; init; }
+        public byte Attributes { get; init; }
+        public byte OamIndex { get; init; }
     }
 }
