@@ -226,8 +226,10 @@ public sealed class Ppu : IPpu
                 {
                     var bit = 7 - b;
                     var colorId = (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1);
+                    var shade = (_bgp >> (colorId * 2)) & 0x3;
                     _bgColorIds[x] = (byte)colorId;
-                    _frameBuffer[rowBase + x++] = (byte)((_bgp >> (colorId * 2)) & 0x3);
+                    var fbIndex = rowBase + x++;
+                    _frameBuffer[fbIndex] = (byte)shade;
                 }
 
                 startBit = 0;
