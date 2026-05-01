@@ -628,17 +628,20 @@ public sealed class Ppu : IPpu
     private void WriteLcdc(byte value)
     {
         var wasDrawingEnabled = _isDrawingEnabled;
-        _isDrawingEnabled            = (value & LcdEnableMask)   != 0;
-        _isBackgroundDrawingEnabled  = (value & LcdcBgEnable)    != 0;
-        _isObjectDrawingEnabled      = (value & LcdcObjEnable)   != 0;
-        _isWindowDrawingEnabled      = (value & LcdcWinEnable)   != 0;
-        _spriteHeight                = (value & LcdcObjSize)     != 0 ? (byte)16 : (byte)8;
-        _bgTileMap                   = (value & LcdcBgTileMap)   != 0 ? _tileMap1 : _tileMap0;
-        _windowTileMap               = (value & LcdcWinTileMap)  != 0 ? _tileMap1 : _tileMap0;
-        var unsignedTileData         = (value & LcdcTileData)    != 0;
+        
+        _isDrawingEnabled = (value & LcdEnableMask) != 0;
+        _isBackgroundDrawingEnabled = (value & LcdcBgEnable) != 0;
+        _isObjectDrawingEnabled = (value & LcdcObjEnable) != 0;
+        _isWindowDrawingEnabled = (value & LcdcWinEnable) != 0;
+        _spriteHeight = (value & LcdcObjSize) != 0 ? (byte)16 : (byte)8;
+        _bgTileMap = (value & LcdcBgTileMap) != 0 ? _tileMap1 : _tileMap0;
+        _windowTileMap = (value & LcdcWinTileMap) != 0 ? _tileMap1 : _tileMap0;
+        
+        var unsignedTileData = (value & LcdcTileData) != 0;
         _bgTileDataBase = unsignedTileData ? TileDataUnsignedBase : TileDataSignedBase;
         _bgTileFlipBit  = unsignedTileData ? TileDataUnsignedFlip : TileDataSignedFlip;
         _lcdc = value;
+        
         if (wasDrawingEnabled && !_isDrawingEnabled)
         {
             _ly = 0;

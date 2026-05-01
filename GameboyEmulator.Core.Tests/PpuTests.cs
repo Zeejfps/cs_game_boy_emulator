@@ -137,6 +137,8 @@ public class PpuTests
     [Fact]
     public void Stat_OnlyAllowsWritingInterruptSourceBits()
     {
+        // Drop LCD off so we're in HBlank (mode 0) for the live-state assertion below.
+        _ppu.WriteRegister(LCDC, 0x00);
         _ppu.WriteRegister(STAT, 0xFF);
 
         // Bits 3-6 latch; bits 0-2 reflect live state (mode 0, LY==LYC since both 0); bit 7 reads 1.
@@ -191,9 +193,11 @@ public class PpuTests
     [Fact]
     public void Oam_IsBlockedDuringOamScanAndDrawing()
     {
+        // Drop LCD off so we land in HBlank and the seed write goes through.
+        _ppu.WriteRegister(LCDC, 0x00);
         _ppu.WriteOam(0, 0xAB);
+        _ppu.WriteRegister(LCDC, LcdOn);
 
-        _ppu.Step(DotsPerLine);
         Assert.Equal(PpuMode.OamScan, Mode(_ppu.ReadRegister(STAT)));
         Assert.Equal(0xFF, _ppu.ReadOam(0));
 
