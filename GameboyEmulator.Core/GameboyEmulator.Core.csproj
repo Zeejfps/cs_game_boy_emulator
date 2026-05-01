@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="GameBoyEmulator.Benchmarks" />
+        <InternalsVisibleTo Include="GameboyEmulator.Benchmarks" />
     </ItemGroup>
 
 </Project>
