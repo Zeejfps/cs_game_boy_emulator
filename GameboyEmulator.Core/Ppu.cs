@@ -615,14 +615,14 @@ public sealed class Ppu : IPpu
         var wasDrawingEnabled = _isDrawingEnabled;
 
         _isDrawingEnabled = value.HasFlag(LcdControl.LcdEnable);
-        _isBackgroundDrawingEnabled = value.HasFlag(LcdControl.BgEnable);
-        _isObjectDrawingEnabled = value.HasFlag(LcdControl.ObjEnable);
-        _isWindowDrawingEnabled = value.HasFlag(LcdControl.WinEnable);
-        _spriteHeight = value.HasFlag(LcdControl.ObjSize) ? (byte)16 : (byte)8;
-        _bgTileMap = value.HasFlag(LcdControl.BgTileMap) ? _tileMap1 : _tileMap0;
-        _windowTileMap = value.HasFlag(LcdControl.WinTileMap) ? _tileMap1 : _tileMap0;
+        _isBackgroundDrawingEnabled = value.HasFlag(LcdControl.BackgroundEnable);
+        _isObjectDrawingEnabled = value.HasFlag(LcdControl.ObjectsEnable);
+        _isWindowDrawingEnabled = value.HasFlag(LcdControl.WindowEnable);
+        _spriteHeight = value.HasFlag(LcdControl.ObjectsUseLargeSize) ? (byte)16 : (byte)8;
+        _bgTileMap = value.HasFlag(LcdControl.BackgroundUsesTileMap1) ? _tileMap1 : _tileMap0;
+        _windowTileMap = value.HasFlag(LcdControl.WindowUsesTileMap1) ? _tileMap1 : _tileMap0;
 
-        var unsignedTileData = value.HasFlag(LcdControl.TileData);
+        var unsignedTileData = value.HasFlag(LcdControl.UseUnsignedTileAddressing);
         _bgTilePixels  = unsignedTileData ? _tilePixels0         : _tilePixels1;
         _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
         _lcdc = value;
