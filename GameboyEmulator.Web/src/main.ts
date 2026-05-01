@@ -129,20 +129,18 @@ async function main(): Promise<void> {
     emu.setButton(button, false);
   });
 
-  const touchButtons = document.querySelectorAll<HTMLButtonElement>('#touch-controls button[data-btn]');
-  touchButtons.forEach((el) => {
-    const name = el.dataset.btn as keyof typeof JoypadButton | undefined;
-    if (!name) return;
-    const button = JoypadButton[name];
+  const bindTouchButton = (el: HTMLButtonElement, buttons: JoypadButton[]) => {
     const press = (e: Event) => {
       e.preventDefault();
+      el.classList.add('pressed');
       if (!emu) return;
-      emu.setButton(button, true);
+      for (const b of buttons) emu.setButton(b, true);
     };
     const release = (e: Event) => {
       e.preventDefault();
+      el.classList.remove('pressed');
       if (!emu) return;
-      emu.setButton(button, false);
+      for (const b of buttons) emu.setButton(b, false);
     };
     el.addEventListener('touchstart', press, { passive: false });
     el.addEventListener('touchend', release, { passive: false });
@@ -151,6 +149,17 @@ async function main(): Promise<void> {
     el.addEventListener('mouseup', release);
     el.addEventListener('mouseleave', release);
     el.addEventListener('contextmenu', (e) => e.preventDefault());
+  };
+
+  document.querySelectorAll<HTMLButtonElement>('#touch-controls button[data-btn]').forEach((el) => {
+    const name = el.dataset.btn as keyof typeof JoypadButton | undefined;
+    if (!name) return;
+    bindTouchButton(el, [JoypadButton[name]]);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('#touch-controls button[data-combo]').forEach((el) => {
+    const combo = el.dataset.combo;
+    if (combo === 'AB') bindTouchButton(el, [JoypadButton.A, JoypadButton.B]);
   });
 
   const fileInput = document.getElementById('rom') as HTMLInputElement;

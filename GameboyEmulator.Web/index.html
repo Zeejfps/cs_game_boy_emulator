@@ -116,8 +116,14 @@
           font-size: 20px;
           padding: 0;
           touch-action: none;
+          transition: background 60ms linear, transform 60ms linear;
         }
-        .dpad button:active { background: #88c070; }
+        .dpad button.pressed,
+        .dpad button:active {
+          background: #e0f8d0;
+          color: #081820;
+          transform: scale(0.94);
+        }
         .dpad .up    { top: 0;    left: 50px; }
         .dpad .down  { top: 100px; left: 50px; }
         .dpad .left  { top: 50px; left: 0; }
@@ -140,8 +146,14 @@
           font-weight: 700;
           padding: 0;
           touch-action: none;
+          transition: background 60ms linear, transform 60ms linear;
         }
-        .ab button:active { background: #88c070; }
+        .ab button.pressed,
+        .ab button:active {
+          background: #e0f8d0;
+          color: #081820;
+          transform: scale(0.94);
+        }
         .ab .b { top: 60px; left: 0; }
         .ab .a { top: 20px; left: 80px; }
         .start-select {
@@ -159,8 +171,14 @@
           letter-spacing: 1px;
           border-radius: 16px;
           touch-action: none;
+          transition: background 60ms linear, transform 60ms linear;
         }
-        .start-select button:active { background: #88c070; }
+        .start-select button.pressed,
+        .start-select button:active {
+          background: #e0f8d0;
+          color: #081820;
+          transform: scale(0.94);
+        }
       }
     </style>
   </head>
@@ -182,6 +200,7 @@
         </div>
         <div class="start-select">
           <button data-btn="Select" aria-label="Select">SELECT</button>
+          <button data-combo="AB" aria-label="A and B together">A+B</button>
           <button data-btn="Start" aria-label="Start">START</button>
         </div>
       </div>
