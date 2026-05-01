@@ -113,66 +113,67 @@ public sealed class Ppu : IPpu
         _tileMap1 = _vram.AsMemory(0x1C00, 1024);
         _tilePixels0 = _vram.AsMemory(0x0000, 4096);
         _tilePixels1 = _vram.AsMemory(0x0800, 4096);
-        _mode = PpuMode.OamScan;
+        _mode = PpuMode.HBlank;
     }
     
     public void Step(int tStates)
     {
         if (!_isLcdEnabled) return;
-        switch (_mode)
+        while (tStates > 0)
         {
-            case PpuMode.HBlank:
-                break;
-            case PpuMode.VBlank:
-                break;
-            case PpuMode.OamScan:
-                StepOamScan(tStates);
-                break;
-            case PpuMode.Drawing:
-                StepDrawing(tStates);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            tStates = _mode switch
+            {
+                PpuMode.OamScan => StepOamScan(tStates),
+                PpuMode.Drawing => StepDrawing(tStates),
+                PpuMode.HBlank  => StepHBlank(tStates),
+                PpuMode.VBlank  => StepVBlank(tStates),
+                _ => 0,
+            };
         }
     }
-    
-    private int _remainderTStates;
+
     private byte _scanSpriteIndex;
     private readonly Sprite[] _sprites = new Sprite[MaxSpritesPerLine];
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void StepOamScan(int tStates)
+    private int StepOamScan(int tStates)
     {
-        var totalStates = tStates + _remainderTStates;
         var lineY = _ly + 16;
-        while (totalStates >= 2)
+        while (tStates > 0 && _dot < OamScanEndDot)
         {
-            var address = _scanSpriteIndex * 4;
-            var spriteY = _oam[address];
-
-            if (lineY >= spriteY && lineY < spriteY + _spriteHeight && _spriteCount < MaxSpritesPerLine)
+            // Sprite check completes once per 2-dot pair; do it on the second T-state.
+            if ((_dot & 1) == 1)
             {
-                _sprites[_spriteCount] = new Sprite
+                var address = _scanSpriteIndex * 4;
+                var spriteY = _oam[address];
+                if (lineY >= spriteY && lineY < spriteY + _spriteHeight && _spriteCount < MaxSpritesPerLine)
                 {
-                    Y = spriteY,
-                    X = _oam[address + 1],
-                    TileId = _oam[address + 2],
-                    Attributes = _oam[address + 3],
-                    OamIndex = _scanSpriteIndex
-                };
-                _spriteCount++;
+                    _sprites[_spriteCount] = new Sprite
+                    {
+                        Y = spriteY,
+                        X = _oam[address + 1],
+                        TileId = _oam[address + 2],
+                        Attributes = _oam[address + 3],
+                        OamIndex = _scanSpriteIndex
+                    };
+                    _spriteCount++;
+                }
+                _scanSpriteIndex++;
             }
-            
-            _scanSpriteIndex++;
-            totalStates -= 2;
-            _dot += 2;
-            if (_dot >= 80)
-            {
-                EnterDrawingMode();
-                break;
-            }
+            _dot++;
+            tStates--;
         }
-        _remainderTStates = totalStates;
+        if (_dot >= OamScanEndDot) EnterDrawingMode();
+        return tStates;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnterOamScanMode()
+    {
+        _mode = PpuMode.OamScan;
+        _scanSpriteIndex = 0;
+        _spriteCount = 0;
+        UpdateStatLine();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -184,14 +185,86 @@ public sealed class Ppu : IPpu
         _bgFifoCount = 0;
         _lcdX = 0;
         _lcdDiscard = (byte)(_scx & 0x07);
+        UpdateStatLine();
     }
 
-    private void StepDrawing(int tStates)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnterHBlankMode()
     {
-        var total = tStates + _remainderTStates;
-        _remainderTStates = 0;
-        StepFetcher(total);
-        StepLcdController(total);
+        _mode = PpuMode.HBlank;
+        UpdateStatLine();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnterVBlankMode()
+    {
+        _mode = PpuMode.VBlank;
+        _interrupts.Request(InterruptType.VBlank);
+        FrameCompleted?.Invoke();
+        UpdateStatLine();
+    }
+
+    private int StepHBlank(int tStates)
+    {
+        var dotsLeft = DotsPerLine - _dot;
+        if (tStates < dotsLeft)
+        {
+            _dot += tStates;
+            return 0;
+        }
+        _dot = DotsPerLine;
+        EndOfLine();
+        return tStates - dotsLeft;
+    }
+
+    private int StepVBlank(int tStates)
+    {
+        var dotsLeft = DotsPerLine - _dot;
+        if (tStates < dotsLeft)
+        {
+            _dot += tStates;
+            return 0;
+        }
+        _dot = DotsPerLine;
+        EndOfLine();
+        return tStates - dotsLeft;
+    }
+
+    private void EndOfLine()
+    {
+        _dot = 0;
+        _ly++;
+        if (_ly >= LinesPerFrame)
+        {
+            _ly = 0;
+            EnterOamScanMode();
+            return;
+        }
+        if (_ly == VisibleLines)
+        {
+            EnterVBlankMode();
+            return;
+        }
+        if (_ly > VisibleLines)
+        {
+            UpdateStatLine();
+            return;
+        }
+        EnterOamScanMode();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private int StepDrawing(int tStates)
+    {
+        while (tStates > 0 && _mode == PpuMode.Drawing)
+        {
+            // Fetcher advances one step every 2 dots; pusher advances every dot.
+            if ((_dot & 1) == 1) FetcherTick();
+            LcdControllerTick();
+            _dot++;
+            tStates--;
+        }
+        return tStates;
     }
 
     #region BgPixelsFetcher
@@ -209,31 +282,17 @@ public sealed class Ppu : IPpu
     private byte _lcdX;
     private byte _lcdDiscard;
 
-    private void StepFetcher(int tStates)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FetcherTick()
     {
-        var totalTStates = tStates;
-        while (totalTStates >= 2)
+        switch (_fetcherState)
         {
-            switch (_fetcherState)
-            {
-                case FetcherState.GetTile:
-                    BgPixelsFetcher_GetTile();
-                    break;
-                case FetcherState.GetTilePixelsLow:
-                    BgPixelsFetcher_GetTilePixelsLow();
-                    break;
-                case FetcherState.GetTilePixelsHigh:
-                    BgPixelsFetcher_GetTilePixelsHigh();
-                    break;
-                case FetcherState.Push:
-                    BgPixelsFetcher_Push();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            totalTStates -= 2;
+            case FetcherState.GetTile:          BgPixelsFetcher_GetTile();          break;
+            case FetcherState.GetTilePixelsLow: BgPixelsFetcher_GetTilePixelsLow(); break;
+            case FetcherState.GetTilePixelsHigh:BgPixelsFetcher_GetTilePixelsHigh();break;
+            case FetcherState.Push:             BgPixelsFetcher_Push();             break;
+            default: throw new ArgumentOutOfRangeException();
         }
-        _remainderTStates = totalTStates;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -285,32 +344,24 @@ public sealed class Ppu : IPpu
     
     #endregion
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private void StepLcdController(int tStates)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void LcdControllerTick()
     {
-        var frameRow = _ly * ScreenWidth;
-        while (tStates-- > 0)
-        {
-            if (_bgFifoCount == 0) continue;
+        if (_bgFifoCount == 0) return;
 
-            var pixel = (((_bgFifoHigh >> 7) & 1) << 1) | ((_bgFifoLow >> 7) & 1);
-            _bgFifoLow  = (byte)(_bgFifoLow  << 1);
-            _bgFifoHigh = (byte)(_bgFifoHigh << 1);
-            _bgFifoCount--;
+        var pixel = (((_bgFifoHigh >> 7) & 1) << 1) | ((_bgFifoLow >> 7) & 1);
+        _bgFifoLow  = (byte)(_bgFifoLow  << 1);
+        _bgFifoHigh = (byte)(_bgFifoHigh << 1);
+        _bgFifoCount--;
 
-            if (_lcdDiscard > 0) { _lcdDiscard--; continue; }
+        if (_lcdDiscard != 0) { _lcdDiscard--; return; }
 
-            if ((_lcdc & LcdcBgEnable) == 0) pixel = 0;
-            var color = (_bgp >> (pixel << 1)) & 0x03;
-            _frameBuffer[frameRow + _lcdX] = (byte)color;
-            _lcdX++;
+        if ((_lcdc & LcdcBgEnable) == 0) pixel = 0;
+        var color = (_bgp >> (pixel << 1)) & 0x03;
+        _frameBuffer[_ly * ScreenWidth + _lcdX] = (byte)color;
+        _lcdX++;
 
-            if (_lcdX == ScreenWidth)
-            {
-                _mode = PpuMode.HBlank;
-                return;
-            }
-        }
+        if (_lcdX == ScreenWidth) EnterHBlankMode();
     }
     
     private void UpdateStatLine()
@@ -340,6 +391,12 @@ public sealed class Ppu : IPpu
             _dot = 0;
             _mode = PpuMode.HBlank;
             _statLine = false;
+        }
+        else if (!wasEnabled && _isLcdEnabled)
+        {
+            _ly = 0;
+            _dot = 0;
+            EnterOamScanMode();
         }
     }
 
