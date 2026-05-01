@@ -10,7 +10,6 @@ public sealed partial class Ppu : IPpu
     
     private const int DotsPerLine    = 456;
     private const int LinesPerFrame  = 154;
-    private const int VisibleLines   = 144;
     private const int OamScanEndDot  = 80;
 
     private const int MaxSpritesPerLine = 10;
@@ -254,12 +253,12 @@ public sealed partial class Ppu : IPpu
             EnterOamScanMode();
             return;
         }
-        if (_ly == VisibleLines)
+        if (_ly == ScreenHeight)
         {
             EnterVBlankMode();
             return;
         }
-        if (_ly > VisibleLines)
+        if (_ly > ScreenHeight)
         {
             UpdateStatLine();
             return;
