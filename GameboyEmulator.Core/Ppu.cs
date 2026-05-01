@@ -46,13 +46,8 @@ public sealed class Ppu : IPpu
 
     private const int MaxSpritesPerLine = 10;
     
-    // Unified addressing: addr = base + ((index ^ flip) << 4)
-    //   unsigned mode: base 0x0000, flip 0x00 → block 0+1
-    //   signed   mode: base 0x0800, flip 0x80 → block 1+2 (0x80 swaps the halves)
-    private const ushort TileDataUnsignedBase = 0x0000;
-    private const byte   TileDataUnsignedFlip = 0x00;
-    private const ushort TileDataSignedBase   = 0x0800;
-    private const byte   TileDataSignedFlip   = 0x80;
+    private const byte TileDataUnsignedFlip = 0x00;
+    private const byte TileDataSignedFlip   = 0x80;
 
     private const ushort LcdcAddress = 0xFF40;
     private const ushort StatAddress = 0xFF41;
@@ -91,7 +86,7 @@ public sealed class Ppu : IPpu
     private bool _isWindowDrawingEnabled;
     private Memory<byte> _bgTileMap;
     private Memory<byte> _windowTileMap;
-    private ushort _bgTileDataBase;
+    private Memory<byte> _bgTilePixels;
     private byte _bgTileFlipBit;
 
     private PpuMode _mode;
@@ -110,6 +105,11 @@ public sealed class Ppu : IPpu
 
     private readonly Memory<byte> _tileMap0;
     private readonly Memory<byte> _tileMap1;
+    // BG/window tile data windows. Unified addressing: addr = (id ^ flip) << 4
+    //   unsigned: _tilePixels0 (blocks 0+1), flip 0x00
+    //   signed:   _tilePixels1 (blocks 1+2), flip 0x80 — swaps the two halves
+    private readonly Memory<byte> _tilePixels0;
+    private readonly Memory<byte> _tilePixels1;
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
 
@@ -121,6 +121,8 @@ public sealed class Ppu : IPpu
         _interrupts = interrupts;
         _tileMap0 = _vram.AsMemory(0x1800, 1024);
         _tileMap1 = _vram.AsMemory(0x1C00, 1024);
+        _tilePixels0 = _vram.AsMemory(0x0000, 4096);
+        _tilePixels1 = _vram.AsMemory(0x0800, 4096);
         _mode = PpuMode.HBlank;
     }
     
@@ -351,24 +353,25 @@ public sealed class Ppu : IPpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_GetTilePixelsLow()
     {
-        var address = BgTileRowAddress();
-        _fetcherTileLow = _vram[address];
+        _fetcherTileLow = _bgTilePixels.Span[BgTileRowOffset()];
         _fetcherState = BgPixelsFetcherState.GetTilePixelsHigh;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_GetTilePixelsHigh()
     {
-        var address = BgTileRowAddress() + 1;
-        _fetcherTileHigh = _vram[address];
+        _fetcherTileHigh = _bgTilePixels.Span[BgTileRowOffset() + 1];
         _fetcherState = BgPixelsFetcherState.Push;
     }
 
+    // Offset within _bgTilePixels for the current tile id and row.
+    // _bgTileFlipBit (0x00 unsigned, 0x80 signed) swaps the two halves of the
+    // window so a single base + xor handles both addressing modes.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int BgTileRowAddress()
+    private int BgTileRowOffset()
     {
         var rowY = _inWindow ? (_windowLineCounter & 0x07) : ((_ly + _scy) & 0x07);
-        return _bgTileDataBase + ((_fetcherTileId ^ _bgTileFlipBit) << 4) + (rowY << 1);
+        return ((_fetcherTileId ^ _bgTileFlipBit) << 4) | (rowY << 1);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -638,8 +641,8 @@ public sealed class Ppu : IPpu
         _windowTileMap = (value & LcdcWinTileMap) != 0 ? _tileMap1 : _tileMap0;
         
         var unsignedTileData = (value & LcdcTileData) != 0;
-        _bgTileDataBase = unsignedTileData ? TileDataUnsignedBase : TileDataSignedBase;
-        _bgTileFlipBit  = unsignedTileData ? TileDataUnsignedFlip : TileDataSignedFlip;
+        _bgTilePixels  = unsignedTileData ? _tilePixels0         : _tilePixels1;
+        _bgTileFlipBit = unsignedTileData ? TileDataUnsignedFlip : TileDataSignedFlip;
         _lcdc = value;
         
         if (wasDrawingEnabled && !_isDrawingEnabled)
