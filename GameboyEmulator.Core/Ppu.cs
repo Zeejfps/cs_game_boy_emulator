@@ -129,6 +129,7 @@ public sealed class Ppu : IPpu
                 StepOamScan(tStates);
                 break;
             case PpuMode.Drawing:
+                StepDrawing(tStates);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -174,6 +175,16 @@ public sealed class Ppu : IPpu
         _remainderTStates = totalStates;
     }
 
+    private void StepDrawing(int tStates)
+    {
+        var totalStates = tStates + _remainderTStates;
+        while (totalStates >= 0)
+        {
+            
+        }
+        _remainderTStates = totalStates;
+    }
+    
     private void UpdateStatLine()
     {
         var line =
