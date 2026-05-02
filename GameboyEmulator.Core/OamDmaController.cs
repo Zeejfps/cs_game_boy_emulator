@@ -51,6 +51,8 @@ public sealed class OamDmaController : IMemoryBus
             Start(value);
             return;
         }
+        if (_active && address < HramStart)
+            return;
         _inner.Write(address, value);
     }
 

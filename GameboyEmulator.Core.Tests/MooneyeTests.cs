@@ -71,10 +71,7 @@ public class MooneyeTests
             if (system.Mmu.Read(system.Cpu.Pc) == LdBBOpcode) { done = true; break; }
 
             system.Cpu.Step();
-            var t = (int)system.BusClock.ConsumeAccumulated();
-            system.Ppu.Step(t);
-            system.Timer.Tick(t);
-            total += t;
+            total += system.BusClock.ConsumeAccumulated();
         }
 
         var cpu = system.Cpu;
@@ -98,7 +95,7 @@ public class MooneyeTests
             $"E={cpu.Re:X2} H={cpu.Rh:X2} L={cpu.Rl:X2}");
     }
 
-    private sealed record System(Cpu Cpu, Mmu Mmu, Ppu Ppu, Timer Timer, CountingBusClock BusClock);
+    private sealed record System(Cpu Cpu, Mmu Mmu, Ppu Ppu, Timer Timer, BusClock BusClock);
 
     private static System BuildSystem(byte[] rom)
     {
@@ -116,7 +113,7 @@ public class MooneyeTests
             new NullSerial(),
             interrupts);
         var dma = new OamDmaController(mmu, ppu);
-        var busClock = new CountingBusClock(dma.Tick);
+        var busClock = new BusClock(ppu, timer, dma);
         var cpu = new Cpu(dma, busClock, interrupts);
         cpu.SkipBoot();
         // SkipBoot leaves the I/O registers cold; mooneye tests assume the
