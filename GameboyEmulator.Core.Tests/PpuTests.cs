@@ -103,10 +103,68 @@ public class PpuTests
     }
 
     [Fact]
+    public void VBlankInterrupt_FiresOnFirstDotOfLine144()
+    {
+        // Stop one dot before LY=144 begins.
+        _ppu.Step(DotsPerLine * 143 + 455);
+        Assert.Equal(143, _ppu.ReadRegister(LY));
+        Assert.Equal(0, _interrupts.VBlankCount);
+
+        // The very next dot crosses into LY=144 and must fire VBlank.
+        _ppu.Step(1);
+        Assert.Equal(144, _ppu.ReadRegister(LY));
+        Assert.Equal(PpuMode.VBlank, Mode(_ppu.ReadRegister(STAT)));
+        Assert.Equal(1, _interrupts.VBlankCount);
+    }
+
+    [Fact]
     public void Frame_WrapsBackToZeroAfter154Lines()
     {
         _ppu.Step(DotsPerLine * 154);
 
+        Assert.Equal(0, _ppu.ReadRegister(LY));
+        Assert.Equal(PpuMode.OamScan, Mode(_ppu.ReadRegister(STAT)));
+        Assert.Equal(1, _interrupts.VBlankCount);
+    }
+
+    [Fact]
+    public void Scanline_IsExactly456Dots()
+    {
+        // One dot before the boundary, LY must still be 0.
+        _ppu.Step(455);
+        Assert.Equal(0, _ppu.ReadRegister(LY));
+
+        // One more dot crosses the boundary to LY=1.
+        _ppu.Step(1);
+        Assert.Equal(1, _ppu.ReadRegister(LY));
+    }
+
+    [Fact]
+    public void VBlank_LastsExactly10Scanlines()
+    {
+        // Step to the start of VBlank (LY=144).
+        _ppu.Step(DotsPerLine * 144);
+        Assert.Equal(144, _ppu.ReadRegister(LY));
+        Assert.Equal(PpuMode.VBlank, Mode(_ppu.ReadRegister(STAT)));
+
+        // 10 full VBlank scanlines later, LY wraps to 0 and a new frame begins.
+        _ppu.Step(DotsPerLine * 10);
+        Assert.Equal(0, _ppu.ReadRegister(LY));
+        Assert.Equal(PpuMode.OamScan, Mode(_ppu.ReadRegister(STAT)));
+    }
+
+    [Fact]
+    public void Frame_IsExactly70224Dots()
+    {
+        const int FrameDots = 456 * 154; // 70,224
+
+        // One dot before the boundary, we should still be on the last VBlank line.
+        _ppu.Step(FrameDots - 1);
+        Assert.Equal(153, _ppu.ReadRegister(LY));
+        Assert.Equal(PpuMode.VBlank, Mode(_ppu.ReadRegister(STAT)));
+
+        // The next dot wraps the frame.
+        _ppu.Step(1);
         Assert.Equal(0, _ppu.ReadRegister(LY));
         Assert.Equal(PpuMode.OamScan, Mode(_ppu.ReadRegister(STAT)));
         Assert.Equal(1, _interrupts.VBlankCount);
