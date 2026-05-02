@@ -7,28 +7,28 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LdABc()
     {
-        Ra = _mmu.Read(Rbc);
+        Ra = Read(Rbc);
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LdADe()
     {
-        Ra = _mmu.Read(Rde);
+        Ra = Read(Rde);
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LdBcA()
     {
-        _mmu.Write(Rbc, Ra);
+        Write(Rbc, Ra);
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LdDeA()
     {
-        _mmu.Write(Rde, Ra);
+        Write(Rde, Ra);
         return 8;
     }
 
@@ -36,7 +36,7 @@ public sealed partial class Cpu
     private int LdHlIncA()
     {
         var hl = Rhl;
-        _mmu.Write(hl, Ra);
+        Write(hl, Ra);
         Rhl = (ushort)(hl + 1);
         return 8;
     }
@@ -45,7 +45,7 @@ public sealed partial class Cpu
     private int LdAHlInc()
     {
         var hl = Rhl;
-        Ra = _mmu.Read(hl);
+        Ra = Read(hl);
         Rhl = (ushort)(hl + 1);
         return 8;
     }
@@ -54,7 +54,7 @@ public sealed partial class Cpu
     private int LdHlDecA()
     {
         var hl = Rhl;
-        _mmu.Write(hl, Ra);
+        Write(hl, Ra);
         Rhl = (ushort)(hl - 1);
         return 8;
     }
@@ -63,7 +63,7 @@ public sealed partial class Cpu
     private int LdAHlDec()
     {
         var hl = Rhl;
-        Ra = _mmu.Read(hl);
+        Ra = Read(hl);
         Rhl = (ushort)(hl - 1);
         return 8;
     }
@@ -72,7 +72,7 @@ public sealed partial class Cpu
     private int LdA16A()
     {
         var address = FetchWord();
-        _mmu.Write(address, Ra);
+        Write(address, Ra);
         return 16;
     }
 
@@ -80,7 +80,7 @@ public sealed partial class Cpu
     private int LdAA16()
     {
         var address = FetchWord();
-        Ra = _mmu.Read(address);
+        Ra = Read(address);
         return 16;
     }
 
@@ -88,7 +88,7 @@ public sealed partial class Cpu
     private int LdhA8A()
     {
         var offset = Fetch();
-        _mmu.Write((ushort)(0xFF00 + offset), Ra);
+        Write((ushort)(0xFF00 + offset), Ra);
         return 12;
     }
 
@@ -96,21 +96,21 @@ public sealed partial class Cpu
     private int LdhAA8()
     {
         var offset = Fetch();
-        Ra = _mmu.Read((ushort)(0xFF00 + offset));
+        Ra = Read((ushort)(0xFF00 + offset));
         return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LdCA()
     {
-        _mmu.Write((ushort)(0xFF00 + Rc), Ra);
+        Write((ushort)(0xFF00 + Rc), Ra);
         return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int LdAC()
     {
-        Ra = _mmu.Read((ushort)(0xFF00 + Rc));
+        Ra = Read((ushort)(0xFF00 + Rc));
         return 8;
     }
 
@@ -118,7 +118,7 @@ public sealed partial class Cpu
     private int LdA16Sp()
     {
         var address = FetchWord();
-        _mmu.WriteWord(address, Sp);
+        WriteWord(address, Sp);
         return 20;
     }
 }

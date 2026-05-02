@@ -26,7 +26,7 @@ public sealed partial class Cpu
     private int LdBa() { Rb = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdBm() { Rb = _mmu.Read(Rhl); return 8; }
+    private int LdBm() { Rb = Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,7 +51,7 @@ public sealed partial class Cpu
     private int LdCa() { Rc = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdCm() { Rc = _mmu.Read(Rhl); return 8; }
+    private int LdCm() { Rc = Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -76,7 +76,7 @@ public sealed partial class Cpu
     private int LdDa() { Rd = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdDm() { Rd = _mmu.Read(Rhl); return 8; }
+    private int LdDm() { Rd = Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -101,7 +101,7 @@ public sealed partial class Cpu
     private int LdEa() { Re = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdEm() { Re = _mmu.Read(Rhl); return 8; }
+    private int LdEm() { Re = Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,7 +126,7 @@ public sealed partial class Cpu
     private int LdHa() { Rh = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdHm() { Rh = _mmu.Read(Rhl); return 8; }
+    private int LdHm() { Rh = Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,7 +151,7 @@ public sealed partial class Cpu
     private int LdLa() { Rl = Ra; return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdLm() { Rl = _mmu.Read(Rhl); return 8; }
+    private int LdLm() { Rl = Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -176,27 +176,27 @@ public sealed partial class Cpu
     private int LdAa() { return 4; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdAm() { Ra = _mmu.Read(Rhl); return 8; }
+    private int LdAm() { Ra = Read(Rhl); return 8; }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdMb() { _mmu.Write(Rhl, Rb); return 8; }
+    private int LdMb() { Write(Rhl, Rb); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdMc() { _mmu.Write(Rhl, Rc); return 8; }
+    private int LdMc() { Write(Rhl, Rc); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdMd() { _mmu.Write(Rhl, Rd); return 8; }
+    private int LdMd() { Write(Rhl, Rd); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdMe() { _mmu.Write(Rhl, Re); return 8; }
+    private int LdMe() { Write(Rhl, Re); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdMh() { _mmu.Write(Rhl, Rh); return 8; }
+    private int LdMh() { Write(Rhl, Rh); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdMl() { _mmu.Write(Rhl, Rl); return 8; }
+    private int LdMl() { Write(Rhl, Rl); return 8; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdMa() { _mmu.Write(Rhl, Ra); return 8; }
+    private int LdMa() { Write(Rhl, Ra); return 8; }
 }

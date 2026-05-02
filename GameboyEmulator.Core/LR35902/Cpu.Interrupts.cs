@@ -27,7 +27,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Reti()
     {
-        Pc = _mmu.ReadWord(Sp);
+        Pc = ReadWord(Sp);
         Sp += 2;
         InterruptMasterEnable = true;
         return 16;
@@ -72,8 +72,8 @@ public sealed partial class Cpu
         InterruptMasterEnable = false;
 
         Sp -= 2;
-        _mmu.Write((ushort)(Sp + 1), (byte)(Pc >> 8));
-        _mmu.Write(Sp, (byte)(Pc & 0xFF));
+        Write((ushort)(Sp + 1), (byte)(Pc >> 8));
+        Write(Sp, (byte)(Pc & 0xFF));
 
         Pc = GetInterruptVector(serviced);
         return 20;

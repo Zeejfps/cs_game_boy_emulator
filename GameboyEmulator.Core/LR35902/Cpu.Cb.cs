@@ -52,7 +52,7 @@ public sealed partial class Cpu
         3 => Re,
         4 => Rh,
         5 => Rl,
-        6 => _mmu.Read(Rhl),
+        6 => Read(Rhl),
         _ => Ra,
     };
 
@@ -67,7 +67,7 @@ public sealed partial class Cpu
             case 3: Re = value; break;
             case 4: Rh = value; break;
             case 5: Rl = value; break;
-            case 6: _mmu.Write(Rhl, value); break;
+            case 6: Write(Rhl, value); break;
             default: Ra = value; break;
         }
     }

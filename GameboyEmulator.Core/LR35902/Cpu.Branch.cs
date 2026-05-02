@@ -10,7 +10,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) != 0)
             return 8;
 
-        Pc = _mmu.ReadWord(Sp);
+        Pc = ReadWord(Sp);
         Sp += 2;
         return 20;
     }
@@ -21,7 +21,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) != 0)
             return 8;
 
-        Pc = _mmu.ReadWord(Sp);
+        Pc = ReadWord(Sp);
         Sp += 2;
         return 20;
     }
@@ -32,7 +32,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) == 0)
             return 8;
 
-        Pc = _mmu.ReadWord(Sp);
+        Pc = ReadWord(Sp);
         Sp += 2;
         return 20;
     }
@@ -43,7 +43,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) == 0)
             return 8;
 
-        Pc = _mmu.ReadWord(Sp);
+        Pc = ReadWord(Sp);
         Sp += 2;
         return 20;
     }
@@ -91,7 +91,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Ret()
     {
-        Pc = _mmu.ReadWord(Sp);
+        Pc = ReadWord(Sp);
         Sp += 2;
         return 16;
     }
@@ -108,7 +108,7 @@ public sealed partial class Cpu
     {
         var address = FetchWord();
         Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
+        WriteWord(Sp, Pc);
         Pc = address;
         return 24;
     }
@@ -127,7 +127,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) != 0)
             return 12;
         Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
+        WriteWord(Sp, Pc);
         Pc = address;
         return 24;
     }
@@ -139,7 +139,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) != 0)
             return 12;
         Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
+        WriteWord(Sp, Pc);
         Pc = address;
         return 24;
     }
@@ -151,7 +151,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) == 0)
             return 12;
         Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
+        WriteWord(Sp, Pc);
         Pc = address;
         return 24;
     }
@@ -163,7 +163,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) == 0)
             return 12;
         Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
+        WriteWord(Sp, Pc);
         Pc = address;
         return 24;
     }
@@ -172,7 +172,7 @@ public sealed partial class Cpu
     private int Rst(ushort vector)
     {
         Sp -= 2;
-        _mmu.WriteWord(Sp, Pc);
+        WriteWord(Sp, Pc);
         Pc = vector;
         return 16;
     }

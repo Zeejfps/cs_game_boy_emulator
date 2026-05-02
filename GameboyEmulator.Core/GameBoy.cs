@@ -46,7 +46,8 @@ public sealed class GameBoy
         _timer = timer;
         _joypad = joypad;
         _mmu = mmu;
-        _cpu = new Cpu(mmu, interrupts);
+        var busClock = new BusClock();
+        _cpu = new Cpu(mmu, busClock, interrupts);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }

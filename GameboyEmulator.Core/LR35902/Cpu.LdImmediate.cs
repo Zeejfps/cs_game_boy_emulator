@@ -57,7 +57,7 @@ public sealed partial class Cpu
     private int LdMn()
     {
         var value = Fetch();
-        _mmu.Write(Rhl, value);
+        Write(Rhl, value);
         return 12;
     }
 }

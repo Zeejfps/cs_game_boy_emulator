@@ -42,7 +42,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int AddM()
     {
-        Ra = Add8(Ra, _mmu.Read(Rhl), false);
+        Ra = Add8(Ra, Read(Rhl), false);
         return 8;
     }
 
@@ -70,7 +70,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int AdcM()
     {
-        Ra = Add8(Ra, _mmu.Read(Rhl), (Flags & CpuFlags.C) != 0);
+        Ra = Add8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0);
         return 8;
     }
 
@@ -105,7 +105,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int SubM()
     {
-        Ra = Sub8(Ra, _mmu.Read(Rhl), false);
+        Ra = Sub8(Ra, Read(Rhl), false);
         return 8;
     }
 
@@ -140,7 +140,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int SbcM()
     {
-        Ra = Sub8(Ra, _mmu.Read(Rhl), (Flags & CpuFlags.C) != 0);
+        Ra = Sub8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0);
         return 8;
     }
 
@@ -177,7 +177,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int IncM()
     {
-        _mmu.Write(Rhl, Inc(_mmu.Read(Rhl)));
+        Write(Rhl, Inc(Read(Rhl)));
         return 12;
     }
 
@@ -214,7 +214,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int DecM()
     {
-        _mmu.Write(Rhl, Dec(_mmu.Read(Rhl)));
+        Write(Rhl, Dec(Read(Rhl)));
         return 12;
     }
 }

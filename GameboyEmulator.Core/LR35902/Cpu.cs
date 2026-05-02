@@ -44,12 +44,14 @@ public sealed partial class Cpu : ICpu
     private int _enableInterruptsTimer;
     private bool _haltBugPending;
     private readonly IMemoryBus _mmu;
+    private readonly IBusClock _busClock;
     private readonly IInterrupts _interrupts;
 
-    public Cpu(IMemoryBus mmu, IInterrupts interrupts)
+    public Cpu(IMemoryBus mmu, IBusClock busClock, IInterrupts interrupts)
     {
         _mmu = mmu;
         _interrupts = interrupts;
+        _busClock = busClock;
     }
 
     public void Reset()
@@ -89,6 +91,33 @@ public sealed partial class Cpu : ICpu
         var cycles = Dispatch();
         UpdateInterruptTimer();
         return cycles;
+    }
+    
+    private byte Read(ushort address)
+    {
+        _busClock.Tick(4);
+        return _mmu.Read(address);
+    }
+    
+    private ushort ReadWord(ushort address)
+    {
+        var lo = Read(address);
+        var hi = Read((ushort)(address + 1));
+        return (ushort)((hi << 8) | lo);
+    }
+
+    private void Write(ushort address, byte value)
+    {
+        _busClock.Tick(4);
+        _mmu.Write(address, value);
+    }
+    
+    private void WriteWord(ushort address, ushort value)
+    {
+        var lo = (byte)(value & 0xFF);
+        var hi = (byte)(value >> 8);
+        Write(address, lo);
+        Write((ushort)(address + 1), hi);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]

@@ -7,7 +7,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PopBc()
     {
-        Rbc = _mmu.ReadWord(Sp);
+        Rbc = ReadWord(Sp);
         Sp += 2;
         return 12;
     }
@@ -16,15 +16,15 @@ public sealed partial class Cpu
     private int PushBc()
     {
         Sp -= 2;
-        _mmu.Write((ushort)(Sp + 1), Rb);
-        _mmu.Write(Sp, Rc);
+        Write((ushort)(Sp + 1), Rb);
+        Write(Sp, Rc);
         return 16;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PopDe()
     {
-        Rde = _mmu.ReadWord(Sp);
+        Rde = ReadWord(Sp);
         Sp += 2;
         return 12;
     }
@@ -33,8 +33,8 @@ public sealed partial class Cpu
     private int PushDe()
     {
         Sp -= 2;
-        _mmu.Write((ushort)(Sp + 1), Rd);
-        _mmu.Write(Sp, Re);
+        Write((ushort)(Sp + 1), Rd);
+        Write(Sp, Re);
         return 16;
     }
 
@@ -42,7 +42,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PopHl()
     {
-        Rhl = _mmu.ReadWord(Sp);
+        Rhl = ReadWord(Sp);
         Sp += 2;
         return 12;
     }
@@ -51,16 +51,16 @@ public sealed partial class Cpu
     private int PushHl()
     {
         Sp -= 2;
-        _mmu.Write((ushort)(Sp + 1), Rh);
-        _mmu.Write(Sp, Rl);
+        Write((ushort)(Sp + 1), Rh);
+        Write(Sp, Rl);
         return 16;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PopAf()
     {
-        Flags = (CpuFlags)_mmu.Read(Sp);
-        Ra = _mmu.Read((ushort)(Sp + 1));
+        Flags = (CpuFlags)Read(Sp);
+        Ra = Read((ushort)(Sp + 1));
         Sp += 2;
         return 12;
     }
@@ -69,8 +69,8 @@ public sealed partial class Cpu
     private int PushAf()
     {
         Sp -= 2;
-        _mmu.Write((ushort)(Sp + 1), Ra);
-        _mmu.Write(Sp, (byte)Flags);
+        Write((ushort)(Sp + 1), Ra);
+        Write(Sp, (byte)Flags);
         return 16;
     }
 
