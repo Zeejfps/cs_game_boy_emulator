@@ -23,6 +23,7 @@ public sealed class Timer : ITimer
 
     private bool _prevSignal;
     private int _reloadDelay;
+    private bool _justReloaded;
 
     public Timer(IInterrupts interrupts)
     {
@@ -42,7 +43,12 @@ public sealed class Timer : ITimer
 
     public void WriteTima(byte value)
     {
-        // A write inside the 4-T reload window cancels the pending reload+IRQ.
+        // At the exact T-cycle the reload fires, a TIMA write is ignored —
+        // TIMA keeps the just-loaded TMA value.
+        if (_justReloaded)
+            return;
+        // Otherwise a write inside the 4-T reload window cancels the pending
+        // reload+IRQ; outside the window it's a normal write.
         _reloadDelay = 0;
         _tima = value;
     }
@@ -62,11 +68,13 @@ public sealed class Timer : ITimer
         for (var i = 0; i < tStates; i++)
         {
             _counter++;
+            _justReloaded = false;
 
             if (_reloadDelay > 0 && --_reloadDelay == 0)
             {
                 _tima = _tma;
                 _interrupts.Request(InterruptType.Timer);
+                _justReloaded = true;
             }
 
             DetectTimaEdge();
@@ -113,5 +121,6 @@ public sealed class Timer : ITimer
         _isTimaEnabled = false;
         _prevSignal = false;
         _reloadDelay = 0;
+        _justReloaded = false;
     }
 }

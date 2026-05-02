@@ -20,6 +20,7 @@ public sealed class OamDmaController : IMemoryBus
     private const ushort HramStart = 0xFF80;
     private const int OamSize = 0xA0;
     private const int TicksPerByte = 4;
+    private const int SetupTicks = 4;
 
     private readonly IMemoryBus _inner;
     private readonly IPpu _ppu;
@@ -28,6 +29,7 @@ public sealed class OamDmaController : IMemoryBus
     private byte _sourcePage;
     private int _byteIndex;
     private int _pendingTicks;
+    private int _setupTicks;
 
     public OamDmaController(IMemoryBus inner, IPpu ppu)
     {
@@ -61,6 +63,15 @@ public sealed class OamDmaController : IMemoryBus
         if (!_active) return;
 
         _pendingTicks += ticks;
+
+        // 4-T bus-arbitration setup before the first byte transfers.
+        if (_setupTicks > 0)
+        {
+            var consume = Math.Min(_setupTicks, _pendingTicks);
+            _setupTicks -= consume;
+            _pendingTicks -= consume;
+        }
+
         while (_active && _pendingTicks >= TicksPerByte)
         {
             _pendingTicks -= TicksPerByte;
@@ -79,6 +90,7 @@ public sealed class OamDmaController : IMemoryBus
         _sourcePage = 0;
         _byteIndex = 0;
         _pendingTicks = 0;
+        _setupTicks = 0;
     }
 
     private void Start(byte sourcePage)
@@ -87,5 +99,6 @@ public sealed class OamDmaController : IMemoryBus
         _active = true;
         _byteIndex = 0;
         _pendingTicks = 0;
+        _setupTicks = SetupTicks;
     }
 }
