@@ -244,19 +244,4 @@ public sealed class Mmu : IMemoryBus
         _bootRom = bootRom;
         _bootRomEnabled = bootRom != null;
     }
-
-    public void WriteWord(ushort address, ushort value)
-    {
-        var lo = (byte)(value & 0xFF);
-        var hi = (byte)(value >> 8);
-        Write(address, lo);
-        Write((ushort)(address + 1), hi);
-    }
-
-    public ushort ReadWord(ushort address)
-    {
-        var lo = Read(address);
-        var hi = Read((ushort)(address + 1));
-        return (ushort)((hi << 8) | lo);
-    }
 }

@@ -229,25 +229,6 @@ public class MmuTests
         Assert.Null(_timer.LastTmaWrite);
     }
 
-    [Fact]
-    public void WriteWord_WritesLittleEndian()
-    {
-        _mmu.WriteWord(0x8000, 0xBEEF);
-
-        Assert.Equal(2, _ppu.VramWrites.Count);
-        Assert.Equal(((ushort)0x0000, (byte)0xEF), _ppu.VramWrites[0]);
-        Assert.Equal(((ushort)0x0001, (byte)0xBE), _ppu.VramWrites[1]);
-    }
-
-    [Fact]
-    public void WriteWord_AcrossRegionBoundary_DispatchesEachByteSeparately()
-    {
-        _mmu.WriteWord(0x7FFF, 0xBEEF);
-
-        Assert.Equal(((ushort)0x7FFF, (byte)0xEF), _mbc.LastBankNWrite);
-        Assert.Equal(((ushort)0x0000, (byte)0xBE), _ppu.LastVramWrite);
-    }
-
     [Theory]
     [InlineData((ushort)0x0000)]
     [InlineData((ushort)0x1234)]
@@ -366,24 +347,6 @@ public class MmuTests
         _mmu.Write(0xFFFF, 0x1F);
 
         Assert.Equal(0x1F, _mmu.Read(0xFFFF));
-    }
-
-    [Fact]
-    public void ReadWord_AssemblesLittleEndian()
-    {
-        _mmu.Write(0xC000, 0xEF);
-        _mmu.Write(0xC001, 0xBE);
-
-        Assert.Equal(0xBEEF, _mmu.ReadWord(0xC000));
-    }
-
-    [Fact]
-    public void ReadWord_AcrossRegionBoundary_AssemblesFromEachRegion()
-    {
-        _mbc.BankNReadStub = addr => addr == 0x7FFF ? (byte)0xEF : (byte)0;
-        _ppu.VramReadStub = addr => addr == 0x0000 ? (byte)0xBE : (byte)0;
-
-        Assert.Equal(0xBEEF, _mmu.ReadWord(0x7FFF));
     }
 
     private void AssertNoExternalDispatch()
