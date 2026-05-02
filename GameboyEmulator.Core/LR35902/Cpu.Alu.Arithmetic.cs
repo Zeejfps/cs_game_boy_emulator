@@ -5,144 +5,112 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Add(byte value)
-    {
-        Ra = Add8(Ra, value, false);
-        return 4;
-    }
+    private void Add(byte value) { Ra = Add8(Ra, value, false); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Adc(byte value)
-    {
-        Ra = Add8(Ra, value, (Flags & CpuFlags.C) != 0);
-        return 4;
-    }
+    private void Adc(byte value) { Ra = Add8(Ra, value, (Flags & CpuFlags.C) != 0); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddB() => Add(Rb);
+    private void AddB() => Add(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddC() => Add(Rc);
+    private void AddC() => Add(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddD() => Add(Rd);
+    private void AddD() => Add(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddE() => Add(Re);
+    private void AddE() => Add(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddH() => Add(Rh);
+    private void AddH() => Add(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddL() => Add(Rl);
+    private void AddL() => Add(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddA() => Add(Ra);
+    private void AddA() => Add(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddM()
-    {
-        Ra = Add8(Ra, Read(Rhl), false);
-        return 8;
-    }
+    private void AddM() { Ra = Add8(Ra, Read(Rhl), false); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcB() => Adc(Rb);
+    private void AdcB() => Adc(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcC() => Adc(Rc);
+    private void AdcC() => Adc(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcD() => Adc(Rd);
+    private void AdcD() => Adc(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcE() => Adc(Re);
+    private void AdcE() => Adc(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcH() => Adc(Rh);
+    private void AdcH() => Adc(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcL() => Adc(Rl);
+    private void AdcL() => Adc(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcA() => Adc(Ra);
+    private void AdcA() => Adc(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AdcM()
-    {
-        Ra = Add8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0);
-        return 8;
-    }
+    private void AdcM() { Ra = Add8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Sub(byte value)
-    {
-        Ra = Sub8(Ra, value, false);
-        return 4;
-    }
+    private void Sub(byte value) { Ra = Sub8(Ra, value, false); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubB() => Sub(Rb);
+    private void SubB() => Sub(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubC() => Sub(Rc);
+    private void SubC() => Sub(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubD() => Sub(Rd);
+    private void SubD() => Sub(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubE() => Sub(Re);
+    private void SubE() => Sub(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubH() => Sub(Rh);
+    private void SubH() => Sub(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubL() => Sub(Rl);
+    private void SubL() => Sub(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubA() => Sub(Ra);
+    private void SubA() => Sub(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SubM()
-    {
-        Ra = Sub8(Ra, Read(Rhl), false);
-        return 8;
-    }
+    private void SubM() { Ra = Sub8(Ra, Read(Rhl), false); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Sbc(byte value)
-    {
-        Ra = Sub8(Ra, value, (Flags & CpuFlags.C) != 0);
-        return 4;
-    }
+    private void Sbc(byte value) { Ra = Sub8(Ra, value, (Flags & CpuFlags.C) != 0); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcB() => Sbc(Rb);
+    private void SbcB() => Sbc(Rb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcC() => Sbc(Rc);
+    private void SbcC() => Sbc(Rc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcD() => Sbc(Rd);
+    private void SbcD() => Sbc(Rd);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcE() => Sbc(Re);
+    private void SbcE() => Sbc(Re);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcH() => Sbc(Rh);
+    private void SbcH() => Sbc(Rh);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcL() => Sbc(Rl);
+    private void SbcL() => Sbc(Rl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcA() => Sbc(Ra);
+    private void SbcA() => Sbc(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SbcM()
-    {
-        Ra = Sub8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0);
-        return 8;
-    }
+    private void SbcM() { Ra = Sub8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Inc(byte value)
@@ -154,32 +122,28 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncB() { Rb = Inc(Rb); return 4; }
+    private void IncB() { Rb = Inc(Rb); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncC() { Rc = Inc(Rc); return 4; }
+    private void IncC() { Rc = Inc(Rc); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncD() { Rd = Inc(Rd); return 4; }
+    private void IncD() { Rd = Inc(Rd); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncE() { Re = Inc(Re); return 4; }
+    private void IncE() { Re = Inc(Re); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncH() { Rh = Inc(Rh); return 4; }
+    private void IncH() { Rh = Inc(Rh); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncL() { Rl = Inc(Rl); return 4; }
+    private void IncL() { Rl = Inc(Rl); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncA() { Ra = Inc(Ra); return 4; }
+    private void IncA() { Ra = Inc(Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncM()
-    {
-        Write(Rhl, Inc(Read(Rhl)));
-        return 12;
-    }
+    private void IncM() { Write(Rhl, Inc(Read(Rhl))); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Dec(byte value)
@@ -191,30 +155,26 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecB() { Rb = Dec(Rb); return 4; }
+    private void DecB() { Rb = Dec(Rb); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecC() { Rc = Dec(Rc); return 4; }
+    private void DecC() { Rc = Dec(Rc); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecD() { Rd = Dec(Rd); return 4; }
+    private void DecD() { Rd = Dec(Rd); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecE() { Re = Dec(Re); return 4; }
+    private void DecE() { Re = Dec(Re); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecH() { Rh = Dec(Rh); return 4; }
+    private void DecH() { Rh = Dec(Rh); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecL() { Rl = Dec(Rl); return 4; }
+    private void DecL() { Rl = Dec(Rl); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecA() { Ra = Dec(Ra); return 4; }
+    private void DecA() { Ra = Dec(Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecM()
-    {
-        Write(Rhl, Dec(Read(Rhl)));
-        return 12;
-    }
+    private void DecM() { Write(Rhl, Dec(Read(Rhl))); }
 }

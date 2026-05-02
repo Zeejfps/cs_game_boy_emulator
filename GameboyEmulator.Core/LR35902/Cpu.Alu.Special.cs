@@ -5,72 +5,65 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rlca()
+    private void Rlca()
     {
         var carry = (Ra & 0x80) != 0;
         Ra = (byte)((Ra << 1) | (carry ? 1 : 0));
         _flags = carry ? CpuFlags.C : CpuFlags.None;
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rla()
+    private void Rla()
     {
         var newCarry = (Ra & 0x80) != 0;
         var oldCarry = (Flags & CpuFlags.C) != 0;
         Ra = (byte)((Ra << 1) | (oldCarry ? 1 : 0));
         _flags = newCarry ? CpuFlags.C : CpuFlags.None;
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rrca()
+    private void Rrca()
     {
         var carry = (Ra & 0x01) != 0;
         Ra = (byte)((Ra >> 1) | (carry ? 0x80 : 0));
         _flags = carry ? CpuFlags.C : CpuFlags.None;
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Rra()
+    private void Rra()
     {
         var newCarry = (Ra & 0x01) != 0;
         var oldCarry = (Flags & CpuFlags.C) != 0;
         Ra = (byte)((Ra >> 1) | (oldCarry ? 0x80 : 0));
         _flags = newCarry ? CpuFlags.C : CpuFlags.None;
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Cpl()
+    private void Cpl()
     {
         Ra = (byte)~Ra;
         SetN(true);
         SetH(true);
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Ccf()
+    private void Ccf()
     {
         SetN(false);
         SetH(false);
         _flags ^= CpuFlags.C;
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Scf()
+    private void Scf()
     {
         SetN(false);
         SetH(false);
         SetC(true);
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Daa()
+    private void Daa()
     {
         var flags = Flags;
         var h = (flags & CpuFlags.H) != 0;
@@ -94,6 +87,5 @@ public sealed partial class Cpu
         SetZ(Ra);
         SetH(false);
         SetC(setC);
-        return 4;
     }
 }

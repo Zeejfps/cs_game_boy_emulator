@@ -86,11 +86,10 @@ public sealed partial class Cpu : ICpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public int Step()
+    public void Step()
     {
-        var cycles = Dispatch();
+        Dispatch();
         UpdateInterruptTimer();
-        return cycles;
     }
     
     private byte Read(ushort address)
@@ -126,7 +125,7 @@ public sealed partial class Cpu : ICpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private int Dispatch()
+    private void Dispatch()
     {
         if (IsSleeping)
         {
@@ -137,24 +136,27 @@ public sealed partial class Cpu : ICpu
             {
                 IsSleeping = false;
             }
-            _busClock.Tick(4);
-            return 4;
+            Tick(4);
+            return;
         }
 
         var pending = _interrupts.GetPending();
         if (IsWaitingForInterrupt && pending == InterruptType.None)
         {
-            _busClock.Tick(4);
-            return 4;
+            Tick(4);
+            return;
         }
 
         IsWaitingForInterrupt = false;
 
         if (InterruptMasterEnable && pending != InterruptType.None)
-            return ServicePendingInterrupt(pending);
+        {
+            ServicePendingInterrupt(pending);
+            return;
+        }
 
         var opcode = Fetch();
-        return Execute(opcode);
+        Execute(opcode);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -169,358 +171,360 @@ public sealed partial class Cpu : ICpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private int Execute(byte opcode) => opcode switch
+    private void Execute(byte opcode)
     {
-        // NOP
-        0x00 => Nop(),
+        switch (opcode)
+        {
+            // NOP
+            case 0x00: Nop(); break;
 
-        // LD r,n8
-        0x06 => LdBn(),
-        0x0E => LdCn(),
-        0x16 => LdDn(),
-        0x1E => LdEn(),
-        0x26 => LdHn(),
-        0x2E => LdLn(),
-        0x3E => LdAn(),
-        0x36 => LdMn(),
+            // LD r,n8
+            case 0x06: LdBn(); break;
+            case 0x0E: LdCn(); break;
+            case 0x16: LdDn(); break;
+            case 0x1E: LdEn(); break;
+            case 0x26: LdHn(); break;
+            case 0x2E: LdLn(); break;
+            case 0x3E: LdAn(); break;
+            case 0x36: LdMn(); break;
 
-        // LD B,r
-        0x40 => LdBb(),
-        0x41 => LdBc(),
-        0x42 => LdBd(),
-        0x43 => LdBe(),
-        0x44 => LdBh(),
-        0x45 => LdBl(),
-        0x46 => LdBm(),
-        0x47 => LdBa(),
+            // LD B,r
+            case 0x40: LdBb(); break;
+            case 0x41: LdBc(); break;
+            case 0x42: LdBd(); break;
+            case 0x43: LdBe(); break;
+            case 0x44: LdBh(); break;
+            case 0x45: LdBl(); break;
+            case 0x46: LdBm(); break;
+            case 0x47: LdBa(); break;
 
-        // LD C,r
-        0x48 => LdCb(),
-        0x49 => LdCc(),
-        0x4A => LdCd(),
-        0x4B => LdCe(),
-        0x4C => LdCh(),
-        0x4D => LdCl(),
-        0x4E => LdCm(),
-        0x4F => LdCa(),
+            // LD C,r
+            case 0x48: LdCb(); break;
+            case 0x49: LdCc(); break;
+            case 0x4A: LdCd(); break;
+            case 0x4B: LdCe(); break;
+            case 0x4C: LdCh(); break;
+            case 0x4D: LdCl(); break;
+            case 0x4E: LdCm(); break;
+            case 0x4F: LdCa(); break;
 
-        // LD D,r
-        0x50 => LdDb(),
-        0x51 => LdDc(),
-        0x52 => LdDd(),
-        0x53 => LdDe(),
-        0x54 => LdDh(),
-        0x55 => LdDl(),
-        0x56 => LdDm(),
-        0x57 => LdDa(),
+            // LD D,r
+            case 0x50: LdDb(); break;
+            case 0x51: LdDc(); break;
+            case 0x52: LdDd(); break;
+            case 0x53: LdDe(); break;
+            case 0x54: LdDh(); break;
+            case 0x55: LdDl(); break;
+            case 0x56: LdDm(); break;
+            case 0x57: LdDa(); break;
 
-        // LD E,r
-        0x58 => LdEb(),
-        0x59 => LdEc(),
-        0x5A => LdEd(),
-        0x5B => LdEe(),
-        0x5C => LdEh(),
-        0x5D => LdEl(),
-        0x5E => LdEm(),
-        0x5F => LdEa(),
+            // LD E,r
+            case 0x58: LdEb(); break;
+            case 0x59: LdEc(); break;
+            case 0x5A: LdEd(); break;
+            case 0x5B: LdEe(); break;
+            case 0x5C: LdEh(); break;
+            case 0x5D: LdEl(); break;
+            case 0x5E: LdEm(); break;
+            case 0x5F: LdEa(); break;
 
-        // LD H,r
-        0x60 => LdHb(),
-        0x61 => LdHc(),
-        0x62 => LdHd(),
-        0x63 => LdHe(),
-        0x64 => LdHh(),
-        0x65 => LdHl(),
-        0x66 => LdHm(),
-        0x67 => LdHa(),
+            // LD H,r
+            case 0x60: LdHb(); break;
+            case 0x61: LdHc(); break;
+            case 0x62: LdHd(); break;
+            case 0x63: LdHe(); break;
+            case 0x64: LdHh(); break;
+            case 0x65: LdHl(); break;
+            case 0x66: LdHm(); break;
+            case 0x67: LdHa(); break;
 
-        // LD L,r
-        0x68 => LdLb(),
-        0x69 => LdLc(),
-        0x6A => LdLd(),
-        0x6B => LdLe(),
-        0x6C => LdLh(),
-        0x6D => LdLl(),
-        0x6E => LdLm(),
-        0x6F => LdLa(),
+            // LD L,r
+            case 0x68: LdLb(); break;
+            case 0x69: LdLc(); break;
+            case 0x6A: LdLd(); break;
+            case 0x6B: LdLe(); break;
+            case 0x6C: LdLh(); break;
+            case 0x6D: LdLl(); break;
+            case 0x6E: LdLm(); break;
+            case 0x6F: LdLa(); break;
 
-        // LD A,r
-        0x78 => LdAb(),
-        0x79 => LdAc(),
-        0x7A => LdAd(),
-        0x7B => LdAe(),
-        0x7C => LdAh(),
-        0x7D => LdAl(),
-        0x7E => LdAm(),
-        0x7F => LdAa(),
+            // LD A,r
+            case 0x78: LdAb(); break;
+            case 0x79: LdAc(); break;
+            case 0x7A: LdAd(); break;
+            case 0x7B: LdAe(); break;
+            case 0x7C: LdAh(); break;
+            case 0x7D: LdAl(); break;
+            case 0x7E: LdAm(); break;
+            case 0x7F: LdAa(); break;
 
-        // LD (HL),r
-        0x70 => LdMb(),
-        0x71 => LdMc(),
-        0x72 => LdMd(),
-        0x73 => LdMe(),
-        0x74 => LdMh(),
-        0x75 => LdMl(),
-        0x76 => Halt(),
-        0x77 => LdMa(),
+            // LD (HL),r
+            case 0x70: LdMb(); break;
+            case 0x71: LdMc(); break;
+            case 0x72: LdMd(); break;
+            case 0x73: LdMe(); break;
+            case 0x74: LdMh(); break;
+            case 0x75: LdMl(); break;
+            case 0x76: Halt(); break;
+            case 0x77: LdMa(); break;
 
-        // LD A,(rr)
-        0x0A => LdABc(),
-        0x1A => LdADe(),
+            // LD A,(rr)
+            case 0x0A: LdABc(); break;
+            case 0x1A: LdADe(); break;
 
-        // LD (rr),A
-        0x02 => LdBcA(),
-        0x12 => LdDeA(),
+            // LD (rr),A
+            case 0x02: LdBcA(); break;
+            case 0x12: LdDeA(); break;
 
-        // LD rr,n16
-        0x01 => LdBcNn(),
-        0x11 => LdDeNn(),
-        0x21 => LdHlNn(),
-        0x31 => LdSpNn(),
+            // LD rr,n16
+            case 0x01: LdBcNn(); break;
+            case 0x11: LdDeNn(); break;
+            case 0x21: LdHlNn(); break;
+            case 0x31: LdSpNn(); break;
 
-        // ADD HL,rr
-        0x09 => AddHlBc(),
-        0x19 => AddHlDe(),
-        0x29 => AddHlHl(),
-        0x39 => AddHlSp(),
+            // ADD HL,rr
+            case 0x09: AddHlBc(); break;
+            case 0x19: AddHlDe(); break;
+            case 0x29: AddHlHl(); break;
+            case 0x39: AddHlSp(); break;
 
-        // INC rr
-        0x03 => IncBc(),
-        0x13 => IncDe(),
-        0x23 => IncHl(),
-        0x33 => IncSp(),
+            // INC rr
+            case 0x03: IncBc(); break;
+            case 0x13: IncDe(); break;
+            case 0x23: IncHl(); break;
+            case 0x33: IncSp(); break;
 
-        // DEC rr
-        0x0B => DecBc(),
-        0x1B => DecDe(),
-        0x2B => DecHl(),
-        0x3B => DecSp(),
+            // DEC rr
+            case 0x0B: DecBc(); break;
+            case 0x1B: DecDe(); break;
+            case 0x2B: DecHl(); break;
+            case 0x3B: DecSp(); break;
 
-        // Stack operations
-        0xC1 => PopBc(),
-        0xD1 => PopDe(),
-        0xE1 => PopHl(),
-        0xF1 => PopAf(),
+            // Stack operations
+            case 0xC1: PopBc(); break;
+            case 0xD1: PopDe(); break;
+            case 0xE1: PopHl(); break;
+            case 0xF1: PopAf(); break;
 
-        0xC5 => PushBc(),
-        0xD5 => PushDe(),
-        0xE5 => PushHl(),
-        0xF5 => PushAf(),
+            case 0xC5: PushBc(); break;
+            case 0xD5: PushDe(); break;
+            case 0xE5: PushHl(); break;
+            case 0xF5: PushAf(); break;
 
-        // Conditional returns
-        0xC0 => RetNz(),
-        0xC8 => RetZ(),
-        0xD0 => RetNc(),
-        0xD8 => RetC(),
+            // Conditional returns
+            case 0xC0: RetNz(); break;
+            case 0xC8: RetZ(); break;
+            case 0xD0: RetNc(); break;
+            case 0xD8: RetC(); break;
 
-        // ADD
-        0x80 => AddB(),
-        0x81 => AddC(),
-        0x82 => AddD(),
-        0x83 => AddE(),
-        0x84 => AddH(),
-        0x85 => AddL(),
-        0x86 => AddM(),
-        0x87 => AddA(),
+            // ADD
+            case 0x80: AddB(); break;
+            case 0x81: AddC(); break;
+            case 0x82: AddD(); break;
+            case 0x83: AddE(); break;
+            case 0x84: AddH(); break;
+            case 0x85: AddL(); break;
+            case 0x86: AddM(); break;
+            case 0x87: AddA(); break;
 
-        // ADC
-        0x88 => AdcB(),
-        0x89 => AdcC(),
-        0x8A => AdcD(),
-        0x8B => AdcE(),
-        0x8C => AdcH(),
-        0x8D => AdcL(),
-        0x8E => AdcM(),
-        0x8F => AdcA(),
+            // ADC
+            case 0x88: AdcB(); break;
+            case 0x89: AdcC(); break;
+            case 0x8A: AdcD(); break;
+            case 0x8B: AdcE(); break;
+            case 0x8C: AdcH(); break;
+            case 0x8D: AdcL(); break;
+            case 0x8E: AdcM(); break;
+            case 0x8F: AdcA(); break;
 
-        // SUB
-        0x90 => SubB(),
-        0x91 => SubC(),
-        0x92 => SubD(),
-        0x93 => SubE(),
-        0x94 => SubH(),
-        0x95 => SubL(),
-        0x96 => SubM(),
-        0x97 => SubA(),
+            // SUB
+            case 0x90: SubB(); break;
+            case 0x91: SubC(); break;
+            case 0x92: SubD(); break;
+            case 0x93: SubE(); break;
+            case 0x94: SubH(); break;
+            case 0x95: SubL(); break;
+            case 0x96: SubM(); break;
+            case 0x97: SubA(); break;
 
-        // SBC
-        0x98 => SbcB(),
-        0x99 => SbcC(),
-        0x9A => SbcD(),
-        0x9B => SbcE(),
-        0x9C => SbcH(),
-        0x9D => SbcL(),
-        0x9E => SbcM(),
-        0x9F => SbcA(),
+            // SBC
+            case 0x98: SbcB(); break;
+            case 0x99: SbcC(); break;
+            case 0x9A: SbcD(); break;
+            case 0x9B: SbcE(); break;
+            case 0x9C: SbcH(); break;
+            case 0x9D: SbcL(); break;
+            case 0x9E: SbcM(); break;
+            case 0x9F: SbcA(); break;
 
-        // AND
-        0xA0 => AndB(),
-        0xA1 => AndC(),
-        0xA2 => AndD(),
-        0xA3 => AndE(),
-        0xA4 => AndH(),
-        0xA5 => AndL(),
-        0xA6 => AndM(),
-        0xA7 => AndA(),
+            // AND
+            case 0xA0: AndB(); break;
+            case 0xA1: AndC(); break;
+            case 0xA2: AndD(); break;
+            case 0xA3: AndE(); break;
+            case 0xA4: AndH(); break;
+            case 0xA5: AndL(); break;
+            case 0xA6: AndM(); break;
+            case 0xA7: AndA(); break;
 
-        // XOR
-        0xA8 => XorB(),
-        0xA9 => XorC(),
-        0xAA => XorD(),
-        0xAB => XorE(),
-        0xAC => XorH(),
-        0xAD => XorL(),
-        0xAE => XorM(),
-        0xAF => XorA(),
+            // XOR
+            case 0xA8: XorB(); break;
+            case 0xA9: XorC(); break;
+            case 0xAA: XorD(); break;
+            case 0xAB: XorE(); break;
+            case 0xAC: XorH(); break;
+            case 0xAD: XorL(); break;
+            case 0xAE: XorM(); break;
+            case 0xAF: XorA(); break;
 
-        // OR
-        0xB0 => OrB(),
-        0xB1 => OrC(),
-        0xB2 => OrD(),
-        0xB3 => OrE(),
-        0xB4 => OrH(),
-        0xB5 => OrL(),
-        0xB6 => OrM(),
-        0xB7 => OrA(),
+            // OR
+            case 0xB0: OrB(); break;
+            case 0xB1: OrC(); break;
+            case 0xB2: OrD(); break;
+            case 0xB3: OrE(); break;
+            case 0xB4: OrH(); break;
+            case 0xB5: OrL(); break;
+            case 0xB6: OrM(); break;
+            case 0xB7: OrA(); break;
 
-        // CP
-        0xB8 => CpB(),
-        0xB9 => CpC(),
-        0xBA => CpD(),
-        0xBB => CpE(),
-        0xBC => CpH(),
-        0xBD => CpL(),
-        0xBE => CpM(),
-        0xBF => CpA(),
+            // CP
+            case 0xB8: CpB(); break;
+            case 0xB9: CpC(); break;
+            case 0xBA: CpD(); break;
+            case 0xBB: CpE(); break;
+            case 0xBC: CpH(); break;
+            case 0xBD: CpL(); break;
+            case 0xBE: CpM(); break;
+            case 0xBF: CpA(); break;
 
-        // Unconditional return, call, JP HL
-        0xC9 => Ret(),
-        0xCD => Call(),
-        0xE9 => JpHl(),
+            // Unconditional return, call, JP HL
+            case 0xC9: Ret(); break;
+            case 0xCD: Call(); break;
+            case 0xE9: JpHl(); break;
 
-        // Jumps
-        0xC3 => Jp(),
-        0xC2 => JpNz(),
-        0xCA => JpZ(),
-        0xD2 => JpNc(),
-        0xDA => JpC(),
+            // Jumps
+            case 0xC3: Jp(); break;
+            case 0xC2: JpNz(); break;
+            case 0xCA: JpZ(); break;
+            case 0xD2: JpNc(); break;
+            case 0xDA: JpC(); break;
 
-        // Conditional calls
-        0xC4 => CallNz(),
-        0xCC => CallZ(),
-        0xD4 => CallNc(),
-        0xDC => CallC(),
+            // Conditional calls
+            case 0xC4: CallNz(); break;
+            case 0xCC: CallZ(); break;
+            case 0xD4: CallNc(); break;
+            case 0xDC: CallC(); break;
 
-        // Restarts
-        0xC7 => Rst0(),
-        0xCF => Rst1(),
-        0xD7 => Rst2(),
-        0xDF => Rst3(),
-        0xE7 => Rst4(),
-        0xEF => Rst5(),
-        0xF7 => Rst6(),
-        0xFF => Rst7(),
+            // Restarts
+            case 0xC7: Rst0(); break;
+            case 0xCF: Rst1(); break;
+            case 0xD7: Rst2(); break;
+            case 0xDF: Rst3(); break;
+            case 0xE7: Rst4(); break;
+            case 0xEF: Rst5(); break;
+            case 0xF7: Rst6(); break;
+            case 0xFF: Rst7(); break;
 
-        // Interrupt control
-        0xF3 => Di(),
-        0xFB => Ei(),
+            // Interrupt control
+            case 0xF3: Di(); break;
+            case 0xFB: Ei(); break;
 
-        // Immediate arithmetic / logic
-        0xC6 => AddN(),
-        0xCE => AdcN(),
-        0xD6 => SubN(),
-        0xDE => SbcN(),
-        0xE6 => AndN(),
-        0xEE => XorN(),
-        0xF6 => OrN(),
-        0xFE => CpN(),
+            // Immediate arithmetic / logic
+            case 0xC6: AddN(); break;
+            case 0xCE: AdcN(); break;
+            case 0xD6: SubN(); break;
+            case 0xDE: SbcN(); break;
+            case 0xE6: AndN(); break;
+            case 0xEE: XorN(); break;
+            case 0xF6: OrN(); break;
+            case 0xFE: CpN(); break;
 
-        // Rotate / special accumulator
-        0x07 => Rlca(),
-        0x0F => Rrca(),
-        0x17 => Rla(),
-        0x1F => Rra(),
-        0x27 => Daa(),
-        0x2F => Cpl(),
-        0x37 => Scf(),
-        0x3F => Ccf(),
+            // Rotate / special accumulator
+            case 0x07: Rlca(); break;
+            case 0x0F: Rrca(); break;
+            case 0x17: Rla(); break;
+            case 0x1F: Rra(); break;
+            case 0x27: Daa(); break;
+            case 0x2F: Cpl(); break;
+            case 0x37: Scf(); break;
+            case 0x3F: Ccf(); break;
 
-        // INC r
-        0x04 => IncB(),
-        0x0C => IncC(),
-        0x14 => IncD(),
-        0x1C => IncE(),
-        0x24 => IncH(),
-        0x2C => IncL(),
-        0x34 => IncM(),
-        0x3C => IncA(),
+            // INC r
+            case 0x04: IncB(); break;
+            case 0x0C: IncC(); break;
+            case 0x14: IncD(); break;
+            case 0x1C: IncE(); break;
+            case 0x24: IncH(); break;
+            case 0x2C: IncL(); break;
+            case 0x34: IncM(); break;
+            case 0x3C: IncA(); break;
 
-        // DEC r
-        0x05 => DecB(),
-        0x0D => DecC(),
-        0x15 => DecD(),
-        0x1D => DecE(),
-        0x25 => DecH(),
-        0x2D => DecL(),
-        0x35 => DecM(),
-        0x3D => DecA(),
+            // DEC r
+            case 0x05: DecB(); break;
+            case 0x0D: DecC(); break;
+            case 0x15: DecD(); break;
+            case 0x1D: DecE(); break;
+            case 0x25: DecH(); break;
+            case 0x2D: DecL(); break;
+            case 0x35: DecM(); break;
+            case 0x3D: DecA(); break;
 
-        0xF9 => LdSpHl(),
+            case 0xF9: LdSpHl(); break;
 
-        // LR35902 Replace opcodes — load/store
-        0x22 => LdHlIncA(),
-        0x2A => LdAHlInc(),
-        0x32 => LdHlDecA(),
-        0x3A => LdAHlDec(),
-        0xEA => LdA16A(),
-        0xFA => LdAA16(),
-        0xE0 => LdhA8A(),
-        0xF0 => LdhAA8(),
-        0xE2 => LdCA(),
-        0xF2 => LdAC(),
-        0x08 => LdA16Sp(),
+            // LR35902 Replace opcodes — load/store
+            case 0x22: LdHlIncA(); break;
+            case 0x2A: LdAHlInc(); break;
+            case 0x32: LdHlDecA(); break;
+            case 0x3A: LdAHlDec(); break;
+            case 0xEA: LdA16A(); break;
+            case 0xFA: LdAA16(); break;
+            case 0xE0: LdhA8A(); break;
+            case 0xF0: LdhAA8(); break;
+            case 0xE2: LdCA(); break;
+            case 0xF2: LdAC(); break;
+            case 0x08: LdA16Sp(); break;
 
-        // SP arithmetic
-        0xE8 => AddSpR8(),
-        0xF8 => LdHlSpR8(),
+            // SP arithmetic
+            case 0xE8: AddSpR8(); break;
+            case 0xF8: LdHlSpR8(); break;
 
-        // Relative jumps
-        0x18 => Jr(),
-        0x20 => JrNz(),
-        0x28 => JrZ(),
-        0x30 => JrNc(),
-        0x38 => JrC(),
+            // Relative jumps
+            case 0x18: Jr(); break;
+            case 0x20: JrNz(); break;
+            case 0x28: JrZ(); break;
+            case 0x30: JrNc(); break;
+            case 0x38: JrC(); break;
 
-        // Deferred to later steps
-        0x10 => Stop(),
-        0xCB => CbPrefix(),
-        0xD9 => Reti(),
+            // Deferred to later steps
+            case 0x10: Stop(); break;
+            case 0xCB: CbPrefix(); break;
+            case 0xD9: Reti(); break;
 
-        // Illegal opcodes
-        0xD3 => Illegal(0xD3),
-        0xDB => Illegal(0xDB),
-        0xDD => Illegal(0xDD),
-        0xE3 => Illegal(0xE3),
-        0xE4 => Illegal(0xE4),
-        0xEB => Illegal(0xEB),
-        0xEC => Illegal(0xEC),
-        0xED => Illegal(0xED),
-        0xF4 => Illegal(0xF4),
-        0xFC => Illegal(0xFC),
-        0xFD => Illegal(0xFD),
-    };
+            // Illegal opcodes
+            case 0xD3:
+            case 0xDB:
+            case 0xDD:
+            case 0xE3:
+            case 0xE4:
+            case 0xEB:
+            case 0xEC:
+            case 0xED:
+            case 0xF4:
+            case 0xFC:
+            case 0xFD:
+                Illegal(opcode);
+                break;
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Illegal(byte opcode)
+    private void Illegal(byte opcode)
     {
         throw new InvalidOperationException($"Illegal LR35902 opcode 0x{opcode:X2}");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Nop()
-    {
-        return 4;
-    }
+    private void Nop() { }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Fetch()

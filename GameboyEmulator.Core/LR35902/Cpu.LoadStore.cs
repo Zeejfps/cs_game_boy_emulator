@@ -5,120 +5,87 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdABc()
-    {
-        Ra = Read(Rbc);
-        return 8;
-    }
+    private void LdABc() { Ra = Read(Rbc); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdADe()
-    {
-        Ra = Read(Rde);
-        return 8;
-    }
+    private void LdADe() { Ra = Read(Rde); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdBcA()
-    {
-        Write(Rbc, Ra);
-        return 8;
-    }
+    private void LdBcA() { Write(Rbc, Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdDeA()
-    {
-        Write(Rde, Ra);
-        return 8;
-    }
+    private void LdDeA() { Write(Rde, Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdHlIncA()
+    private void LdHlIncA()
     {
         var hl = Rhl;
         Write(hl, Ra);
         Rhl = (ushort)(hl + 1);
-        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdAHlInc()
+    private void LdAHlInc()
     {
         var hl = Rhl;
         Ra = Read(hl);
         Rhl = (ushort)(hl + 1);
-        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdHlDecA()
+    private void LdHlDecA()
     {
         var hl = Rhl;
         Write(hl, Ra);
         Rhl = (ushort)(hl - 1);
-        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdAHlDec()
+    private void LdAHlDec()
     {
         var hl = Rhl;
         Ra = Read(hl);
         Rhl = (ushort)(hl - 1);
-        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdA16A()
+    private void LdA16A()
     {
         var address = FetchWord();
         Write(address, Ra);
-        return 16;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdAA16()
+    private void LdAA16()
     {
         var address = FetchWord();
         Ra = Read(address);
-        return 16;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdhA8A()
+    private void LdhA8A()
     {
         var offset = Fetch();
         Write((ushort)(0xFF00 + offset), Ra);
-        return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdhAA8()
+    private void LdhAA8()
     {
         var offset = Fetch();
         Ra = Read((ushort)(0xFF00 + offset));
-        return 12;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdCA()
-    {
-        Write((ushort)(0xFF00 + Rc), Ra);
-        return 8;
-    }
+    private void LdCA() { Write((ushort)(0xFF00 + Rc), Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdAC()
-    {
-        Ra = Read((ushort)(0xFF00 + Rc));
-        return 8;
-    }
+    private void LdAC() { Ra = Read((ushort)(0xFF00 + Rc)); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdA16Sp()
+    private void LdA16Sp()
     {
         var address = FetchWord();
         WriteWord(address, Sp);
-        return 20;
     }
 }

@@ -5,37 +5,34 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Di()
+    private void Di()
     {
         InterruptMasterEnable = false;
         // Cancel any pending EI delay — an immediate DI overrides it.
         _enableInterruptsTimer = 0;
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Ei()
+    private void Ei()
     {
         // 2 produces exactly one full instruction of delay with our
         // Execute → UpdateInterruptTimer ordering: EI's own step decrements
         // 2→1, the next step decrements 1→0 and sets IME, so the *third*
         // fetch is the first one that sees IME=1.
         _enableInterruptsTimer = 2;
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Reti()
+    private void Reti()
     {
         Pc = ReadWord(Sp);
         Sp += 2;
         InterruptMasterEnable = true;
         Tick(4);
-        return 16;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Halt()
+    private void Halt()
     {
         var pending = _interrupts.GetPending();
         if (InterruptMasterEnable)
@@ -52,21 +49,19 @@ public sealed partial class Cpu
         {
             IsWaitingForInterrupt = true;
         }
-        return 4;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int Stop()
+    private void Stop()
     {
         // Per spec encoders write `10 00`, but real hardware ignores the
         // following byte — just consume it without inspecting.
         Fetch();
         IsSleeping = true;
-        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int ServicePendingInterrupt(InterruptType pending)
+    private void ServicePendingInterrupt(InterruptType pending)
     {
         var serviced = GetHighestPriority(pending);
         _interrupts.Clear(serviced);
@@ -82,7 +77,6 @@ public sealed partial class Cpu
         Pc = GetInterruptVector(serviced);
         // M5: vector-fetch / PC-update internal cycle.
         Tick(4);
-        return 20;
     }
 
     // Lowest bit wins: VBlank > LcdStat > Timer > Serial > Joypad.

@@ -5,30 +5,14 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdBcNn()
-    {
-        Rbc = FetchWord();
-        return 12;
-    }
+    private void LdBcNn() { Rbc = FetchWord(); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdDeNn()
-    {
-        Rde = FetchWord();
-        return 12;
-    }
+    private void LdDeNn() { Rde = FetchWord(); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdHlNn()
-    {
-        Rhl = FetchWord();
-        return 12;
-    }
+    private void LdHlNn() { Rhl = FetchWord(); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int LdSpNn()
-    {
-        Sp = FetchWord();
-        return 12;
-    }
+    private void LdSpNn() { Sp = FetchWord(); }
 }

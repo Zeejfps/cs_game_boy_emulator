@@ -5,50 +5,49 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncBc() { Rbc = (ushort)(Rbc + 1); Tick(4); return 8; }
+    private void IncBc() { Rbc = (ushort)(Rbc + 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncDe() { Rde = (ushort)(Rde + 1); Tick(4); return 8; }
+    private void IncDe() { Rde = (ushort)(Rde + 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncHl() { Rhl = (ushort)(Rhl + 1); Tick(4); return 8; }
+    private void IncHl() { Rhl = (ushort)(Rhl + 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int IncSp() { Sp = (ushort)(Sp + 1); Tick(4); return 8; }
+    private void IncSp() { Sp = (ushort)(Sp + 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecBc() { Rbc = (ushort)(Rbc - 1); Tick(4); return 8; }
+    private void DecBc() { Rbc = (ushort)(Rbc - 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecDe() { Rde = (ushort)(Rde - 1); Tick(4); return 8; }
+    private void DecDe() { Rde = (ushort)(Rde - 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecHl() { Rhl = (ushort)(Rhl - 1); Tick(4); return 8; }
+    private void DecHl() { Rhl = (ushort)(Rhl - 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int DecSp() { Sp = (ushort)(Sp - 1); Tick(4); return 8; }
+    private void DecSp() { Sp = (ushort)(Sp - 1); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHl(ushort value) { AddHL(value); Tick(4); return 8; }
+    private void AddHl(ushort value) { AddHL(value); Tick(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHlBc() => AddHl(Rbc);
+    private void AddHlBc() => AddHl(Rbc);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHlDe() => AddHl(Rde);
+    private void AddHlDe() => AddHl(Rde);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHlHl() => AddHl(Rhl);
+    private void AddHlHl() => AddHl(Rhl);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddHlSp() => AddHl(Sp);
+    private void AddHlSp() => AddHl(Sp);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int AddSpR8()
+    private void AddSpR8()
     {
         var r8 = (sbyte)Fetch();
         Sp = AddSpSigned(r8);
         Tick(8);
-        return 16;
     }
 }

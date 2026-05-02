@@ -5,7 +5,7 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private int CbPrefix()
+    private void CbPrefix()
     {
         var sub = Fetch();
         var op = sub >> 3;
@@ -29,17 +29,17 @@ public sealed partial class Cpu
                     _ => CbSrl(value),
                 };
                 WriteCbOperand(operand, result);
-                return operand == 6 ? 16 : 8;
+                break;
             }
             case < 16:
                 CbBit(value, op - 8);
-                return operand == 6 ? 12 : 8;
+                break;
             case < 24:
                 WriteCbOperand(operand, CbRes(value, op - 16));
-                return operand == 6 ? 16 : 8;
+                break;
             default:
                 WriteCbOperand(operand, CbSet(value, op - 24));
-                return operand == 6 ? 16 : 8;
+                break;
         }
     }
 
