@@ -95,7 +95,7 @@ public sealed partial class Cpu : ICpu
     
     private byte Read(ushort address)
     {
-        _busClock.Tick(4);
+        Tick(4);
         return _mmu.Read(address);
     }
     
@@ -108,7 +108,7 @@ public sealed partial class Cpu : ICpu
 
     private void Write(ushort address, byte value)
     {
-        _busClock.Tick(4);
+        Tick(4);
         _mmu.Write(address, value);
     }
     
@@ -118,6 +118,11 @@ public sealed partial class Cpu : ICpu
         var hi = (byte)(value >> 8);
         Write(address, lo);
         Write((ushort)(address + 1), hi);
+    }
+
+    private void Tick(int cycles)
+    {
+        _busClock.Tick(cycles);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]

@@ -30,7 +30,7 @@ public sealed partial class Cpu
         Pc = ReadWord(Sp);
         Sp += 2;
         InterruptMasterEnable = true;
-        _busClock.Tick(4);
+        Tick(4);
         return 16;
     }
 
@@ -73,7 +73,7 @@ public sealed partial class Cpu
         InterruptMasterEnable = false;
 
         // 2 internal cycles before push (M1 + M2 of the 5-cycle dispatch).
-        _busClock.Tick(8);
+        Tick(8);
 
         Sp -= 2;
         Write((ushort)(Sp + 1), (byte)(Pc >> 8));
@@ -81,7 +81,7 @@ public sealed partial class Cpu
 
         Pc = GetInterruptVector(serviced);
         // M5: vector-fetch / PC-update internal cycle.
-        _busClock.Tick(4);
+        Tick(4);
         return 20;
     }
 
