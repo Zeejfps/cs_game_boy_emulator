@@ -15,6 +15,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PushBc()
     {
+        _busClock.Tick(4);
         Sp -= 2;
         Write((ushort)(Sp + 1), Rb);
         Write(Sp, Rc);
@@ -32,6 +33,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PushDe()
     {
+        _busClock.Tick(4);
         Sp -= 2;
         Write((ushort)(Sp + 1), Rd);
         Write(Sp, Re);
@@ -50,6 +52,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PushHl()
     {
+        _busClock.Tick(4);
         Sp -= 2;
         Write((ushort)(Sp + 1), Rh);
         Write(Sp, Rl);
@@ -68,6 +71,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int PushAf()
     {
+        _busClock.Tick(4);
         Sp -= 2;
         Write((ushort)(Sp + 1), Ra);
         Write(Sp, (byte)Flags);
@@ -78,6 +82,7 @@ public sealed partial class Cpu
     private int LdSpHl()
     {
         Sp = Rhl;
+        _busClock.Tick(4);
         return 8;
     }
 
@@ -86,6 +91,7 @@ public sealed partial class Cpu
     {
         var r8 = (sbyte)Fetch();
         Rhl = AddSpSigned(r8);
+        _busClock.Tick(4);
         return 12;
     }
 }

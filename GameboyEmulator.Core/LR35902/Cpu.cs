@@ -132,13 +132,17 @@ public sealed partial class Cpu : ICpu
             {
                 IsSleeping = false;
             }
+            _busClock.Tick(4);
             return 4;
         }
 
         var pending = _interrupts.GetPending();
         if (IsWaitingForInterrupt && pending == InterruptType.None)
+        {
+            _busClock.Tick(4);
             return 4;
-        
+        }
+
         IsWaitingForInterrupt = false;
 
         if (InterruptMasterEnable && pending != InterruptType.None)
@@ -519,9 +523,9 @@ public sealed partial class Cpu : ICpu
         if (_haltBugPending)
         {
             _haltBugPending = false;
-            return _mmu.Read(Pc);
+            return Read(Pc);
         }
-        return _mmu.Read(Pc++);
+        return Read(Pc++);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

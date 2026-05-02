@@ -7,44 +7,52 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int RetNz()
     {
+        _busClock.Tick(4);
         if ((Flags & CpuFlags.Z) != 0)
             return 8;
 
         Pc = ReadWord(Sp);
         Sp += 2;
+        _busClock.Tick(4);
         return 20;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int RetNc()
     {
+        _busClock.Tick(4);
         if ((Flags & CpuFlags.C) != 0)
             return 8;
 
         Pc = ReadWord(Sp);
         Sp += 2;
+        _busClock.Tick(4);
         return 20;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int RetZ()
     {
+        _busClock.Tick(4);
         if ((Flags & CpuFlags.Z) == 0)
             return 8;
 
         Pc = ReadWord(Sp);
         Sp += 2;
+        _busClock.Tick(4);
         return 20;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int RetC()
     {
+        _busClock.Tick(4);
         if ((Flags & CpuFlags.C) == 0)
             return 8;
 
         Pc = ReadWord(Sp);
         Sp += 2;
+        _busClock.Tick(4);
         return 20;
     }
 
@@ -55,6 +63,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) != 0)
             return 12;
         Pc = address;
+        _busClock.Tick(4);
         return 16;
     }
 
@@ -65,6 +74,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) != 0)
             return 12;
         Pc = address;
+        _busClock.Tick(4);
         return 16;
     }
 
@@ -75,6 +85,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) == 0)
             return 12;
         Pc = address;
+        _busClock.Tick(4);
         return 16;
     }
 
@@ -85,6 +96,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) == 0)
             return 12;
         Pc = address;
+        _busClock.Tick(4);
         return 16;
     }
 
@@ -93,6 +105,7 @@ public sealed partial class Cpu
     {
         Pc = ReadWord(Sp);
         Sp += 2;
+        _busClock.Tick(4);
         return 16;
     }
 
@@ -107,6 +120,7 @@ public sealed partial class Cpu
     private int Call()
     {
         var address = FetchWord();
+        _busClock.Tick(4);
         Sp -= 2;
         WriteWord(Sp, Pc);
         Pc = address;
@@ -117,6 +131,7 @@ public sealed partial class Cpu
     private int Jp()
     {
         Pc = FetchWord();
+        _busClock.Tick(4);
         return 16;
     }
 
@@ -126,6 +141,7 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) != 0)
             return 12;
+        _busClock.Tick(4);
         Sp -= 2;
         WriteWord(Sp, Pc);
         Pc = address;
@@ -138,6 +154,7 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.C) != 0)
             return 12;
+        _busClock.Tick(4);
         Sp -= 2;
         WriteWord(Sp, Pc);
         Pc = address;
@@ -150,6 +167,7 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) == 0)
             return 12;
+        _busClock.Tick(4);
         Sp -= 2;
         WriteWord(Sp, Pc);
         Pc = address;
@@ -162,6 +180,7 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.C) == 0)
             return 12;
+        _busClock.Tick(4);
         Sp -= 2;
         WriteWord(Sp, Pc);
         Pc = address;
@@ -171,6 +190,7 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Rst(ushort vector)
     {
+        _busClock.Tick(4);
         Sp -= 2;
         WriteWord(Sp, Pc);
         Pc = vector;
@@ -206,6 +226,7 @@ public sealed partial class Cpu
     {
         var offset = (sbyte)Fetch();
         Pc = (ushort)(Pc + offset);
+        _busClock.Tick(4);
         return 12;
     }
 
@@ -216,6 +237,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) != 0)
             return 8;
         Pc = (ushort)(Pc + offset);
+        _busClock.Tick(4);
         return 12;
     }
 
@@ -226,6 +248,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) == 0)
             return 8;
         Pc = (ushort)(Pc + offset);
+        _busClock.Tick(4);
         return 12;
     }
 
@@ -236,6 +259,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) != 0)
             return 8;
         Pc = (ushort)(Pc + offset);
+        _busClock.Tick(4);
         return 12;
     }
 
@@ -246,6 +270,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) == 0)
             return 8;
         Pc = (ushort)(Pc + offset);
+        _busClock.Tick(4);
         return 12;
     }
 }

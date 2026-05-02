@@ -30,6 +30,7 @@ public sealed partial class Cpu
         Pc = ReadWord(Sp);
         Sp += 2;
         InterruptMasterEnable = true;
+        _busClock.Tick(4);
         return 16;
     }
 
@@ -61,7 +62,7 @@ public sealed partial class Cpu
         // following byte — just consume it without inspecting.
         Fetch();
         IsSleeping = true;
-        return 4;
+        return 8;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -71,11 +72,16 @@ public sealed partial class Cpu
         _interrupts.Clear(serviced);
         InterruptMasterEnable = false;
 
+        // 2 internal cycles before push (M1 + M2 of the 5-cycle dispatch).
+        _busClock.Tick(8);
+
         Sp -= 2;
         Write((ushort)(Sp + 1), (byte)(Pc >> 8));
         Write(Sp, (byte)(Pc & 0xFF));
 
         Pc = GetInterruptVector(serviced);
+        // M5: vector-fetch / PC-update internal cycle.
+        _busClock.Tick(4);
         return 20;
     }
 
