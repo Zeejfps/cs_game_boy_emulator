@@ -9,3 +9,6 @@ riderModule.iml
 
 # Blargg test ROMs — fetched locally per TestRoms/blargg/README.md, not checked in.
 GameboyEmulator.Core.Tests/TestRoms/**/*.gb
+
+# dmg-acid2 reference image — fetched/converted per TestRoms/dmg-acid2/README.md, not checked in.
+GameboyEmulator.Core.Tests/TestRoms/**/*.bin

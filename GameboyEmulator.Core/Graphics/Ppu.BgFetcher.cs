@@ -62,16 +62,21 @@ public sealed partial class Ppu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int BgTileRowOffset()
     {
-        var rowY = _inWindow ? (_windowLineCounter & 0x07) : ((_ly + _scy) & 0x07);
+        var inWindow = _inWindow && _isWindowDrawingEnabled;
+        var rowY = inWindow ? (_windowLineCounter & 0x07) : ((_ly + _scy) & 0x07);
         return ((_fetcherTileId ^ _bgTileFlipBit) << 4) | (rowY << 1);
     }
 
+    // Window-vs-BG is decided per fetch on the live LCDC.WindowEnable bit, not
+    // the activation latch alone — clearing the bit mid-window stops further
+    // window fetches and the fetcher reverts to BG (with whatever _fetcherX
+    // window left it at, matching hardware's glitchy resume).
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void BgPixelsFetcher_GetTile()
     {
         ReadOnlySpan<byte> tileMap;
         int tileX, tileY;
-        if (_inWindow)
+        if (_inWindow && _isWindowDrawingEnabled)
         {
             tileMap = _windowTileMap.Span;
             tileX = _fetcherX & 0x1F;

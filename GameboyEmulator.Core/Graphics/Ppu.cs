@@ -303,19 +303,21 @@ public sealed partial class Ppu : IPpu
         // and the WY-condition has latched. This drops any in-flight BG pixels
         // (window pixels are not subject to SCX discard) and restarts the
         // fetcher against the window tilemap with WLY as the row source.
+        // WX in 0..6 puts the window's leading pixels off-screen to the left:
+        // activate at LCD X=0 and reuse _lcdDiscard to drop (7 - WX) window
+        // pixels so the first visible window pixel lands at column 0.
         if (!_inWindow
             && _isWindowDrawingEnabled
             && _wyTriggered
             && _wx <= 166
-            && _wx >= 7
-            && _lcdX == _wx - 7)
+            && (_wx >= 7 ? _lcdX == _wx - 7 : _lcdX == 0))
         {
             _inWindow = true;
             _windowRenderedThisLine = true;
             _bgFifo.Clear();
             _fetcherState = BgPixelsFetcherState.GetTile;
             _fetcherX = 0;
-            _lcdDiscard = 0;
+            _lcdDiscard = _wx < 7 ? (byte)(7 - _wx) : (byte)0;
             return;
         }
 
