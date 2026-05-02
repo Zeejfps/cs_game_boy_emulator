@@ -13,6 +13,7 @@ public class CpuBenchmark
     private Cpu _cpu = null!;
     private Mmu _mmu = null!;
     private GbTimer _timer = null!;
+    private TimerBusClock _busClock = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -42,23 +43,44 @@ public class CpuBenchmark
             new Serial(interrupts),
             interrupts);
 
-        _cpu = new Cpu(_mmu, interrupts);
+        _busClock = new TimerBusClock(_timer);
+        _cpu = new Cpu(_mmu, _busClock, interrupts);
         _cpu.SkipBoot();
         _cpu.Pc = 0x0100;
     }
 
     [Benchmark]
-    public int RunDispatchLoop()
+    public long RunDispatchLoop()
     {
         var cpu = _cpu;
-        var timer = _timer;
-        var total = 0;
+        var busClock = _busClock;
+        long total = 0;
         while (total < CycleBudget)
         {
-            var t = cpu.Step();
-            timer.Tick(t);
-            total += t;
+            cpu.Step();
+            total += busClock.ConsumeAccumulated();
         }
         return total;
+    }
+
+    private sealed class TimerBusClock : IBusClock
+    {
+        private readonly GbTimer _timer;
+        private long _accumulated;
+
+        public TimerBusClock(GbTimer timer) { _timer = timer; }
+
+        public void Tick(int ticks)
+        {
+            _timer.Tick(ticks);
+            _accumulated += ticks;
+        }
+
+        public long ConsumeAccumulated()
+        {
+            var c = _accumulated;
+            _accumulated = 0;
+            return c;
+        }
     }
 }
