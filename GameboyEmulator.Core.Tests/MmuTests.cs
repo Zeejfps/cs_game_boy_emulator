@@ -1,3 +1,4 @@
+using GameBoyEmulator.Core.Cartridge;
 using GameBoyEmulator.Core.Graphics;
 
 namespace GameBoyEmulator.Core.Tests;

@@ -1,5 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using GameBoyEmulator.Core;
+using GameBoyEmulator.Core.Cartridge;
+using GameBoyEmulator.Core.Graphics;
 using GameBoyEmulator.Core.LR35902;
 using GbTimer = GameBoyEmulator.Core.Timer;
 

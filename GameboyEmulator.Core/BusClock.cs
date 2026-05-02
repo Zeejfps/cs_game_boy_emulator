@@ -1,4 +1,5 @@
 using GameBoyEmulator.Core.Graphics;
+using GameBoyEmulator.Core.LR35902;
 
 namespace GameBoyEmulator.Core;
 

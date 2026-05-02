@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using GameBoyEmulator.Core.Cartridge;
 using GameBoyEmulator.Core.Graphics;
 using GameBoyEmulator.Core.LR35902;
 

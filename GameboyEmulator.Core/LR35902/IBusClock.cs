@@ -1,4 +1,4 @@
-namespace GameBoyEmulator.Core;
+namespace GameBoyEmulator.Core.LR35902;
 
 public interface IBusClock
 {

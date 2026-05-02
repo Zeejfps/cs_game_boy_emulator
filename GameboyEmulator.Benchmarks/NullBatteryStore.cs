@@ -1,4 +1,5 @@
 using GameBoyEmulator.Core;
+using GameBoyEmulator.Core.Cartridge;
 
 namespace GameBoyEmulator.Benchmarks;
 

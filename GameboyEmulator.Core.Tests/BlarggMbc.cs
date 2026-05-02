@@ -1,3 +1,5 @@
+using GameBoyEmulator.Core.Cartridge;
+
 namespace GameBoyEmulator.Core.Tests;
 
 internal sealed class BlarggMbc : IMbc
