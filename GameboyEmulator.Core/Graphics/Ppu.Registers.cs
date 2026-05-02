@@ -36,7 +36,11 @@ public sealed partial class Ppu
             case LyAddress:   /* read-only */ break;
             case LycAddress:
                 _lyc = value;
-                if (_isLcdEnabled) UpdateStatLine();
+                if (_isLcdEnabled)
+                {
+                    _lycMatch = _ly == _lyc;
+                    UpdateStatLine();
+                }
                 break;
             case BgpAddress:  _bgp = value; break;
             case Obp0Address: _obp0 = value; break;
@@ -51,7 +55,7 @@ public sealed partial class Ppu
         return address switch
         {
             LcdcAddress => (byte)_lcdc,
-            StatAddress => (byte)(StatFlags.Unused | _statSources | (_ly == _lyc ? StatFlags.LycEqualLy : 0) | (StatFlags)(byte)_mode),
+            StatAddress => (byte)(StatFlags.Unused | _statSources | (_lycMatch ? StatFlags.LycEqualLy : 0) | (StatFlags)EffectiveStatMode()),
             ScyAddress  => _scy,
             ScxAddress  => _scx,
             LyAddress   => _ly,
@@ -94,11 +98,12 @@ public sealed partial class Ppu
         _ly = 0;
         _dot = 0;
         _mode = PpuMode.HBlank;
-        _statLine = false;
         _wyTriggered = false;
         _windowLineCounter = 0;
         _inWindow = false;
         _windowRenderedThisLine = false;
+        // _statLine and _lycMatch are preserved: the comparison clock and the
+        // STAT-IRQ line are frozen, not reset, while the LCD is off.
     }
 
     private void OnLcdEnabled()
@@ -107,6 +112,15 @@ public sealed partial class Ppu
         _dot = 0;
         _wyTriggered = false;
         _windowLineCounter = 0;
+        _lycMatch = _ly == _lyc;
+        _firstScanlineAfterEnable = true;
         EnterOamScanMode();
     }
+
+    // While _firstScanlineAfterEnable is set, STAT reports mode 0 instead of
+    // mode 2 during the first OAM scan after the LCD turns on. The PPU is
+    // still internally scanning OAM; only the externally visible mode bits
+    // are masked.
+    private byte EffectiveStatMode()
+        => _firstScanlineAfterEnable && _mode == PpuMode.OamScan ? (byte)0 : (byte)_mode;
 }

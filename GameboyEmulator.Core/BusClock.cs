@@ -18,9 +18,14 @@ public sealed class BusClock : IBusClock
 
     public void Tick(int ticks)
     {
-        _ppu.Step(ticks);
-        _timer.Tick(ticks);
+        // DMA before PPU so OAM bytes written this batch are visible to the
+        // PPU's OAM scan during the same batch — otherwise the PPU sees the
+        // pre-batch OAM state and freshly DMA'd sprites land one tick late,
+        // which manifests as per-frame flicker on rapidly-rewritten OAM
+        // entries (chains, shadows under jumping NPCs).
         _dma.Tick(ticks);
+        _timer.Tick(ticks);
+        _ppu.Step(ticks);
         _accumulated += ticks;
     }
 

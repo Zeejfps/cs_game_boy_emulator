@@ -48,6 +48,15 @@ public sealed partial class Ppu : IPpu
     private int _dot;
     private bool _statLine; // previous OR-of-sources, for stat-blocking edge detection
 
+    // Latched LY=LYC comparison. Updated only while the comparison clock runs
+    // (PPU on); preserved across LCD off so STAT bit 2 retains its last value
+    // and changing LYC while the LCD is off does not affect the bit.
+    private bool _lycMatch;
+    // Set when the LCD is enabled; while true, STAT reports mode 0 instead of
+    // mode 2 during the first OAM scan (well-known DMG quirk). Cleared when
+    // the PPU advances into Drawing for the first time after enable.
+    private bool _firstScanlineAfterEnable;
+
     // Window state.
     // _wyTriggered latches the first time LY == WY in a frame; persists until frame end.
     // _windowLineCounter (WLY) only advances on scanlines that actually pushed window pixels.
@@ -169,6 +178,7 @@ public sealed partial class Ppu : IPpu
     private void EnterDrawingMode()
     {
         _mode = PpuMode.Drawing;
+        _firstScanlineAfterEnable = false;
         LatchBgFetcherLcdc();
         _fetcherState = BgPixelsFetcherState.GetTile;
         _fetcherX = 0;
@@ -264,6 +274,10 @@ public sealed partial class Ppu : IPpu
             _ly = 0;
             _wyTriggered = false;
             _windowLineCounter = 0;
+        }
+        _lycMatch = _ly == _lyc;
+        if (_ly == 0)
+        {
             EnterOamScanMode();
             return;
         }
@@ -368,7 +382,7 @@ public sealed partial class Ppu : IPpu
     private void UpdateStatLine()
     {
         var line =
-            (_statSources.HasFlag(StatFlags.LycIrq)    && _ly == _lyc)              ||
+            (_statSources.HasFlag(StatFlags.LycIrq)    && _lycMatch)                ||
             (_statSources.HasFlag(StatFlags.OamIrq)    && _mode == PpuMode.OamScan) ||
             (_statSources.HasFlag(StatFlags.VBlankIrq) && _mode == PpuMode.VBlank)  ||
             (_statSources.HasFlag(StatFlags.HBlankIrq) && _mode == PpuMode.HBlank);
