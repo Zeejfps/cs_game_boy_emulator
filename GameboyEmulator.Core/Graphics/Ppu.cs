@@ -425,7 +425,6 @@ public sealed partial class Ppu : IPpu
     // master and isn't subject to those restrictions.
     public void WriteVram(ushort address, byte value) => _vram[address] = value;
     public byte ReadVram(ushort address) => _vram[address];
-    public ReadOnlySpan<byte> ReadVramRange(ushort address, int length) => _vram.AsSpan(address, length);
     public byte ReadOam(ushort address) => _oam[address];
     public void WriteOam(ushort address, byte value) => _oam[address] = value;
     public void WriteOam(ReadOnlySpan<byte> data) => data.CopyTo(_oam);

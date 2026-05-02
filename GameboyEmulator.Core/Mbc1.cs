@@ -89,22 +89,6 @@ public sealed class Mbc1 : IMbc
         return offset < _ram.Length ? _ram[offset] : (byte)0xFF;
     }
 
-    public ReadOnlySpan<byte> ReadBank0Range(ushort address, int length) =>
-        _rom.AsSpan(Bank0Offset() + address, length);
-
-    public ReadOnlySpan<byte> ReadBankNRange(ushort address, int length) =>
-        _rom.AsSpan(BankNOffset() + (address - 0x4000), length);
-
-    public ReadOnlySpan<byte> ReadExternalRamRange(ushort address, int length)
-    {
-        if (!_ramEnabled || _ram.Length == 0)
-            return ReadOnlySpan<byte>.Empty;
-        var offset = RamOffset(address);
-        if (offset + length > _ram.Length)
-            return ReadOnlySpan<byte>.Empty;
-        return _ram.AsSpan(offset, length);
-    }
-
     public void Flush() => FlushIfDirty();
 
     private int Bank0Offset()

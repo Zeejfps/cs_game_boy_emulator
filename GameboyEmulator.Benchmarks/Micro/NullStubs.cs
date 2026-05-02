@@ -7,7 +7,6 @@ internal sealed class NullPpu : IPpu
 {
     public void WriteVram(ushort address, byte value) { }
     public byte ReadVram(ushort address) => 0xFF;
-    public ReadOnlySpan<byte> ReadVramRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
     public void WriteOam(ushort address, byte value) { }
     public void WriteOam(ReadOnlySpan<byte> data) { }
     public byte ReadOam(ushort address) => 0xFF;
