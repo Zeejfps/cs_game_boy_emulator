@@ -379,32 +379,15 @@ public sealed partial class Ppu : IPpu
         _statLine = line;
     }
 
-    public void WriteVram(ushort address, byte value)
-    {
-        if (_mode == PpuMode.Drawing) return;
-        _vram[address] = value;
-    }
-
-    public byte ReadVram(ushort address)
-    {
-        if (_mode == PpuMode.Drawing) return 0xFF;
-        return _vram[address];
-    }
-
+    // Raw VRAM/OAM access. PPU-mode bus restrictions are enforced at the MMU
+    // (CPU side); DMA writes go through these directly because DMA is the bus
+    // master and isn't subject to those restrictions.
+    public void WriteVram(ushort address, byte value) => _vram[address] = value;
+    public byte ReadVram(ushort address) => _vram[address];
     public ReadOnlySpan<byte> ReadVramRange(ushort address, int length) => _vram.AsSpan(address, length);
-
-    public byte ReadOam(ushort address)
-    {
-        if (_mode is PpuMode.OamScan or PpuMode.Drawing) return 0xFF;
-        return _oam[address];
-    }
-
-    public void WriteOam(ushort address, byte value)
-    {
-        if (_mode is PpuMode.OamScan or PpuMode.Drawing) return;
-        _oam[address] = value;
-    }
-
-    // DMA path: PPU bus restrictions don't apply — DMA itself drives OAM.
+    public byte ReadOam(ushort address) => _oam[address];
+    public void WriteOam(ushort address, byte value) => _oam[address] = value;
     public void WriteOam(ReadOnlySpan<byte> data) => data.CopyTo(_oam);
+
+    public PpuMode Mode => _mode;
 }

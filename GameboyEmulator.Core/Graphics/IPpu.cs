@@ -10,4 +10,5 @@ public interface IPpu
     byte ReadOam(ushort address);
     void WriteRegister(ushort address, byte value);
     byte ReadRegister(ushort address);
+    PpuMode Mode { get; }
 }

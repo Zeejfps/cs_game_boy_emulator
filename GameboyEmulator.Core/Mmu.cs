@@ -62,6 +62,7 @@ public sealed class Mmu : IMemoryBus
                 return;
             case 0x8:
             case 0x9:
+                if (_ppu.Mode == PpuMode.Drawing) return;
                 _ppu.WriteVram((ushort)(address - 0x8000), value);
                 return;
             case 0xA:
@@ -90,6 +91,7 @@ public sealed class Mmu : IMemoryBus
                 _wram[address - 0xE000] = value;
                 return;
             case < 0xFEA0:
+                if (_ppu.Mode is PpuMode.OamScan or PpuMode.Drawing) return;
                 _ppu.WriteOam((ushort)(address - 0xFE00), value);
                 return;
             case < 0xFF00:
@@ -169,6 +171,7 @@ public sealed class Mmu : IMemoryBus
                 return _mbc.ReadBankN(address);
             case 0x8:
             case 0x9:
+                if (_ppu.Mode == PpuMode.Drawing) return 0xFF;
                 return _ppu.ReadVram((ushort)(address - 0x8000));
             case 0xA:
             case 0xB:
@@ -189,7 +192,7 @@ public sealed class Mmu : IMemoryBus
         return address switch
         {
             < 0xFE00 => _wram[address - 0xE000],
-            < 0xFEA0 => _ppu.ReadOam((ushort)(address - 0xFE00)),
+            < 0xFEA0 => _ppu.Mode is PpuMode.OamScan or PpuMode.Drawing ? (byte)0xFF : _ppu.ReadOam((ushort)(address - 0xFE00)),
             < 0xFF00 => 0xFF,
             < 0xFF80 => ReadIO(address),
             < InterruptEnableAddress => _hram[address - 0xFF80],
