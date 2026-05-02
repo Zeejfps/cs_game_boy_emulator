@@ -13,6 +13,7 @@ public class CpuBenchmark
     private Cpu _cpu = null!;
     private Mmu _mmu = null!;
     private GbTimer _timer = null!;
+    private OamDmaController _dma = null!;
     private TimerBusClock _busClock = null!;
 
     [GlobalSetup]
@@ -34,17 +35,19 @@ public class CpuBenchmark
 
         var interrupts = new Interrupts();
         _timer = new GbTimer(interrupts);
+        var ppu = new NullPpu();
         _mmu = new Mmu(
             new RomOnlyMbc(rom),
-            new NullPpu(),
+            ppu,
             new NullJoypad(),
             _timer,
             new NullApu(),
             new Serial(interrupts),
             interrupts);
+        _dma = new OamDmaController(_mmu, ppu);
 
-        _busClock = new TimerBusClock(_timer);
-        _cpu = new Cpu(_mmu, _busClock, interrupts);
+        _busClock = new TimerBusClock(_timer, _dma);
+        _cpu = new Cpu(_dma, _busClock, interrupts);
         _cpu.SkipBoot();
         _cpu.Pc = 0x0100;
     }
@@ -66,13 +69,19 @@ public class CpuBenchmark
     private sealed class TimerBusClock : IBusClock
     {
         private readonly GbTimer _timer;
+        private readonly OamDmaController _dma;
         private long _accumulated;
 
-        public TimerBusClock(GbTimer timer) { _timer = timer; }
+        public TimerBusClock(GbTimer timer, OamDmaController dma)
+        {
+            _timer = timer;
+            _dma = dma;
+        }
 
         public void Tick(int ticks)
         {
             _timer.Tick(ticks);
+            _dma.Tick(ticks);
             _accumulated += ticks;
         }
 

@@ -24,6 +24,7 @@ public sealed class GameBoy
     private readonly Timer _timer;
     private readonly Joypad _joypad;
     private readonly BusClock _busClock;
+    private readonly OamDmaController _dma;
     private readonly MbcFactory _mbcFactory;
     private readonly double _cyclesPerTick;
 
@@ -43,12 +44,13 @@ public sealed class GameBoy
         var apu = new Apu();
         var serial = new Serial(interrupts);
         var mmu = new Mmu(mbc, _ppu, joypad, timer, apu, serial, interrupts);
+        _dma = new OamDmaController(mmu, _ppu);
 
         _timer = timer;
         _joypad = joypad;
         _mmu = mmu;
-        _busClock = new BusClock(_ppu, timer);
-        _cpu = new Cpu(mmu, _busClock, interrupts);
+        _busClock = new BusClock(_ppu, timer, _dma);
+        _cpu = new Cpu(_dma, _busClock, interrupts);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }
@@ -116,6 +118,7 @@ public sealed class GameBoy
         _mmu.Reset();
         _timer.Reset();
         _joypad.Reset();
+        _dma.Reset();
         _cpu.Reset();
         _clock.Ticked -= Clock_OnTicked;
         IsPoweredOn = false;

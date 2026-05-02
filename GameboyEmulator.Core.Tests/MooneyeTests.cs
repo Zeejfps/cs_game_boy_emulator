@@ -115,8 +115,9 @@ public class MooneyeTests
             new NullApu(),
             new NullSerial(),
             interrupts);
-        var busClock = new CountingBusClock();
-        var cpu = new Cpu(mmu, busClock, interrupts);
+        var dma = new OamDmaController(mmu, ppu);
+        var busClock = new CountingBusClock(dma.Tick);
+        var cpu = new Cpu(dma, busClock, interrupts);
         cpu.SkipBoot();
         // SkipBoot leaves the I/O registers cold; mooneye tests assume the
         // post-boot state the DMG boot ROM normally writes. Mirror what

@@ -13,7 +13,6 @@ public sealed class Mmu : IMemoryBus
 
     private readonly byte[] _wram = new byte[0x2000];
     private readonly byte[] _hram = new byte[0x7F];
-    private byte _dmaSource;
 
     private byte[]? _bootRom;
     private bool _bootRomEnabled;
@@ -139,9 +138,6 @@ public sealed class Mmu : IMemoryBus
             case >= 0xFF10 and <= 0xFF3F:
                 _apu.WriteRegister(address, value);
                 break;
-            case 0xFF46:
-                WriteDma(value);
-                break;
             case >= 0xFF40 and <= 0xFF4B:
                 _ppu.WriteRegister(address, value);
                 break;
@@ -214,19 +210,10 @@ public sealed class Mmu : IMemoryBus
             0xFF06 => _timer.ReadTma(),
             0xFF07 => _timer.ReadTac(),
             InterruptFlagAddress => (byte)((byte)_interrupts.ReadRequestedInterrupts() | 0xE0),
-            0xFF46 => _dmaSource,
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
             _ => 0xFF
         };
-    }
-
-    private void WriteDma(byte sourcePage)
-    {
-        _dmaSource = sourcePage;
-        var sourceAddress = (ushort)(sourcePage << 8);
-        var data = ReadRange(sourceAddress, 0xA0);
-        _ppu.WriteOam(data);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -267,7 +254,6 @@ public sealed class Mmu : IMemoryBus
     {
         Array.Clear(_wram);
         Array.Clear(_hram);
-        _dmaSource = 0;
         // Power-cycle re-arms the boot ROM if one is loaded — matches what
         // happens when you turn a real Game Boy off and back on again.
         _bootRomEnabled = _bootRom != null;

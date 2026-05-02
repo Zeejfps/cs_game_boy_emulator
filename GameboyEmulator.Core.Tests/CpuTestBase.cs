@@ -23,9 +23,19 @@ public abstract class CpuTestBase
 
 public sealed class CountingBusClock : IBusClock
 {
+    private readonly Action<int>? _onTick;
     private long _accumulated;
 
-    public void Tick(int ticks) => _accumulated += ticks;
+    public CountingBusClock(Action<int>? onTick = null)
+    {
+        _onTick = onTick;
+    }
+
+    public void Tick(int ticks)
+    {
+        _onTick?.Invoke(ticks);
+        _accumulated += ticks;
+    }
 
     public long ConsumeAccumulated()
     {

@@ -45,16 +45,18 @@ public class BlarggCpuInstrTests
         var interrupts = new Interrupts();
         var timer = new Timer(interrupts);
         var serial = new BlarggSerial(interrupts);
+        var ppu = new NullPpu();
         var mmu = new Mmu(
             new BlarggMbc(rom),
-            new NullPpu(),
+            ppu,
             new NullJoypad(),
             timer,
             new NullApu(),
             serial,
             interrupts);
-        var busClock = new CountingBusClock();
-        var cpu = new Cpu(mmu, busClock, interrupts);
+        var dma = new OamDmaController(mmu, ppu);
+        var busClock = new CountingBusClock(dma.Tick);
+        var cpu = new Cpu(dma, busClock, interrupts);
         cpu.SkipBoot();
 
         long total = 0;
