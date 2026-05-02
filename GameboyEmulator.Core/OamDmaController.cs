@@ -54,12 +54,6 @@ public sealed class OamDmaController : IMemoryBus
         _inner.Write(address, value);
     }
 
-    public void WriteWord(ushort address, ushort value)
-    {
-        Write(address, (byte)(value & 0xFF));
-        Write((ushort)(address + 1), (byte)(value >> 8));
-    }
-
     public void Tick(int ticks)
     {
         if (!_active) return;
