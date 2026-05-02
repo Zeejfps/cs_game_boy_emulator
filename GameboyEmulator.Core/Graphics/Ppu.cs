@@ -189,7 +189,7 @@ public sealed partial class Ppu : IPpu
     {
         var unsignedTileData = _lcdc.HasFlag(LcdControl.UseUnsignedTileAddressing);
         _bgTileMap     = _lcdc.HasFlag(LcdControl.BackgroundUsesTileMap1) ? _tileMap1 : _tileMap0;
-        _windowTileMap = _lcdc.HasFlag(LcdControl.WindowUsesTileMap1)     ? _tileMap1 : _tileMap0;
+        _windowTileMap = _lcdc.HasFlag(LcdControl.WindowUsesTileMap1) ? _tileMap1 : _tileMap0;
         _bgTilePixels  = unsignedTileData ? _tilePixels0 : _tilePixels1;
         _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
     }

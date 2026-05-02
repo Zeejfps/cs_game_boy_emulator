@@ -53,7 +53,14 @@ public sealed class Timer : ITimer
         _tima = value;
     }
 
-    public void WriteTma(byte value) => _tma = value;
+    public void WriteTma(byte value)
+    {
+        _tma = value;
+        // A TMA write at the exact T-cycle the reload fires updates the
+        // value the reload just loaded: TIMA picks up the new TMA.
+        if (_justReloaded)
+            _tima = value;
+    }
 
     public void WriteTac(byte value)
     {
