@@ -16,7 +16,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, 0x00);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         Assert.Equal(4, cycles);
         Assert.Equal(initialState with { Pc = (ushort)(initialState.Pc + 1) }, Cpu.ReadState());
@@ -81,7 +81,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -115,7 +115,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(address, 0x50);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -150,7 +150,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -184,7 +184,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 1), 0xAB);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(instructionSize);
@@ -212,7 +212,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 1), sentinel);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(instructionSize);
@@ -242,7 +242,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(address, sentinel);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -270,7 +270,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -297,7 +297,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.WriteWord((ushort)(initialState.Pc + 1), immediate);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(instructionSize);
@@ -322,7 +322,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -344,7 +344,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, 0x22);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -368,7 +368,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialHl, sentinel);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -391,7 +391,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, 0x32);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -415,7 +415,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialHl, sentinel);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -437,7 +437,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.WriteWord((ushort)(initialState.Pc + 1), target);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(3);
@@ -459,7 +459,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(source, sentinel);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(3);
@@ -480,7 +480,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 1), offset);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(2);
@@ -502,7 +502,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write((ushort)(0xFF00 + offset), sentinel);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(2);
@@ -522,7 +522,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write(initialState.Pc, 0xE2);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -543,7 +543,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write((ushort)(0xFF00 + offset), sentinel);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -563,7 +563,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.WriteWord((ushort)(initialState.Pc + 1), target);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(3);
@@ -587,7 +587,7 @@ public class CpuLdTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 1), (byte)r8);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(2);

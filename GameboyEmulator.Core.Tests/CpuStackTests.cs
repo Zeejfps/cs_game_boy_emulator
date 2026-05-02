@@ -23,7 +23,7 @@ public class CpuStackTests : CpuTestBase
         Mmu.Write((ushort)(stackAddr + 1), 0x20);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -51,7 +51,7 @@ public class CpuStackTests : CpuTestBase
         Mmu.Write((ushort)(stackAddr + 1), 0xAB);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -75,7 +75,7 @@ public class CpuStackTests : CpuTestBase
         Mmu.Write((ushort)(stackAddr + 1), 0x12);  // A (high byte)
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         Assert.Equal(0x12, Cpu.Ra);
         Assert.Equal((CpuFlags)0xF0, Cpu.Flags);
@@ -99,7 +99,7 @@ public class CpuStackTests : CpuTestBase
         Mmu.Write(initialState.Pc, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);
@@ -127,7 +127,7 @@ public class CpuStackTests : CpuTestBase
         Mmu.Write(initialState.Pc, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.IncrementPcBy(1);

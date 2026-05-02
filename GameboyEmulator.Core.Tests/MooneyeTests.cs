@@ -70,7 +70,8 @@ public class MooneyeTests
         {
             if (system.Mmu.Read(system.Cpu.Pc) == LdBBOpcode) { done = true; break; }
 
-            var t = system.Cpu.Step();
+            system.Cpu.Step();
+            var t = (int)system.BusClock.ConsumeAccumulated();
             system.Ppu.Step(t);
             system.Timer.Tick(t);
             total += t;
@@ -97,7 +98,7 @@ public class MooneyeTests
             $"E={cpu.Re:X2} H={cpu.Rh:X2} L={cpu.Rl:X2}");
     }
 
-    private sealed record System(Cpu Cpu, Mmu Mmu, Ppu Ppu, Timer Timer);
+    private sealed record System(Cpu Cpu, Mmu Mmu, Ppu Ppu, Timer Timer, CountingBusClock BusClock);
 
     private static System BuildSystem(byte[] rom)
     {
@@ -114,7 +115,8 @@ public class MooneyeTests
             new NullApu(),
             new NullSerial(),
             interrupts);
-        var cpu = new Cpu(mmu, interrupts);
+        var busClock = new CountingBusClock();
+        var cpu = new Cpu(mmu, busClock, interrupts);
         cpu.SkipBoot();
         // SkipBoot leaves the I/O registers cold; mooneye tests assume the
         // post-boot state the DMG boot ROM normally writes. Mirror what
@@ -123,7 +125,7 @@ public class MooneyeTests
         mmu.Write(0xFF47, 0xFC);
         mmu.Write(0xFF48, 0xFF);
         mmu.Write(0xFF49, 0xFF);
-        return new System(cpu, mmu, ppu, timer);
+        return new System(cpu, mmu, ppu, timer, busClock);
     }
 
     private sealed class MooneyeBatteryStore : IBatteryStore

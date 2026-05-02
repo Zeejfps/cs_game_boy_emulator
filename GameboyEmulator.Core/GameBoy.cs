@@ -23,6 +23,7 @@ public sealed class GameBoy
     private readonly Mmu _mmu;
     private readonly Timer _timer;
     private readonly Joypad _joypad;
+    private readonly BusClock _busClock;
     private readonly MbcFactory _mbcFactory;
     private readonly double _cyclesPerTick;
 
@@ -46,8 +47,8 @@ public sealed class GameBoy
         _timer = timer;
         _joypad = joypad;
         _mmu = mmu;
-        var busClock = new BusClock();
-        _cpu = new Cpu(mmu, busClock, interrupts);
+        _busClock = new BusClock(_ppu, timer);
+        _cpu = new Cpu(mmu, _busClock, interrupts);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }
@@ -136,10 +137,8 @@ public sealed class GameBoy
 
         while (_tCycles > 0)
         {
-            var ts = _cpu.Step();
-            _ppu.Step(ts);
-            _timer.Tick(ts);
-            _tCycles -= ts;
+            _cpu.Step();
+            _tCycles -= _busClock.ConsumeAccumulated();
         }
     }
 }

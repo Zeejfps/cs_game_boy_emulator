@@ -20,7 +20,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
@@ -42,7 +42,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(addr, 0x15);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = 0x15;
@@ -66,7 +66,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, 0xA0); // ANA B
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedResult;
@@ -92,7 +92,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
@@ -111,7 +111,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, 0xAF); // XRA A
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = 0x00;
@@ -133,7 +133,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(addr, 0x07);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = 0x08;
@@ -157,7 +157,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, 0xA8); // XRA B
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedResult;
@@ -184,7 +184,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
@@ -206,7 +206,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(addr, 0x10);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = 0x10;
@@ -230,7 +230,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, 0xB0); // ORA B
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedResult;
@@ -257,7 +257,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Flags = CpuFlags.N;
@@ -275,7 +275,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, 0xBF); // CMP A
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Flags = CpuFlags.Z | CpuFlags.N;
@@ -296,7 +296,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(addr, 0x01);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Flags = CpuFlags.N;
@@ -319,7 +319,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x00, 0xB8); // CMP B
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Flags = expectedFlags;
@@ -342,7 +342,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x01, imm);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
@@ -367,7 +367,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x01, imm);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Flags = expectedFlags;
@@ -390,7 +390,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x01, imm);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;
@@ -414,7 +414,7 @@ public class CpuLogicTests : CpuTestBase
         Mmu.Write(0x01, imm);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Ra = expectedA;

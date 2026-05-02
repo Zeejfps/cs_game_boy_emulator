@@ -18,7 +18,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x00);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x0B, state.Rb);
@@ -35,7 +35,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x08);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x80, state.Rb);
@@ -52,7 +52,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x10);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x01, state.Rb);
@@ -69,7 +69,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x18);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x80, state.Rb);
@@ -86,7 +86,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x20);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x02, state.Rb);
@@ -103,7 +103,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x28);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0xC0, state.Rb);
@@ -120,7 +120,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x30);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0xBA, state.Rb);
@@ -137,7 +137,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x38);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x40, state.Rb);
@@ -154,7 +154,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x58);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x08, state.Rb); // unchanged
@@ -171,7 +171,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x98);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0xF7, state.Rb);
@@ -188,7 +188,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0xD8);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x08, state.Rb);
@@ -217,7 +217,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, sub);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x0B, state.ReadReg(reg));
@@ -237,7 +237,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(addr, 0x85);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         Assert.Equal(0x0B, Mmu.Read(addr));
         Assert.Equal(CpuFlags.C, Cpu.ReadState().Flags);
@@ -255,7 +255,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x06); // RLC (HL)
 
         Cpu.WriteState(initialState);
-        Assert.Equal(16, Cpu.Step());
+        Assert.Equal(16, StepCycles());
     }
 
     [Fact]
@@ -268,7 +268,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x46); // BIT 0,(HL)
 
         Cpu.WriteState(initialState);
-        Assert.Equal(12, Cpu.Step());
+        Assert.Equal(12, StepCycles());
     }
 
     [Fact]
@@ -281,7 +281,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x86); // RES 0,(HL)
 
         Cpu.WriteState(initialState);
-        Assert.Equal(16, Cpu.Step());
+        Assert.Equal(16, StepCycles());
     }
 
     [Fact]
@@ -294,7 +294,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0xC6); // SET 0,(HL)
 
         Cpu.WriteState(initialState);
-        Assert.Equal(16, Cpu.Step());
+        Assert.Equal(16, StepCycles());
     }
 
     [Fact]
@@ -305,7 +305,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x00); // RLC B
 
         Cpu.WriteState(initialState);
-        Assert.Equal(8, Cpu.Step());
+        Assert.Equal(8, StepCycles());
     }
 
     // Flag-rule regressions.
@@ -320,7 +320,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x37);
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x00, state.Ra);
@@ -337,7 +337,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x40); // BIT 0,B
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         // bit 0 of 0 → Z=1, N=0, H=1, C unchanged (1).
@@ -353,7 +353,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x80); // RES 0,B
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         Assert.Equal(CpuFlags.All, Cpu.ReadState().Flags);
     }
@@ -367,7 +367,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0xC0); // SET 0,B
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         Assert.Equal(CpuFlags.None, Cpu.ReadState().Flags);
     }
@@ -382,7 +382,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, 0x00); // RLC B
 
         Cpu.WriteState(initialState);
-        Cpu.Step();
+        StepCycles();
 
         var state = Cpu.ReadState();
         Assert.Equal(0x00, state.Rb);
@@ -417,7 +417,7 @@ public class CpuCbTests : CpuTestBase
         Mmu.Write(0x01, sub);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         Assert.Equal(expectedCycles, cycles);
     }
@@ -455,7 +455,7 @@ public class CpuCbTests : CpuTestBase
             s1.WriteReg(SlotToReg(slot), bitSet);
 
         Cpu.WriteState(s1);
-        Cpu.Step();
+        StepCycles();
         Assert.Equal(CpuFlags.H | CpuFlags.C, Cpu.Flags);
 
         // Arm 2: operand has bit n clear → Z=1.
@@ -468,7 +468,7 @@ public class CpuCbTests : CpuTestBase
             s2.WriteReg(SlotToReg(slot), bitClear);
 
         Cpu.WriteState(s2);
-        Cpu.Step();
+        StepCycles();
         Assert.Equal(CpuFlags.Z | CpuFlags.H | CpuFlags.C, Cpu.Flags);
     }
 
@@ -492,7 +492,7 @@ public class CpuCbTests : CpuTestBase
             initial.WriteReg(SlotToReg(slot), 0xFF);
 
         Cpu.WriteState(initial);
-        Cpu.Step();
+        StepCycles();
 
         byte expected = (byte)(0xFF & ~(1 << n));
         byte actual = slot == 6 ? Mmu.Read(hlAddr) : Cpu.ReadState().ReadReg(SlotToReg(slot));
@@ -518,7 +518,7 @@ public class CpuCbTests : CpuTestBase
             initial.WriteReg(SlotToReg(slot), 0x00);
 
         Cpu.WriteState(initial);
-        Cpu.Step();
+        StepCycles();
 
         byte expected = (byte)(1 << n);
         byte actual = slot == 6 ? Mmu.Read(hlAddr) : Cpu.ReadState().ReadReg(SlotToReg(slot));

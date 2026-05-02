@@ -54,7 +54,7 @@ public class CpuTStateCoverageTests : CpuTestBase
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000, Flags = flags });
 
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         Assert.Equal(expected, cycles);
     }
@@ -69,7 +69,7 @@ public class CpuTStateCoverageTests : CpuTestBase
 
         Cpu.WriteState(new CpuState { Pc = start, Sp = sp });
 
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         Assert.Equal(16, cycles);
     }
@@ -85,7 +85,7 @@ public class CpuTStateCoverageTests : CpuTestBase
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
         Cpu.InterruptMasterEnable = true;
 
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         Assert.Equal(20, cycles);
     }
@@ -117,7 +117,7 @@ public class CpuTStateCoverageTests : CpuTestBase
             Flags = CpuFlags.None, // Z=0, C=0
         });
 
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         Assert.Equal(expectedCycles, cycles);
     }
@@ -140,7 +140,7 @@ public class CpuTStateCoverageTests : CpuTestBase
         Mmu.Write(start, opcode);
         Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
 
-        Assert.ThrowsAny<Exception>(() => Cpu.Step());
+        Assert.ThrowsAny<Exception>(() => StepCycles());
     }
 
     private static TheoryData<byte, int> BuildBaseOpcodeCycleData()

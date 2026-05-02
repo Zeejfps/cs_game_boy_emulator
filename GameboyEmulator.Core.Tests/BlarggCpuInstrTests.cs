@@ -53,13 +53,15 @@ public class BlarggCpuInstrTests
             new NullApu(),
             serial,
             interrupts);
-        var cpu = new Cpu(mmu, interrupts);
+        var busClock = new CountingBusClock();
+        var cpu = new Cpu(mmu, busClock, interrupts);
         cpu.SkipBoot();
 
         long total = 0;
         while (total < CycleBudget)
         {
-            var t = cpu.Step();
+            cpu.Step();
+            var t = (int)busClock.ConsumeAccumulated();
             timer.Tick(t);
             total += t;
 

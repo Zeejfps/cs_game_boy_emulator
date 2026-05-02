@@ -32,7 +32,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(stackAddr + 1), 0x20);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         if (taken)
@@ -72,7 +72,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 2), 0x20);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         if (taken)
@@ -104,7 +104,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 2), 0x20);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Pc = 0x2030;
@@ -137,7 +137,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 2), 0x20);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         if (taken)
@@ -182,7 +182,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write(initialState.Pc, opcode);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Pc = target;
@@ -210,7 +210,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(stackAddr + 1), 0x20);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Pc = 0x2030;
@@ -229,7 +229,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write(initialState.Pc, 0xE9);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Pc = 0x2030;
@@ -250,7 +250,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 1), (byte)offset);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         // PC has advanced past the operand, then offset is applied.
@@ -279,7 +279,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 1), (byte)offset);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         if (taken)
@@ -313,7 +313,7 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write((ushort)(initialState.Pc + 2), 0x20);
 
         Cpu.WriteState(initialState);
-        var cycles = Cpu.Step();
+        var cycles = StepCycles();
 
         var expectedState = initialState;
         expectedState.Pc = 0x2030;
@@ -340,10 +340,10 @@ public class CpuBranchTests : CpuTestBase
         Mmu.Write(0x12, 0x20);
 
         Cpu.WriteState(new CpuState { Pc = 0x10, Flags = takenFlags });
-        var takenCycles = Cpu.Step();
+        var takenCycles = StepCycles();
 
         Cpu.WriteState(new CpuState { Pc = 0x10, Flags = notTakenFlags });
-        var notTakenCycles = Cpu.Step();
+        var notTakenCycles = StepCycles();
 
         Assert.Equal(16, takenCycles);
         Assert.Equal(12, notTakenCycles);

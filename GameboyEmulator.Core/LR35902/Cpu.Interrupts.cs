@@ -55,8 +55,9 @@ public sealed partial class Cpu
     private void Stop()
     {
         // Per spec encoders write `10 00`, but real hardware ignores the
-        // following byte — just consume it without inspecting.
-        Fetch();
+        // following byte — advance PC past it without a bus access (STOP is
+        // 4 T-cycles total; only the opcode fetch ticks).
+        Pc++;
         IsSleeping = true;
     }
 
