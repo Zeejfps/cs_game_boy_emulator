@@ -1,7 +1,6 @@
-using GameBoyEmulator.Core.Graphics;
 using GameBoyEmulator.Core.LR35902;
 
-namespace GameBoyEmulator.Core;
+namespace GameBoyEmulator.Core.Graphics;
 
 // IMemoryBus decorator that owns OAM DMA.
 //
