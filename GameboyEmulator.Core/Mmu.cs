@@ -134,7 +134,7 @@ public sealed class Mmu : IMemoryBus
             case 0xFF07:
                 _timer.WriteTac(value);
                 break;
-            case Mmu.InterruptFlagAddress:
+            case InterruptFlagAddress:
                 _interrupts.WriteRequestedInterrupts((InterruptType)value);
                 break;
             case >= 0xFF10 and <= 0xFF3F:
@@ -217,40 +217,6 @@ public sealed class Mmu : IMemoryBus
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
             _ => 0xFF
         };
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private ReadOnlySpan<byte> ReadRange(ushort address, int length)
-    {
-        switch (address >> 12)
-        {
-            case 0x0:
-            case 0x1:
-            case 0x2:
-            case 0x3:
-                if (_bootRomEnabled && address + length <= BootRomSize)
-                    return _bootRom!.AsSpan(address, length);
-                return _mbc.ReadBank0Range(address, length);
-            case 0x4:
-            case 0x5:
-            case 0x6:
-            case 0x7:
-                return _mbc.ReadBankNRange(address, length);
-            case 0x8:
-            case 0x9:
-                return _ppu.ReadVramRange((ushort)(address - 0x8000), length);
-            case 0xA:
-            case 0xB:
-                return _mbc.ReadExternalRamRange((ushort)(address - 0xA000), length);
-            case 0xC:
-            case 0xD:
-                return _wram.AsSpan(address - 0xC000, length);
-            case 0xE:
-            case 0xF when address < 0xFE00:
-                return _wram.AsSpan(address - 0xE000, length);
-            default:
-                throw new InvalidOperationException($"ReadRange unsupported source 0x{address:X4}");
-        }
     }
 
     public void Reset()
