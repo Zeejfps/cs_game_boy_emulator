@@ -316,6 +316,53 @@ public class PpuTests
     }
 
     [Fact]
+    public void HBlankInterrupt_FiresOnceWhenEnteringMode0()
+    {
+        // Enable Mode 0 (HBlank) source only. We start at line 0, dot 0 in OamScan,
+        // so no source is active and the STAT line is low. Step into HBlank and
+        // verify a single IRQ on the rising edge.
+        _ppu.WriteRegister(STAT, 0x08);
+
+        var before = _interrupts.LcdStatCount;
+        _ppu.Step(80 + 200); // through OamScan + Drawing into HBlank
+
+        Assert.Equal(PpuMode.HBlank, Mode(_ppu.ReadRegister(STAT)));
+        Assert.Equal(before + 1, _interrupts.LcdStatCount);
+    }
+
+    [Fact]
+    public void VBlankStatInterrupt_FiresOnceWhenEnteringMode1()
+    {
+        // Enable Mode 1 (VBlank) STAT source only. This is distinct from the
+        // VBlank vector (0x40) — bit 4 of STAT routes mode-1 entry to the LCD
+        // STAT IRQ.
+        _ppu.WriteRegister(STAT, 0x10);
+
+        // Step to first dot of line 144.
+        _ppu.Step(DotsPerLine * 144);
+
+        Assert.Equal(PpuMode.VBlank, Mode(_ppu.ReadRegister(STAT)));
+        Assert.Equal(1, _interrupts.LcdStatCount);
+    }
+
+    [Fact]
+    public void OamInterrupt_FiresOnceWhenEnteringMode2()
+    {
+        // Enable Mode 2 (OAM scan) source only. Line 0 starts in OamScan, so
+        // the source is already true at t=0; no rising edge expected yet.
+        _ppu.WriteRegister(STAT, 0x20);
+        var afterEnable = _interrupts.LcdStatCount;
+
+        // Cross into HBlank, then back into OamScan on line 1 — that crossing
+        // is the rising edge we care about.
+        _ppu.Step(DotsPerLine);
+
+        Assert.Equal(1, _ppu.ReadRegister(LY));
+        Assert.Equal(PpuMode.OamScan, Mode(_ppu.ReadRegister(STAT)));
+        Assert.Equal(afterEnable + 1, _interrupts.LcdStatCount);
+    }
+
+    [Fact]
     public void LycWrite_MatchingCurrentLy_FiresStatInterrupt()
     {
         // Enable LYC interrupt source.
