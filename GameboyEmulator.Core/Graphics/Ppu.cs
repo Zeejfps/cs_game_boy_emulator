@@ -235,7 +235,19 @@ public sealed partial class Ppu : IPpu
         _mode = PpuMode.VBlank;
         _interrupts.Request(InterruptType.VBlank);
         FrameCompleted?.Invoke();
-        UpdateStatLine();
+
+        // DMG quirk: at the LY 143→144 transition, the OAM (mode 2) STAT
+        // source is asserted on the same cycle as the VBlank IRQ, even though
+        // the visible mode is 1 (VBlank). If mode 2 IRQ is enabled this fires
+        // a STAT IRQ at exactly the cycle VBlank is requested. The line then
+        // settles to its VBlank-mode value at the next UpdateStatLine call.
+        var line =
+            (_statSources.HasFlag(StatFlags.LycIrq)    && _lycMatch) ||
+            _statSources.HasFlag(StatFlags.OamIrq)                   ||
+            _statSources.HasFlag(StatFlags.VBlankIrq);
+        if (line && !_statLine)
+            _interrupts.Request(InterruptType.LcdStat);
+        _statLine = line;
     }
 
     private int StepHBlank(int tStates)
