@@ -180,60 +180,9 @@ public class PpuTests
         Assert.Equal(3, _ppu.ReadRegister(LY));
     }
 
-    // ─────────────────────── VRAM/OAM bus locking ────────────────────────
-
-    [Fact]
-    public void Vram_IsBlockedDuringDrawing()
-    {
-        _ppu.WriteVram(0x0000, 0xAB);
-
-        // Step into Drawing on line 1.
-        _ppu.Step(DotsPerLine + 80);
-        Assert.Equal(PpuMode.Drawing, Mode(_ppu.ReadRegister(STAT)));
-
-        Assert.Equal(0xFF, _ppu.ReadVram(0x0000));
-        _ppu.WriteVram(0x0000, 0x99);
-
-        // Leave Drawing — write was dropped.
-        _ppu.Step(172);
-        Assert.Equal(0xAB, _ppu.ReadVram(0x0000));
-    }
-
-    [Fact]
-    public void Oam_IsBlockedDuringOamScanAndDrawing()
-    {
-        // Drop LCD off so we land in HBlank and the seed write goes through.
-        _ppu.WriteRegister(LCDC, 0x00);
-        _ppu.WriteOam(0, 0xAB);
-        _ppu.WriteRegister(LCDC, LcdOn);
-
-        Assert.Equal(PpuMode.OamScan, Mode(_ppu.ReadRegister(STAT)));
-        Assert.Equal(0xFF, _ppu.ReadOam(0));
-
-        _ppu.Step(80);
-        Assert.Equal(PpuMode.Drawing, Mode(_ppu.ReadRegister(STAT)));
-        Assert.Equal(0xFF, _ppu.ReadOam(0));
-
-        _ppu.Step(172);
-        Assert.Equal(PpuMode.HBlank, Mode(_ppu.ReadRegister(STAT)));
-        Assert.Equal(0xAB, _ppu.ReadOam(0));
-    }
-
-    [Fact]
-    public void DmaOamWrite_BypassesBusLocking()
-    {
-        // Get into OamScan, where the per-byte write would be blocked.
-        _ppu.Step(DotsPerLine);
-        Assert.Equal(PpuMode.OamScan, Mode(_ppu.ReadRegister(STAT)));
-
-        var data = new byte[0xA0];
-        for (var i = 0; i < data.Length; i++) data[i] = (byte)i;
-        _ppu.WriteOam(data);
-
-        // Leave OamScan/Drawing to read OAM back.
-        _ppu.Step(80 + 172);
-        Assert.Equal(0x42, _ppu.ReadOam(0x42));
-    }
+    // VRAM/OAM bus locking is now enforced by the MMU (see MmuTests). The PPU
+    // exposes raw access; DMA, which bypasses the MMU, naturally bypasses the
+    // mode-block too.
 
     // ───────────────────────── STAT IRQ behavior ─────────────────────────
 

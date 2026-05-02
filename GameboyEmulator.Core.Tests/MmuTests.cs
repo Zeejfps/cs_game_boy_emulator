@@ -78,6 +78,42 @@ public class MmuTests
         Assert.Null(_ppu.LastVramWrite);
     }
 
+    [Fact]
+    public void Write_Vram_BlockedDuringPpuDrawing()
+    {
+        _ppu.Mode = PpuMode.Drawing;
+        _mmu.Write(0x8000, 0x42);
+        Assert.Null(_ppu.LastVramWrite);
+    }
+
+    [Fact]
+    public void Read_Vram_ReturnsFFDuringPpuDrawing()
+    {
+        _ppu.Mode = PpuMode.Drawing;
+        _ppu.VramReadStub = _ => 0x42;
+        Assert.Equal(0xFF, _mmu.Read(0x8000));
+    }
+
+    [Theory]
+    [InlineData(PpuMode.OamScan)]
+    [InlineData(PpuMode.Drawing)]
+    public void Write_Oam_BlockedDuringPpuOamScanOrDrawing(PpuMode mode)
+    {
+        _ppu.Mode = mode;
+        _mmu.Write(0xFE00, 0x77);
+        Assert.Null(_ppu.LastOamWrite);
+    }
+
+    [Theory]
+    [InlineData(PpuMode.OamScan)]
+    [InlineData(PpuMode.Drawing)]
+    public void Read_Oam_ReturnsFFDuringPpuOamScanOrDrawing(PpuMode mode)
+    {
+        _ppu.Mode = mode;
+        _ppu.OamReadStub = _ => 0x77;
+        Assert.Equal(0xFF, _mmu.Read(0xFE00));
+    }
+
     [Theory]
     [InlineData((ushort)0xC000)]
     [InlineData((ushort)0xCDEF)]
@@ -463,5 +499,6 @@ public class MmuTests
         public ReadOnlySpan<byte> ReadVramRange(ushort address, int length) => ReadOnlySpan<byte>.Empty;
         public byte ReadOam(ushort address) { LastOamReadAddress = address; return OamReadStub(address); }
         public byte ReadRegister(ushort address) => 0;
+        public PpuMode Mode { get; set; } = PpuMode.HBlank;
     }
 }
