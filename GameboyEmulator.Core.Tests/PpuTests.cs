@@ -76,7 +76,9 @@ public class PpuTests
         _ppu.Step(80);
         Assert.Equal(PpuMode.Drawing, Mode(_ppu.ReadRegister(STAT)));
 
-        _ppu.Step(172);
+        // Mode 3 with no sprites/SCX/window is ~173 dots in our pipeline; step
+        // a comfortable margin past that to reliably land in HBlank.
+        _ppu.Step(200);
         Assert.Equal(PpuMode.HBlank, Mode(_ppu.ReadRegister(STAT)));
     }
 
@@ -227,7 +229,7 @@ public class PpuTests
     public void StatBug_WriteStatWhenSourceActive_FiresSpuriousInterrupt()
     {
         // Step into HBlank on line 0.
-        _ppu.Step(80 + 172);
+        _ppu.Step(80 + 200);
         Assert.Equal(PpuMode.HBlank, Mode(_ppu.ReadRegister(STAT)));
 
         var before = _interrupts.LcdStatCount;
@@ -243,7 +245,7 @@ public class PpuTests
     public void StatBug_WriteStatWhenNoSourceActive_NoSpuriousInterrupt()
     {
         // Step into HBlank on line 0.
-        _ppu.Step(80 + 172);
+        _ppu.Step(80 + 200);
         Assert.Equal(PpuMode.HBlank, Mode(_ppu.ReadRegister(STAT)));
 
         var before = _interrupts.LcdStatCount;
@@ -300,8 +302,9 @@ public class PpuTests
         _ppu.WriteRegister(LCDC, (byte)(LcdOn | UnsignedTileData | BgOn));
         _ppu.WriteRegister(BGP, IdentityBgp);
 
-        // Render line 0.
-        _ppu.Step(80 + 172);
+        // Render line 0. Step well past mode 3 to ensure all 160 pixels are
+        // pushed before the assert.
+        _ppu.Step(80 + 200);
 
         var row = _ppu.FrameBuffer.Span;
         for (var x = 0; x < 160; x++)

@@ -57,6 +57,13 @@ public sealed partial class Ppu : IPpu
     // the PPU advances into Drawing for the first time after enable.
     private bool _firstScanlineAfterEnable;
 
+    // Mode-3 startup delay: real DMG holds the BG pixel pusher idle for ~6
+    // dots after entering Drawing while the fetcher warms up. This is what
+    // makes the canonical mode-3 length 172 dots (SCX=0, no sprites). Without
+    // it our pipeline emits the first pixel ~5-6 dots too early and OAM
+    // becomes accessible too soon after the mode-2 STAT IRQ.
+    private int _drawingStall;
+
     // Window state.
     // _wyTriggered latches the first time LY == WY in a frame; persists until frame end.
     // _windowLineCounter (WLY) only advances on scanlines that actually pushed window pixels.
@@ -179,6 +186,7 @@ public sealed partial class Ppu : IPpu
     {
         _mode = PpuMode.Drawing;
         _firstScanlineAfterEnable = false;
+        _drawingStall = 6;
         LatchBgFetcherLcdc();
         _fetcherState = BgPixelsFetcherState.GetTile;
         _fetcherX = 0;
@@ -311,6 +319,13 @@ public sealed partial class Ppu : IPpu
     {
         while (tStates > 0 && _mode == PpuMode.Drawing)
         {
+            if (_drawingStall > 0)
+            {
+                _drawingStall--;
+                _dot++;
+                tStates--;
+                continue;
+            }
             // Fetcher advances one step every 2 dots; pusher advances every dot.
             if ((_dot & 1) == 1) BgPixelFetcher_Tick();
             LcdControllerTick();
