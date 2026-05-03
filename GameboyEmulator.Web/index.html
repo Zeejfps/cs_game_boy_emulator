@@ -75,54 +75,99 @@
       input[type="file"] {
         color: inherit;
       }
-      #touch-controls {
+
+      /* Desktop default: pages flatten via display:contents so the picker DOM
+         (h1 + file input) and the game DOM (canvas) coexist in <main>'s flex
+         column exactly as the original single-view layout. */
+      #page-picker, #page-game {
+        display: contents;
+      }
+      .game-left, .game-right, .rom-cta {
         display: none;
       }
+
+      /* ----- Touch / small-screen mode ----- */
       @media (max-width: 720px), (pointer: coarse) {
         main {
-          padding: 12px 0;
-          gap: 12px;
+          max-width: 100%;
+          padding: 0;
+          gap: 0;
         }
-        canvas {
-          width: 100vw;
-          height: calc(100vw * 144 / 160);
-          max-width: 100vw;
-        }
-        #touch-controls {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
+        /* Pages become real pages; .hidden now actually hides one. */
+        #page-picker, #page-game {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
           width: 100%;
-          padding: 16px;
           box-sizing: border-box;
-          gap: 16px;
+        }
+        #page-picker.hidden, #page-game.hidden {
+          display: none !important;
+        }
+
+        /* Picker page: centered h1 + big load button, native input visually hidden. */
+        #page-picker {
+          min-height: 100vh;
+          justify-content: center;
+          gap: 32px;
+          padding: 16px;
+        }
+        #page-picker input[type="file"] {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          opacity: 0;
+          pointer-events: none;
+        }
+        .rom-cta {
+          display: inline-block;
+          padding: 16px 32px;
+          background: #346856;
+          border: 2px solid #e0f8d0;
+          color: #e0f8d0;
+          border-radius: 12px;
+          font-size: 18px;
+          font-weight: 600;
+          cursor: pointer;
+          user-select: none;
+          -webkit-user-select: none;
+          touch-action: manipulation;
+        }
+
+        /* Shared touch-button styles. */
+        .dpad, .ab {
           touch-action: none;
           user-select: none;
           -webkit-user-select: none;
           -webkit-touch-callout: none;
         }
-        .dpad {
-          position: relative;
-          width: 150px;
-          height: 150px;
-          justify-self: start;
-        }
-        .dpad button {
-          position: absolute;
-          width: 50px;
-          height: 50px;
+        .dpad button,
+        .ab button {
           background: #346856;
           border: 2px solid #e0f8d0;
           color: #e0f8d0;
-          font-size: 20px;
           padding: 0;
           touch-action: none;
           transition: background 60ms linear, transform 60ms linear;
         }
         .dpad button.pressed,
-        .dpad button:active {
+        .dpad button:active,
+        .ab button.pressed,
+        .ab button:active {
           background: #e0f8d0;
           color: #081820;
           transform: scale(0.94);
+        }
+        .dpad {
+          position: relative;
+          width: 150px;
+          height: 150px;
+        }
+        .dpad button {
+          position: absolute;
+          width: 50px;
+          height: 50px;
+          font-size: 20px;
         }
         .dpad .up    { top: 0;    left: 50px; }
         .dpad .down  { top: 100px; left: 50px; }
@@ -132,27 +177,14 @@
           position: relative;
           width: 150px;
           height: 150px;
-          justify-self: end;
         }
         .ab button {
           position: absolute;
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background: #346856;
-          border: 2px solid #e0f8d0;
-          color: #e0f8d0;
           font-size: 22px;
           font-weight: 700;
-          padding: 0;
-          touch-action: none;
-          transition: background 60ms linear, transform 60ms linear;
-        }
-        .ab button.pressed,
-        .ab button:active {
-          background: #e0f8d0;
-          color: #081820;
-          transform: scale(0.94);
         }
         .ab .b { top: 60px; left: 0; }
         .ab .a { top: 20px; left: 80px; }
@@ -163,11 +195,6 @@
           left: 70px;
           font-size: 14px;
           letter-spacing: 0.5px;
-        }
-        .start-select {
-          grid-column: 1 / -1;
-          display: flex;
-          justify-content: center;
         }
         .ss-pill {
           display: flex;
@@ -194,31 +221,151 @@
           background: #e0f8d0;
           color: #081820;
         }
+        .power-btn {
+          display: inline-block;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: #346856;
+          border: 2px solid #e0f8d0;
+          color: #e0f8d0;
+          font-size: 18px;
+          line-height: 1;
+          padding: 0;
+          cursor: pointer;
+          touch-action: manipulation;
+          transition: background 60ms linear, transform 60ms linear;
+        }
+        .power-btn:active {
+          background: #e0f8d0;
+          color: #081820;
+          transform: scale(0.94);
+        }
+      }
+
+      /* Touch portrait: canvas full-width on top; dpad+ab in a row; pill then
+         power-off below. Side wrappers collapse via display:contents so their
+         children become direct grid items of #page-game. */
+      @media (max-width: 720px) and (orientation: portrait),
+             (pointer: coarse) and (orientation: portrait) {
+        #page-game {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-template-areas:
+            "canvas canvas"
+            "dpad   ab"
+            "pill   power";
+          align-items: center;
+          width: 100%;
+          gap: 12px;
+          padding: 12px 0;
+        }
+        .game-left, .game-right {
+          display: contents;
+        }
+        #page-game canvas {
+          grid-area: canvas;
+          width: 100vw;
+          height: calc(100vw * 144 / 160);
+          max-width: 100vw;
+        }
+        #page-game .dpad {
+          grid-area: dpad;
+          justify-self: start;
+          margin-left: 16px;
+        }
+        #page-game .ab {
+          grid-area: ab;
+          justify-self: end;
+          margin-right: 16px;
+        }
+        #page-game .ss-pill {
+          grid-area: pill;
+          justify-self: center;
+        }
+        #page-game .power-btn {
+          grid-area: power;
+          justify-self: end;
+          margin-right: 16px;
+        }
+      }
+
+      /* Touch landscape: dpad + power-off + pill on the left, canvas centered
+         and height-locked, A/B diamond on the right. Side wrappers are flex
+         columns so DOM order (dpad → power → pill) flows naturally. */
+      @media (max-width: 720px) and (orientation: landscape),
+             (pointer: coarse) and (orientation: landscape) {
+        #page-game {
+          display: grid;
+          grid-template-columns: 160px 1fr 160px;
+          align-items: center;
+          height: 100vh;
+          width: 100vw;
+          padding: 0;
+          gap: 0;
+        }
+        #page-game canvas {
+          grid-column: 2;
+          height: min(calc(100vh - 16px), calc((100vw - 320px) * 144 / 160));
+          aspect-ratio: 160 / 144;
+          width: auto;
+          margin: 0 auto;
+        }
+        /* DOM order is [dpad, pill] / [ab, power]. column-reverse + space-between
+           anchors gameplay controls (dpad, A/B) to the bottom corners and the
+           rarely-used controls (pill, ⏻) to the top corners. */
+        .game-left {
+          grid-column: 1;
+          display: flex;
+          flex-direction: column-reverse;
+          align-items: center;
+          justify-content: space-between;
+          height: 100%;
+          padding: 12px 0;
+          box-sizing: border-box;
+        }
+        .game-right {
+          grid-column: 3;
+          display: flex;
+          flex-direction: column-reverse;
+          align-items: center;
+          justify-content: space-between;
+          height: 100%;
+          padding: 12px 0;
+          box-sizing: border-box;
+        }
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>GameBoy Emulator</h1>
-      <input id="rom" type="file" accept=".gb" />
-      <canvas id="screen" width="160" height="144"></canvas>
-      <div id="touch-controls">
-        <div class="dpad">
-          <button data-btn="Up" class="up" aria-label="Up">▲</button>
-          <button data-btn="Down" class="down" aria-label="Down">▼</button>
-          <button data-btn="Left" class="left" aria-label="Left">◀</button>
-          <button data-btn="Right" class="right" aria-label="Right">▶</button>
-        </div>
-        <div class="ab">
-          <button data-btn="B" class="b" aria-label="B">B</button>
-          <button data-btn="A" class="a" aria-label="A">A</button>
-          <button data-combo="AB" class="ab-combo" aria-label="A and B together">A+B</button>
-        </div>
-        <div class="start-select">
+      <div id="page-picker">
+        <h1>GameBoy Emulator</h1>
+        <label class="rom-cta" for="rom">Load .gb ROM</label>
+        <input id="rom" type="file" accept=".gb" />
+      </div>
+
+      <div id="page-game" class="hidden">
+        <div class="game-left">
+          <div class="dpad">
+            <button data-btn="Up" class="up" aria-label="Up">▲</button>
+            <button data-btn="Down" class="down" aria-label="Down">▼</button>
+            <button data-btn="Left" class="left" aria-label="Left">◀</button>
+            <button data-btn="Right" class="right" aria-label="Right">▶</button>
+          </div>
           <div class="ss-pill" id="ss-pill" role="group" aria-label="Select and Start">
             <span class="ss-half ss-left" aria-label="Select">SEL</span>
             <span class="ss-half ss-right" aria-label="Start">STA</span>
           </div>
+        </div>
+        <canvas id="screen" width="160" height="144"></canvas>
+        <div class="game-right">
+          <div class="ab">
+            <button data-btn="B" class="b" aria-label="B">B</button>
+            <button data-btn="A" class="a" aria-label="A">A</button>
+            <button data-combo="AB" class="ab-combo" aria-label="A and B together">A+B</button>
+          </div>
+          <button id="power-off" class="power-btn" aria-label="Power off" type="button">⏻</button>
         </div>
       </div>
     </main>

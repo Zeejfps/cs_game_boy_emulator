@@ -151,13 +151,13 @@ async function main(): Promise<void> {
     el.addEventListener('contextmenu', (e) => e.preventDefault());
   };
 
-  document.querySelectorAll<HTMLButtonElement>('#touch-controls button[data-btn]').forEach((el) => {
+  document.querySelectorAll<HTMLButtonElement>('#page-game button[data-btn]').forEach((el) => {
     const name = el.dataset.btn as keyof typeof JoypadButton | undefined;
     if (!name) return;
     bindTouchButton(el, [JoypadButton[name]]);
   });
 
-  document.querySelectorAll<HTMLButtonElement>('#touch-controls button[data-combo]').forEach((el) => {
+  document.querySelectorAll<HTMLButtonElement>('#page-game button[data-combo]').forEach((el) => {
     const combo = el.dataset.combo;
     if (combo === 'AB') bindTouchButton(el, [JoypadButton.A, JoypadButton.B]);
   });
@@ -211,6 +211,22 @@ async function main(): Promise<void> {
     ssPill.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  const showPage = (p: 'picker' | 'game') => {
+    document.getElementById('page-picker')!.classList.toggle('hidden', p !== 'picker');
+    document.getElementById('page-game')!.classList.toggle('hidden', p !== 'game');
+  };
+
+  document.getElementById('power-off')?.addEventListener('click', () => {
+    if (!confirm('Power off and return to ROM picker? Your progress will be saved.')) return;
+    if (emu?.isPoweredOn()) {
+      persistCurrentSave();
+      emu.powerOff();
+    }
+    // Reset so picking the same file again still fires 'change'.
+    (document.getElementById('rom') as HTMLInputElement).value = '';
+    showPage('picker');
+  });
+
   const fileInput = document.getElementById('rom') as HTMLInputElement;
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
@@ -231,6 +247,7 @@ async function main(): Promise<void> {
       console.info(`Loading ROM "${title}" (${bytes.length} bytes, cart type 0x${bytes[0x0147].toString(16).padStart(2, '0')})`);
       emu.loadRom(bytes, restored);
       emu.powerOn();
+      showPage('game');
     } catch (err) {
       console.error(`Failed to load ROM "${file.name}":`, err);
     }
