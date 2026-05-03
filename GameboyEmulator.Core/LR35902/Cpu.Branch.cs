@@ -112,7 +112,7 @@ public sealed partial class Cpu
         var address = FetchWord();
         AdvanceClock(4);
         Sp -= 2;
-        WriteWordToBus(Sp, Pc);
+        PushPcToStack();
         Pc = address;
     }
 
@@ -131,7 +131,7 @@ public sealed partial class Cpu
             return;
         AdvanceClock(4);
         Sp -= 2;
-        WriteWordToBus(Sp, Pc);
+        PushPcToStack();
         Pc = address;
     }
 
@@ -143,7 +143,7 @@ public sealed partial class Cpu
             return;
         AdvanceClock(4);
         Sp -= 2;
-        WriteWordToBus(Sp, Pc);
+        PushPcToStack();
         Pc = address;
     }
 
@@ -155,7 +155,7 @@ public sealed partial class Cpu
             return;
         AdvanceClock(4);
         Sp -= 2;
-        WriteWordToBus(Sp, Pc);
+        PushPcToStack();
         Pc = address;
     }
 
@@ -167,7 +167,7 @@ public sealed partial class Cpu
             return;
         AdvanceClock(4);
         Sp -= 2;
-        WriteWordToBus(Sp, Pc);
+        PushPcToStack();
         Pc = address;
     }
 
@@ -176,8 +176,19 @@ public sealed partial class Cpu
     {
         AdvanceClock(4);
         Sp -= 2;
-        WriteWordToBus(Sp, Pc);
+        PushPcToStack();
         Pc = vector;
+    }
+
+    // Hardware pushes the high byte first (to SP+1) on its first push
+    // M-cycle, then the low byte (to SP) on the next. Mooneye's rst_timing
+    // observes which of the two writes lands during DMA's last transfer
+    // cycle, so the byte order matters — not just the total cycle count.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void PushPcToStack()
+    {
+        WriteToBus((ushort)(Sp + 1), (byte)(Pc >> 8));
+        WriteToBus(Sp, (byte)(Pc & 0xFF));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
