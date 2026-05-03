@@ -103,7 +103,7 @@ public class MooneyeTests
         var interrupts = new Interrupts();
         var ppu = new Ppu(interrupts);
         var timer = new Timer(interrupts);
-        var mbcFactory = new MbcFactory(new MooneyeBatteryStore());
+        var mbcFactory = new MbcFactory(new MooneyeBatteryStore(), new SystemTimeProvider());
         var mbc = mbcFactory.Create(rom);
         var mmu = new Mmu(
             mbc,

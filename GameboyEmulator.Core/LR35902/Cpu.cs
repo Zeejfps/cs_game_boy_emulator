@@ -20,7 +20,7 @@ public sealed partial class Cpu : ICpu
     public byte Rh { get; set; }
     public byte Rl { get; set; }
     public bool InterruptMasterEnable { get; set; }
-    public bool IsWaitingForInterrupt { get; internal set; }
+    public bool IsWaitingForInterrupt { get; private set; }
     public bool IsSleeping { get; private set; }
     
     private ushort Rbc

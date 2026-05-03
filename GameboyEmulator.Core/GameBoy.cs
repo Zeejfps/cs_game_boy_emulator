@@ -33,9 +33,14 @@ public sealed class GameBoy
     private double _tCycles;
 
     public GameBoy(IClock clock, IBatteryStore batteryStore)
+        : this(clock, batteryStore, new SystemTimeProvider())
+    {
+    }
+
+    public GameBoy(IClock clock, IBatteryStore batteryStore, ITimeProvider timeProvider)
     {
         _clock = clock;
-        _mbcFactory = new MbcFactory(batteryStore);
+        _mbcFactory = new MbcFactory(batteryStore, timeProvider);
 
         var interrupts = new Interrupts();
         _ppu = new Ppu(interrupts);

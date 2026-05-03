@@ -11,10 +11,12 @@ public sealed class MbcFactory
     private const int TitleEnd = 0x0143;
 
     private readonly IBatteryStore _batteryStore;
+    private readonly ITimeProvider _timeProvider;
 
-    public MbcFactory(IBatteryStore batteryStore)
+    public MbcFactory(IBatteryStore batteryStore, ITimeProvider timeProvider)
     {
         _batteryStore = batteryStore;
+        _timeProvider = timeProvider;
     }
 
     public IMbc Create(byte[] rom)
@@ -23,12 +25,18 @@ public sealed class MbcFactory
             throw new ArgumentException("ROM is smaller than the cartridge header", nameof(rom));
 
         var cartType = rom[CartTypeAddress];
+        var title = ReadTitle(rom);
         return cartType switch
         {
             0x00 => new RomOnlyMbc(rom),
-            0x01 => new Mbc1(rom, 0, hasBattery: false, _batteryStore, ReadTitle(rom)),
-            0x02 => new Mbc1(rom, ReadRamSize(rom), hasBattery: false, _batteryStore, ReadTitle(rom)),
-            0x03 => new Mbc1(rom, ReadRamSize(rom), hasBattery: true, _batteryStore, ReadTitle(rom)),
+            0x01 => new Mbc1(rom, 0, hasBattery: false, _batteryStore, title),
+            0x02 => new Mbc1(rom, ReadRamSize(rom), hasBattery: false, _batteryStore, title),
+            0x03 => new Mbc1(rom, ReadRamSize(rom), hasBattery: true, _batteryStore, title),
+            0x0F => new Mbc3(rom, 0, hasBattery: true, hasRtc: true, _batteryStore, _timeProvider, title),
+            0x10 => new Mbc3(rom, ReadRamSize(rom), hasBattery: true, hasRtc: true, _batteryStore, _timeProvider, title),
+            0x11 => new Mbc3(rom, 0, hasBattery: false, hasRtc: false, _batteryStore, _timeProvider, title),
+            0x12 => new Mbc3(rom, ReadRamSize(rom), hasBattery: false, hasRtc: false, _batteryStore, _timeProvider, title),
+            0x13 => new Mbc3(rom, ReadRamSize(rom), hasBattery: true, hasRtc: false, _batteryStore, _timeProvider, title),
             _ => throw new NotSupportedException($"Cartridge type 0x{cartType:X2} is not supported")
         };
     }

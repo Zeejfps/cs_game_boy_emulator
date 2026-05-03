@@ -87,7 +87,7 @@ public class DmgAcid2Tests
         var interrupts = new Interrupts();
         var ppu = new Ppu(interrupts);
         var timer = new Timer(interrupts);
-        var mbcFactory = new MbcFactory(new NullBatteryStore());
+        var mbcFactory = new MbcFactory(new NullBatteryStore(), new SystemTimeProvider());
         var mbc = mbcFactory.Create(rom);
         var mmu = new Mmu(
             mbc,
