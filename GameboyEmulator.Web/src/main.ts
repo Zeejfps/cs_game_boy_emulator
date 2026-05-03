@@ -217,6 +217,25 @@ async function main(): Promise<void> {
     document.getElementById('page-game')!.classList.toggle('hidden', p !== 'game');
   };
 
+  const fsBtn = document.getElementById('fullscreen-toggle');
+  fsBtn?.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.warn('Fullscreen request failed:', err);
+    }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    if (!fsBtn) return;
+    const on = !!document.fullscreenElement;
+    fsBtn.setAttribute('aria-label', on ? 'Exit fullscreen' : 'Toggle fullscreen');
+    fsBtn.classList.toggle('active', on);
+  });
+
   document.getElementById('power-off')?.addEventListener('click', () => {
     if (!confirm('Power off and return to ROM picker? Your progress will be saved.')) return;
     if (emu?.isPoweredOn()) {
