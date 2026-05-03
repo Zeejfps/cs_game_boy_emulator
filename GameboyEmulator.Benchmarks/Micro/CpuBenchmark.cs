@@ -297,7 +297,7 @@ public class CpuBenchmark
         }
     }
 
-    private sealed class TickAccumulatingClock : IBusClock
+    private sealed class TickAccumulatingClock : ISystemClock
     {
         private readonly GbTimer _timer;
         private readonly OamDmaController _dma;
@@ -309,7 +309,7 @@ public class CpuBenchmark
             _dma = dma;
         }
 
-        public void Tick(int ticks)
+        public void Advance(int ticks)
         {
             _timer.Tick(ticks);
             _dma.Tick(ticks);

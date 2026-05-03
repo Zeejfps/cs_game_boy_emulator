@@ -3,21 +3,21 @@ using GameBoyEmulator.Core.LR35902;
 
 namespace GameBoyEmulator.Core;
 
-public sealed class BusClock : IBusClock
+public sealed class SystemClock : ISystemClock
 {
     private readonly Ppu _ppu;
     private readonly Timer _timer;
     private readonly OamDmaController _dma;
     private long _accumulated;
 
-    public BusClock(Ppu ppu, Timer timer, OamDmaController dma)
+    public SystemClock(Ppu ppu, Timer timer, OamDmaController dma)
     {
         _ppu = ppu;
         _timer = timer;
         _dma = dma;
     }
 
-    public void Tick(int ticks)
+    public void Advance(int ticks)
     {
         // DMA before PPU so OAM bytes written this batch are visible to the
         // PPU's OAM scan during the same batch — otherwise the PPU sees the

@@ -49,7 +49,7 @@ public class DmgAcid2Tests
         {
             if (system.Mmu.Read(system.Cpu.Pc) == LdBBOpcode) { done = true; break; }
             system.Cpu.Step();
-            total += system.BusClock.ConsumeAccumulated();
+            total += system.SystemClock.ConsumeAccumulated();
         }
 
         Assert.True(
@@ -80,7 +80,7 @@ public class DmgAcid2Tests
         }
     }
 
-    private sealed record System(Cpu Cpu, Mmu Mmu, Ppu Ppu, BusClock BusClock);
+    private sealed record System(Cpu Cpu, Mmu Mmu, Ppu Ppu, SystemClock SystemClock);
 
     private static System BuildSystem(byte[] rom)
     {
@@ -98,7 +98,7 @@ public class DmgAcid2Tests
             new NullSerial(),
             interrupts);
         var dma = new OamDmaController(mmu, ppu);
-        var busClock = new BusClock(ppu, timer, dma);
+        var busClock = new SystemClock(ppu, timer, dma);
         var cpu = new Cpu(dma, busClock, interrupts);
         cpu.SkipBoot();
         // Match what GameBoy.SkipBootIo does — without these, LCDC/BGP stay
