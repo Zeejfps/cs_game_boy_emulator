@@ -13,6 +13,12 @@ namespace GameBoyEmulator.Core.Graphics;
 //     because DMA is writing to it. HRAM and I/O stay reachable on either
 //     bus, which is why every game's DMA-wait loop lives in HRAM.
 //
+// Startup timing: writing FF46 schedules a 2-M-cycle (8T) startup window
+// before the new DMA actually engages OAM. During that window OAM stays
+// accessible (fresh DMA) or stays locked by the previous DMA (restart),
+// per Mooneye's oam_dma_start spec: M=0 is the FF46 write, M=1 is "nothing"
+// (still accessible), M=2 is when the new DMA starts and OAM lock kicks in.
+//
 // The controller's own source reads call _inner.Read directly, bypassing the
 // block — same as DMA being the bus master in hardware.
 public sealed class OamDmaController : IBus
@@ -23,7 +29,7 @@ public sealed class OamDmaController : IBus
     private const ushort OamEnd = 0xFEA0;
     private const int OamSize = 0xA0;
     private const int TicksPerByte = 4;
-    private const int SetupTicks = 4;
+    private const int StartupTicks = 8;
 
     private readonly IBus _inner;
     private readonly IPpu _ppu;
@@ -33,7 +39,11 @@ public sealed class OamDmaController : IBus
     private bool _sourceVideoBus;
     private int _byteIndex;
     private int _pendingTicks;
-    private int _setupTicks;
+
+    private bool _startupPending;
+    private int _startupTicks;
+    private byte _pendingSourcePage;
+    private bool _pendingSourceVideoBus;
 
     public OamDmaController(IBus inner, IPpu ppu)
     {
@@ -44,7 +54,7 @@ public sealed class OamDmaController : IBus
     public byte Read(ushort address)
     {
         if (address == DmaRegister)
-            return _sourcePage;
+            return _startupPending ? _pendingSourcePage : _sourcePage;
         if (_active && IsBusBlocked(address))
             return 0xFF;
         return _inner.Read(address);
@@ -66,41 +76,50 @@ public sealed class OamDmaController : IBus
 
     public void Tick(int ticks)
     {
-        if (!_active) return;
-
-        _pendingTicks += ticks;
-
-        // 4-T bus-arbitration setup before the first byte transfers.
-        if (_setupTicks > 0)
+        // The current (old) DMA, if any, keeps running through its full
+        // ticks budget regardless of any pending startup. The new DMA's
+        // startup window runs in parallel.
+        if (_active)
         {
-            var consume = Math.Min(_setupTicks, _pendingTicks);
-            _setupTicks -= consume;
-            _pendingTicks -= consume;
+            _pendingTicks += ticks;
+
+            while (_active && _pendingTicks >= TicksPerByte)
+            {
+                _pendingTicks -= TicksPerByte;
+                if (_byteIndex < OamSize)
+                {
+                    // DMG quirk: source pages $E0-$FF read echo-of-WRAM
+                    // ($C0-$DF), not OAM/IO/HRAM. Mooneye's
+                    // oam_dma/sources-GS verifies this for $FE and $FF in
+                    // particular — without the mask DMA from $FE would
+                    // copy OAM into itself.
+                    var page = _sourcePage >= 0xE0 ? (byte)(_sourcePage - 0x20) : _sourcePage;
+                    var src = (ushort)((page << 8) | _byteIndex);
+                    var value = _inner.Read(src);
+                    _ppu.WriteOam((ushort)_byteIndex, value);
+                    _byteIndex++;
+                    if (_byteIndex >= OamSize)
+                        _active = false;
+                }
+            }
         }
 
-        while (_active && _pendingTicks >= TicksPerByte)
+        if (_startupPending)
         {
-            _pendingTicks -= TicksPerByte;
-            if (_byteIndex < OamSize)
+            var consume = Math.Min(_startupTicks, ticks);
+            _startupTicks -= consume;
+            if (_startupTicks == 0)
             {
-                // DMG quirk: source pages $E0-$FF read echo-of-WRAM
-                // ($C0-$DF), not OAM/IO/HRAM. Mooneye's
-                // oam_dma/sources-GS verifies this for $FE and $FF in
-                // particular — without the mask DMA from $FE would copy
-                // OAM into itself.
-                var page = _sourcePage >= 0xE0 ? (byte)(_sourcePage - 0x20) : _sourcePage;
-                var src = (ushort)((page << 8) | _byteIndex);
-                var value = _inner.Read(src);
-                _ppu.WriteOam((ushort)_byteIndex, value);
-                _byteIndex++;
-            }
-            else
-            {
-                // One drain M-cycle past the final transfer so the OAM
-                // lock persists through the M-cycle that contained that
-                // last write. Mooneye's add_sp_e/jp/etc. timing tests
-                // align an OAM read to land on exactly that cycle.
-                _active = false;
+                // New DMA takes over after its startup window. Resets
+                // byte index to 0 — any progress the old DMA made during
+                // these 8T is discarded since OAM is about to be filled
+                // by the new transfer anyway.
+                _startupPending = false;
+                _active = true;
+                _sourcePage = _pendingSourcePage;
+                _sourceVideoBus = _pendingSourceVideoBus;
+                _byteIndex = 0;
+                _pendingTicks = 0;
             }
         }
     }
@@ -112,7 +131,10 @@ public sealed class OamDmaController : IBus
         _sourceVideoBus = false;
         _byteIndex = 0;
         _pendingTicks = 0;
-        _setupTicks = 0;
+        _startupPending = false;
+        _startupTicks = 0;
+        _pendingSourcePage = 0;
+        _pendingSourceVideoBus = false;
     }
 
     // OAM is always blocked while DMA runs (DMA owns it for writes).
@@ -130,11 +152,9 @@ public sealed class OamDmaController : IBus
 
     private void Start(byte sourcePage)
     {
-        _sourcePage = sourcePage;
-        _sourceVideoBus = sourcePage >= 0x80 && sourcePage < 0xA0;
-        _active = true;
-        _byteIndex = 0;
-        _pendingTicks = 0;
-        _setupTicks = SetupTicks;
+        _pendingSourcePage = sourcePage;
+        _pendingSourceVideoBus = sourcePage >= 0x80 && sourcePage < 0xA0;
+        _startupPending = true;
+        _startupTicks = StartupTicks;
     }
 }

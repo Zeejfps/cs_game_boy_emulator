@@ -19,7 +19,13 @@ public sealed partial class Cpu
         // Execute → UpdateInterruptTimer ordering: EI's own step decrements
         // 2→1, the next step decrements 1→0 and sets IME, so the *third*
         // fetch is the first one that sees IME=1.
-        _enableInterruptsTimer = 2;
+        //
+        // Only arm if not already armed: a chain of EIs must let the
+        // first EI's pending fire after the second EI completes, rather
+        // than each EI resetting the countdown. Mooneye's ei_sequence
+        // verifies this.
+        if (_enableInterruptsTimer == 0 && !InterruptMasterEnable)
+            _enableInterruptsTimer = 2;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
