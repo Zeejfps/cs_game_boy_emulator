@@ -102,8 +102,9 @@ function loop(): void {
 }
 
 async function main(): Promise<void> {
-  const versionEl = document.getElementById('version');
-  if (versionEl) versionEl.textContent = __APP_VERSION__;
+  document.querySelectorAll<HTMLElement>('.version-text').forEach((el) => {
+    el.textContent = __APP_VERSION__;
+  });
 
   try {
     emu = await init({ baseUrl: '/wasm/', version: __APP_VERSION__ });
