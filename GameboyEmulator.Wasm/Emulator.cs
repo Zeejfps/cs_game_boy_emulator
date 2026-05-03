@@ -14,6 +14,14 @@ public static partial class Emulator
     private static bool _isFrameBufferPinned;
     private static bool _frameReady;
 
+    // The PPU writes pixels into its internal buffer continuously. A single host
+    // tick can run more than one DMG frame's worth of cycles (RAF jitter, 120Hz
+    // displays, brief stalls), so by the time the host paints, the live buffer
+    // may already contain the top scanlines of frame N+1 — visible as a tear.
+    // We snapshot the buffer at VBlank so the host always reads a complete frame.
+    private static readonly byte[] _frameBufferSnapshot =
+        new byte[Ppu.ScreenWidth * Ppu.ScreenHeight];
+
     [JSExport]
     public static void Init()
     {
@@ -23,7 +31,13 @@ public static partial class Emulator
         _clock = new StopwatchClock();
         _battery = new InMemoryBatteryStore();
         _gameBoy = new GameBoy(_clock, _battery);
-        _gameBoy.FrameCompleted += () => _frameReady = true;
+        _gameBoy.FrameCompleted += OnFrameCompleted;
+    }
+
+    private static void OnFrameCompleted()
+    {
+        Gb().FrameBuffer.Span.CopyTo(_frameBufferSnapshot);
+        _frameReady = true;
     }
 
     [JSExport]
@@ -81,7 +95,7 @@ public static partial class Emulator
     {
         if (!_isFrameBufferPinned)
         {
-            _frameBufferHandle = Gb().FrameBuffer.Pin();
+            _frameBufferHandle = _frameBufferSnapshot.AsMemory().Pin();
             _isFrameBufferPinned = true;
         }
         return (int)_frameBufferHandle.Pointer;
