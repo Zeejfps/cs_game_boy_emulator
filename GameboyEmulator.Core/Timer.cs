@@ -25,6 +25,14 @@ public sealed class Timer : ITimer
     private int _reloadDelay;
     private bool _justReloaded;
 
+    // Bit 12 of the internal counter falls 1->0 at exactly 512 Hz, which is
+    // the APU frame sequencer's clock. WriteDiv (which resets the counter
+    // to 0) can also cause a falling edge if bit 12 was set — that's the
+    // documented "DIV reset glitches APU" behavior, used by some games to
+    // phase-shift envelopes.
+    private bool _prevApuBit;
+    public Action? OnApuFrameSequencerTick { get; set; }
+
     public Timer(IInterrupts interrupts)
     {
         _interrupts = interrupts;
@@ -39,6 +47,7 @@ public sealed class Timer : ITimer
     {
         _counter = 0;
         DetectTimaEdge();
+        DetectApuEdge();
     }
 
     public void WriteTima(byte value)
@@ -85,6 +94,7 @@ public sealed class Timer : ITimer
             }
 
             DetectTimaEdge();
+            DetectApuEdge();
         }
     }
 
@@ -118,6 +128,15 @@ public sealed class Timer : ITimer
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void DetectApuEdge()
+    {
+        var bit = ((_counter >> 12) & 1) != 0;
+        if (_prevApuBit && !bit)
+            OnApuFrameSequencerTick?.Invoke();
+        _prevApuBit = bit;
+    }
+
     public void Reset()
     {
         _counter = 0;
@@ -127,6 +146,7 @@ public sealed class Timer : ITimer
         _timaBitIndex = TimaBitIndex[0];
         _isTimaEnabled = false;
         _prevSignal = false;
+        _prevApuBit = false;
         _reloadDelay = 0;
         _justReloaded = false;
     }

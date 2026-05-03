@@ -30,6 +30,24 @@ const MIME: Record<string, string> = {
   '.map':  'application/json',
 };
 
+// SharedArrayBuffer (used by the audio ring buffer between main thread and
+// AudioWorklet) requires the page to be cross-origin isolated. In dev we
+// inject COOP/COEP headers; production needs the equivalent set at the host
+// (Cloudflare Transform Rule on gb.builtbyzee.com — GitHub Pages can't set
+// response headers on its own).
+function crossOriginIsolation(): Plugin {
+  return {
+    name: 'cross-origin-isolation',
+    configureServer(server) {
+      server.middlewares.use((_req, res, next) => {
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+        next();
+      });
+    },
+  };
+}
+
 // Make the gameboy-emulator npm package's runtime files available at /wasm/*.
 // Dev: a middleware streams files from the package's dist folder.
 // Build: emit each file as a Vite asset under wasm/ in the build output.
@@ -80,7 +98,7 @@ function serveWasmAssets(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [serveWasmAssets()],
+  plugins: [crossOriginIsolation(), serveWasmAssets()],
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },

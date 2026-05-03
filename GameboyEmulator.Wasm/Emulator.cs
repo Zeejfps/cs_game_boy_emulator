@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Runtime.InteropServices.JavaScript;
 using GameBoyEmulator.Core;
+using GameBoyEmulator.Core.Cartridge;
 using GameBoyEmulator.Core.Graphics;
 
 namespace GameBoyEmulator.Wasm;
@@ -22,15 +23,27 @@ public static partial class Emulator
     private static readonly byte[] _frameBufferSnapshot =
         new byte[Ppu.ScreenWidth * Ppu.ScreenHeight];
 
+    // Stereo float scratchpad the host drains audio into between ticks.
+    // Sized for ~85 ms of jitter budget at 48 kHz; an 8 kHz host or a wedged
+    // main thread that holds Tick for >85 ms will quietly drop oldest samples
+    // inside the APU's own ring buffer rather than overflowing this one.
+    private const int AudioDrainFrames = 4096;
+    private static readonly float[] _audioDrainBuffer = new float[AudioDrainFrames * 2];
+    private static MemoryHandle _audioBufferHandle;
+    private static bool _isAudioBufferPinned;
+
     [JSExport]
-    public static void Init()
+    public static void Init(int sampleRate)
     {
         if (_gameBoy != null)
             return;
 
         _clock = new StopwatchClock();
         _battery = new InMemoryBatteryStore();
-        _gameBoy = new GameBoy(_clock, _battery);
+        // sampleRate <= 0 is interpreted as "no audio yet" — the APU defaults
+        // to 48 kHz and produces samples that nothing will drain. Once the
+        // host opens an AudioContext, it should re-init or accept the default.
+        _gameBoy = new GameBoy(_clock, _battery, new SystemTimeProvider(), sampleRate > 0 ? sampleRate : 48000);
         _gameBoy.FrameCompleted += OnFrameCompleted;
     }
 
@@ -103,6 +116,28 @@ public static partial class Emulator
         }
         return (int)_frameBufferHandle.Pointer;
     }
+
+    // Audio drain: the host calls DrainAudio() between ticks; samples land in
+    // the pinned float buffer at GetAudioBufferPointer(), interleaved L,R.
+    // Returns frames written (each frame = 2 floats = 8 bytes). The caller
+    // is expected to copy those frames into a SharedArrayBuffer ring buffer
+    // that an AudioWorklet reads on the audio thread.
+    [JSExport]
+    public static int GetAudioBufferFrameCapacity() => AudioDrainFrames;
+
+    [JSExport]
+    public static unsafe int GetAudioBufferPointer()
+    {
+        if (!_isAudioBufferPinned)
+        {
+            _audioBufferHandle = _audioDrainBuffer.AsMemory().Pin();
+            _isAudioBufferPinned = true;
+        }
+        return (int)_audioBufferHandle.Pointer;
+    }
+
+    [JSExport]
+    public static int DrainAudio() => Gb().DrainAudio(_audioDrainBuffer);
 
     private static GameBoy Gb() =>
         _gameBoy ?? throw new InvalidOperationException("Emulator.Init has not been called");

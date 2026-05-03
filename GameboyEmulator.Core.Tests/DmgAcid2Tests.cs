@@ -89,16 +89,17 @@ public class DmgAcid2Tests
         var timer = new Timer(interrupts);
         var mbcFactory = new MbcFactory(new NullBatteryStore(), new SystemTimeProvider());
         var mbc = mbcFactory.Create(rom);
+        var apu = new NullApu();
         var mmu = new Mmu(
             mbc,
             ppu,
             new NullJoypad(),
             timer,
-            new NullApu(),
+            apu,
             new NullSerial(),
             interrupts);
         var dma = new OamDmaController(mmu, ppu);
-        var busClock = new SystemClock(ppu, timer, dma);
+        var busClock = new SystemClock(ppu, timer, dma, apu);
         var cpu = new Cpu(dma, busClock, interrupts);
         cpu.SkipBoot();
         // Match what GameBoy.SkipBootIo does — without these, LCDC/BGP stay

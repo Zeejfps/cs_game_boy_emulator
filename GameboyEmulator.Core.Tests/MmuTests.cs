@@ -399,6 +399,9 @@ public class MmuTests
         public (ushort address, byte value)? LastRegisterWrite { get; private set; }
         public void WriteRegister(ushort address, byte value) => LastRegisterWrite = (address, value);
         public byte ReadRegister(ushort address) => 0;
+        public void Step(int tStates) { }
+        public void OnFrameSequencerTick() { }
+        public int DrainAudio(Span<float> dest) => 0;
     }
 
     private sealed class FakeTimer : ITimer

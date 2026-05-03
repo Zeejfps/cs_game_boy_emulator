@@ -1,4 +1,5 @@
 import { init, JoypadButton, type Emulator } from 'gameboy-emulator';
+import { createAudio, type AudioBridge } from './audio';
 
 const KEY_MAP: Record<string, JoypadButton> = {
   ArrowUp:    JoypadButton.Up,
@@ -28,6 +29,7 @@ const imageData = ctx.createImageData(canvas.width, canvas.height);
 const pixels = new Uint32Array(imageData.data.buffer);
 
 let emu: Emulator | null = null;
+let audio: AudioBridge | null = null;
 let currentSaveKey: string | null = null;
 // Retained after LoadRom so save-import can soft-reset the cart with the
 // imported RAM, and save-export can name the download after the ROM file.
@@ -210,7 +212,13 @@ function paint(): void {
 
 function loop(): void {
   try {
-    if (emu && emu.isPoweredOn()) emu.tick();
+    if (emu && emu.isPoweredOn()) {
+      emu.tick();
+      // Audio is drained AFTER tick so the freshly-produced samples are
+      // available; the worklet on the audio thread reads from the same SAB
+      // ring without further coordination.
+      audio?.drain(emu);
+    }
   } catch (err) {
     console.error('Emulator tick failed — halting CPU loop:', err);
     if (emu?.isPoweredOn()) {
@@ -352,8 +360,19 @@ async function main(): Promise<void> {
     el.textContent = __APP_VERSION__;
   });
 
+  // The AudioContext's sampleRate is fixed at construction and the APU
+  // needs it to compute its host-rate sample period — so audio is set up
+  // first, sample rate is read off it, then the WASM init is parameterized
+  // to match. If SAB/cross-origin-isolation is unavailable, audio stays null
+  // and the emulator runs silently.
+  audio = createAudio('/audio-worklet.js');
+
   try {
-    emu = await init({ baseUrl: '/wasm/', version: __APP_VERSION__ });
+    emu = await init({
+      baseUrl: '/wasm/',
+      version: __APP_VERSION__,
+      sampleRate: audio?.sampleRate ?? 48000,
+    });
   } catch (err) {
     console.error('Failed to initialize emulator:', err);
     return;
@@ -525,6 +544,10 @@ async function main(): Promise<void> {
       currentRomBytes = bytes;
       currentRomFileName = file.name;
       emu.powerOn();
+      // Browsers block AudioContext.resume() outside a user gesture; the
+      // file-picker change event is one. Failures here aren't fatal — silent
+      // operation is still useful.
+      audio?.start().catch((err) => console.warn('Audio start failed:', err));
       showPage('game');
     } catch (err) {
       console.error(`Failed to load ROM "${file.name}":`, err);

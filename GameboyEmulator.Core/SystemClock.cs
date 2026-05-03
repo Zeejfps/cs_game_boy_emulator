@@ -8,13 +8,15 @@ public sealed class SystemClock : ISystemClock
     private readonly Ppu _ppu;
     private readonly Timer _timer;
     private readonly OamDmaController _dma;
+    private readonly IApu _apu;
     private long _accumulated;
 
-    public SystemClock(Ppu ppu, Timer timer, OamDmaController dma)
+    public SystemClock(Ppu ppu, Timer timer, OamDmaController dma, IApu apu)
     {
         _ppu = ppu;
         _timer = timer;
         _dma = dma;
+        _apu = apu;
     }
 
     public void Advance(int ticks)
@@ -27,6 +29,7 @@ public sealed class SystemClock : ISystemClock
         _dma.Tick(ticks);
         _timer.Tick(ticks);
         _ppu.Step(ticks);
+        _apu.Step(ticks);
         _accumulated += ticks;
     }
 

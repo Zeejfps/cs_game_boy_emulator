@@ -26,4 +26,7 @@ internal sealed class NullApu : IApu
 {
     public void WriteRegister(ushort address, byte value) { }
     public byte ReadRegister(ushort address) => 0xFF;
+    public void Step(int tStates) { }
+    public void OnFrameSequencerTick() { }
+    public int DrainAudio(Span<float> dest) => 0;
 }

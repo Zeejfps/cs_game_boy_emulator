@@ -1,5 +1,5 @@
 interface EmulatorExports {
-  Init(): void;
+  Init(sampleRate: number): void;
   LoadRom(rom: Uint8Array, saveData: Uint8Array | null): void;
   GetSaveData(): Uint8Array | null;
   SetBootRom(bootRom: Uint8Array | null): void;
@@ -12,6 +12,9 @@ interface EmulatorExports {
   GetFrameBufferHeight(): number;
   GetFrameBufferLength(): number;
   GetFrameBufferPointer(): number;
+  GetAudioBufferFrameCapacity(): number;
+  GetAudioBufferPointer(): number;
+  DrainAudio(): number;
   SetButton(button: number, pressed: boolean): void;
   GetDebugState(): string;
 }
@@ -104,6 +107,17 @@ export interface Emulator {
    * DIV/TIMA/TAC; bytes at PC; bytes at HL; stack contents.
    */
   getDebugState(): string;
+
+  /**
+   * Drain the APU's accumulated stereo float frames since the last call.
+   * Returns a transient Float32Array view (interleaved L,R) into the WASM
+   * heap — copy it (e.g. into a SharedArrayBuffer ring buffer feeding an
+   * AudioWorklet) before the next emulator call, since heap views are
+   * invalidated by anything that grows the heap.
+   *
+   * Frame count = returned array length / 2. Empty array means underrun.
+   */
+  drainAudio(): Float32Array;
 }
 
 export interface InitOptions {
@@ -117,6 +131,11 @@ export interface InitOptions {
    * to force a fresh fetch on each release.
    */
   version?: string;
+  /**
+   * Audio output sample rate in Hz (typically `AudioContext.sampleRate`).
+   * The APU mixes and downsamples to this rate. Default 48000.
+   */
+  sampleRate?: number;
 }
 
 export async function init(opts: InitOptions): Promise<Emulator> {
@@ -135,12 +154,16 @@ export async function init(opts: InitOptions): Promise<Emulator> {
   const exports = await runtime.getAssemblyExports(assemblyName);
   const E: EmulatorExports = exports.GameBoyEmulator.Wasm.Emulator;
 
-  E.Init();
+  E.Init(opts.sampleRate ?? 48000);
 
   const width = E.GetFrameBufferWidth();
   const height = E.GetFrameBufferHeight();
   const length = E.GetFrameBufferLength();
   const ptr = E.GetFrameBufferPointer();
+
+  const audioPtr = E.GetAudioBufferPointer();
+  // The *view* over the heap can detach if the heap grows, so we re-derive
+  // it on each drainAudio() call rather than caching the Float32Array.
 
   const frameHandlers = new Set<() => void>();
 
@@ -173,5 +196,14 @@ export async function init(opts: InitOptions): Promise<Emulator> {
     },
     setButton: (button, pressed) => E.SetButton(button, pressed),
     getDebugState: () => E.GetDebugState(),
+    drainAudio: () => {
+      const frames = E.DrainAudio();
+      if (frames === 0) return _emptyF32;
+      const heap = runtime.localHeapViewF32();
+      const start = audioPtr / 4;
+      return heap.subarray(start, start + frames * 2);
+    },
   };
 }
+
+const _emptyF32 = new Float32Array(0);

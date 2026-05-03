@@ -32,12 +32,19 @@ public sealed class GameBoy
     private long _lastTimestamp;
     private double _tCycles;
 
+    private readonly Apu _apu;
+
     public GameBoy(IClock clock, IBatteryStore batteryStore)
-        : this(clock, batteryStore, new SystemTimeProvider())
+        : this(clock, batteryStore, new SystemTimeProvider(), 48000)
     {
     }
 
     public GameBoy(IClock clock, IBatteryStore batteryStore, ITimeProvider timeProvider)
+        : this(clock, batteryStore, timeProvider, 48000)
+    {
+    }
+
+    public GameBoy(IClock clock, IBatteryStore batteryStore, ITimeProvider timeProvider, int audioSampleRate)
     {
         _clock = clock;
         _mbcFactory = new MbcFactory(batteryStore, timeProvider);
@@ -47,7 +54,11 @@ public sealed class GameBoy
         var mbc = new NoCartridgeMbc();
         var joypad = new Joypad(interrupts);
         var timer = new Timer(interrupts);
-        var apu = new Apu();
+        var apu = new Apu(audioSampleRate);
+        // DIV bit-12 falling edge clocks the APU frame sequencer at 512 Hz
+        // (DMG); routing through this hook also captures the WriteDiv-resets-
+        // counter glitch that some games use to phase-shift envelopes.
+        timer.OnApuFrameSequencerTick = apu.OnFrameSequencerTick;
         var serial = new Serial(interrupts);
         var mmu = new Mmu(mbc, _ppu, joypad, timer, apu, serial, interrupts);
         _dma = new OamDmaController(mmu, _ppu);
@@ -55,11 +66,19 @@ public sealed class GameBoy
         _timer = timer;
         _joypad = joypad;
         _mmu = mmu;
-        _systemClock = new SystemClock(_ppu, timer, _dma);
+        _apu = apu;
+        _systemClock = new SystemClock(_ppu, timer, _dma, apu);
         _cpu = new Cpu(_dma, _systemClock, interrupts);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }
+
+    // Drain stereo float frames produced since the last call. `dest` is
+    // interleaved L,R; length must be even. Returns the number of frames
+    // (each = 2 floats) actually written. Underruns return 0; the host is
+    // responsible for buffering against jitter (e.g. an SAB ring buffer
+    // feeding an AudioWorklet).
+    public int DrainAudio(Span<float> dest) => _apu.DrainAudio(dest);
 
     public void LoadRom(byte[] rom)
     {
