@@ -53,7 +53,9 @@ public sealed class OamDmaController : IBus
             return;
         }
         if (_active && address < HramStart)
+        {
             return;
+        }
         _inner.Write(address, value);
     }
 
