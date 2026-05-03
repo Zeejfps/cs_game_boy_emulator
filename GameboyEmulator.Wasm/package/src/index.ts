@@ -13,6 +13,7 @@ interface EmulatorExports {
   GetFrameBufferLength(): number;
   GetFrameBufferPointer(): number;
   SetButton(button: number, pressed: boolean): void;
+  GetDebugState(): string;
 }
 
 /** Mirrors the C# `JoypadButton` enum — values are stable and crossed via WASM. */
@@ -96,6 +97,13 @@ export interface Emulator {
    * `setButton(button, true)` on press and `setButton(button, false)` on release.
    */
   setButton(button: JoypadButton, pressed: boolean): void;
+
+  /**
+   * Snapshot of CPU/PPU/interrupt state for debugging in-game freezes.
+   * Lines: registers; IME/IF/IE/halted; LCDC/STAT/LY/LYC/SCX/SCY/WX/WY;
+   * DIV/TIMA/TAC; bytes at PC; bytes at HL; stack contents.
+   */
+  getDebugState(): string;
 }
 
 export interface InitOptions {
@@ -164,5 +172,6 @@ export async function init(opts: InitOptions): Promise<Emulator> {
       return heap.subarray(ptr, ptr + length);
     },
     setButton: (button, pressed) => E.SetButton(button, pressed),
+    getDebugState: () => E.GetDebugState(),
   };
 }

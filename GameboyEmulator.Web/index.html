@@ -76,6 +76,85 @@
         color: inherit;
       }
 
+      #dialog-root {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      #dialog-root[hidden] { display: none; }
+      .dialog-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(8, 24, 32, 0.75);
+      }
+      .dialog-card {
+        position: relative;
+        background: #081820;
+        border: 2px solid #e0f8d0;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 420px;
+        width: 100%;
+        box-sizing: border-box;
+        color: #e0f8d0;
+      }
+      .dialog-title {
+        margin: 0 0 12px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .dialog-message {
+        margin: 0 0 20px;
+        font-size: 14px;
+        line-height: 1.5;
+        color: rgba(224, 248, 208, 0.85);
+        white-space: pre-line;
+      }
+      .dialog-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .dialog-btn {
+        padding: 10px 20px;
+        background: #346856;
+        border: 2px solid #e0f8d0;
+        color: #e0f8d0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .dialog-btn:active {
+        background: #e0f8d0;
+        color: #081820;
+      }
+      .dialog-btn.dialog-secondary {
+        background: transparent;
+      }
+      .dialog-btn.dialog-secondary:active {
+        background: rgba(224, 248, 208, 0.2);
+        color: #e0f8d0;
+      }
+      .dialog-btn.dialog-destructive {
+        background: #882020;
+        border-color: #f8a0a0;
+        color: #f8e0e0;
+      }
+      .dialog-btn.dialog-destructive:active {
+        background: #f8a0a0;
+        color: #081820;
+      }
+      .dialog-btn[hidden] { display: none; }
+
       /* Desktop default: pages flatten via display:contents so the picker DOM
          (h1 + file input) and the game DOM (canvas) coexist in <main>'s flex
          column exactly as the original single-view layout. */
@@ -296,6 +375,52 @@
           color: #081820;
           transform: scale(0.94);
         }
+
+        .save-menu {
+          position: relative;
+          display: inline-flex;
+        }
+        .save-popover {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          right: 0;
+          background: #346856;
+          border: 2px solid #e0f8d0;
+          border-radius: 8px;
+          padding: 4px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 170px;
+          z-index: 10;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-touch-callout: none;
+        }
+        .save-popover[hidden] { display: none; }
+        .save-popover-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 12px;
+          background: transparent;
+          border: none;
+          color: #e0f8d0;
+          font-size: 14px;
+          font-family: inherit;
+          text-align: left;
+          cursor: pointer;
+          border-radius: 4px;
+          touch-action: manipulation;
+        }
+        .save-popover-item:not(:disabled):active {
+          background: rgba(224, 248, 208, 0.2);
+        }
+        .save-popover-item:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
       }
 
       /* Touch portrait: canvas top, dpad+ab in middle row that absorbs leftover
@@ -425,6 +550,32 @@
           </div>
           <span class="version-text">dev</span>
           <div class="bottombar-actions">
+            <div class="save-menu">
+              <button id="save-menu-toggle" class="icon-btn" aria-label="Save file menu" aria-haspopup="true" aria-expanded="false" type="button">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                  <polyline points="14 3 14 9 20 9"/>
+                </svg>
+              </button>
+              <div id="save-popover" class="save-popover" hidden role="menu" aria-label="Save file menu">
+                <button class="save-popover-item" data-action="export" role="menuitem" type="button">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3v12"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <path d="M5 21h14"/>
+                  </svg>
+                  <span>Export Save</span>
+                </button>
+                <button class="save-popover-item" data-action="import" role="menuitem" type="button">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 21V9"/>
+                    <polyline points="7 14 12 9 17 14"/>
+                    <path d="M5 3h14"/>
+                  </svg>
+                  <span>Import Save</span>
+                </button>
+              </div>
+            </div>
             <button id="fullscreen-toggle" class="icon-btn" aria-label="Toggle fullscreen" type="button">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
@@ -440,6 +591,18 @@
         </footer>
       </div>
     </main>
+    <input id="save-import" type="file" accept=".sav,.srm" hidden />
+    <div id="dialog-root" hidden role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-message">
+      <div class="dialog-backdrop"></div>
+      <div class="dialog-card">
+        <h2 id="dialog-title" class="dialog-title"></h2>
+        <p id="dialog-message" class="dialog-message"></p>
+        <div class="dialog-actions">
+          <button class="dialog-btn dialog-secondary dialog-cancel" type="button"></button>
+          <button class="dialog-btn dialog-ok" type="button"></button>
+        </div>
+      </div>
+    </div>
     <footer class="page-footer">version <span class="version-text">dev</span></footer>
     <script type="module" src="/src/main.ts"></script>
   </body>

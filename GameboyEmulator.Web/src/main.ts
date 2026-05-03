@@ -29,6 +29,10 @@ const pixels = new Uint32Array(imageData.data.buffer);
 
 let emu: Emulator | null = null;
 let currentSaveKey: string | null = null;
+// Retained after LoadRom so save-import can soft-reset the cart with the
+// imported RAM, and save-export can name the download after the ROM file.
+let currentRomBytes: Uint8Array | null = null;
+let currentRomFileName: string | null = null;
 
 // Backstop for anything that escapes the per-callsite try/catches below
 // (event handlers, microtasks, etc.). Without these listeners, async errors
@@ -79,6 +83,122 @@ function persistCurrentSave(): void {
   }
 }
 
+// Cart header introspection — mirrors MbcFactory.cs. Used to gate the
+// save-export/import UI and validate imported file sizes.
+const RTC_TRAILER_SIZE = 48;
+function cartHasBattery(rom: Uint8Array): boolean {
+  const t = rom[0x0147];
+  return t === 0x03 || t === 0x0F || t === 0x10 || t === 0x13 || t === 0x1B || t === 0x1E;
+}
+function cartHasRtc(rom: Uint8Array): boolean {
+  const t = rom[0x0147];
+  return t === 0x0F || t === 0x10;
+}
+function cartRamSize(rom: Uint8Array): number {
+  switch (rom[0x0149]) {
+    case 0x00: return 0;
+    case 0x01: return 0x0800;
+    case 0x02: return 0x2000;
+    case 0x03: return 0x8000;
+    default: return 0;
+  }
+}
+// Sizes we accept for an imported .sav: canonical (matches what GetSaveData
+// produces) plus, for RTC carts, the RAM-only size emulators that don't write
+// the RTC trailer use.
+function expectedSaveSizes(rom: Uint8Array): number[] {
+  const ram = cartRamSize(rom);
+  const rtc = cartHasRtc(rom);
+  const canonical = ram + (rtc ? RTC_TRAILER_SIZE : 0);
+  if (rtc && ram > 0) return [canonical, ram];
+  return [canonical];
+}
+
+type DialogOpts = {
+  title: string;
+  message: string;
+  okLabel?: string;
+  cancelLabel?: string | null; // null = no cancel button (alert mode)
+  destructive?: boolean;
+};
+
+let dialogClose: ((result: boolean) => void) | null = null;
+
+function openDialog(opts: DialogOpts): Promise<boolean> {
+  // Resolve any in-flight dialog as cancelled before opening a new one.
+  if (dialogClose) dialogClose(false);
+
+  const root = document.getElementById('dialog-root') as HTMLElement;
+  const titleEl = document.getElementById('dialog-title') as HTMLElement;
+  const messageEl = document.getElementById('dialog-message') as HTMLElement;
+  const okBtn = root.querySelector('.dialog-ok') as HTMLButtonElement;
+  const cancelBtn = root.querySelector('.dialog-cancel') as HTMLButtonElement;
+  const backdrop = root.querySelector('.dialog-backdrop') as HTMLElement;
+
+  titleEl.textContent = opts.title;
+  messageEl.textContent = opts.message;
+  okBtn.textContent = opts.okLabel ?? 'OK';
+  okBtn.classList.toggle('dialog-destructive', !!opts.destructive);
+
+  const hasCancel = opts.cancelLabel !== null;
+  cancelBtn.hidden = !hasCancel;
+  if (hasCancel) cancelBtn.textContent = opts.cancelLabel ?? 'Cancel';
+
+  root.hidden = false;
+  // Default focus: cancel for destructive (so a stray Enter doesn't confirm),
+  // ok otherwise.
+  (opts.destructive && hasCancel ? cancelBtn : okBtn).focus();
+
+  return new Promise<boolean>((resolve) => {
+    const finish = (result: boolean) => {
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKey);
+      backdrop.removeEventListener('click', onBackdrop);
+      root.hidden = true;
+      dialogClose = null;
+      resolve(result);
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    };
+    const onBackdrop = (e: MouseEvent) => {
+      if (e.target === backdrop) finish(false);
+    };
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKey);
+    backdrop.addEventListener('click', onBackdrop);
+    dialogClose = finish;
+  });
+}
+
+function showConfirm(
+  title: string,
+  message: string,
+  opts?: { okLabel?: string; cancelLabel?: string; destructive?: boolean },
+): Promise<boolean> {
+  return openDialog({
+    title,
+    message,
+    okLabel: opts?.okLabel,
+    cancelLabel: opts?.cancelLabel ?? 'Cancel',
+    destructive: opts?.destructive,
+  });
+}
+
+function showAlert(title: string, message: string, opts?: { okLabel?: string }): Promise<void> {
+  return openDialog({
+    title,
+    message,
+    okLabel: opts?.okLabel,
+    cancelLabel: null,
+  }).then(() => undefined);
+}
+
 function paint(): void {
   if (!emu) return;
   const fb = emu.getFrameBuffer();
@@ -99,6 +219,132 @@ function loop(): void {
     return; // stop scheduling further frames; the user can load another ROM.
   }
   requestAnimationFrame(loop);
+}
+
+function setupSaveMenu(): void {
+  const toggleBtn = document.getElementById('save-menu-toggle') as HTMLButtonElement | null;
+  const popover = document.getElementById('save-popover') as HTMLElement | null;
+  const importInput = document.getElementById('save-import') as HTMLInputElement | null;
+  if (!toggleBtn || !popover || !importInput) return;
+
+  const exportBtn = popover.querySelector('[data-action="export"]') as HTMLButtonElement;
+  const importBtn = popover.querySelector('[data-action="import"]') as HTMLButtonElement;
+
+  let isOpen = false;
+
+  const open = () => {
+    if (isOpen) return;
+    const enabled = !!currentRomBytes && cartHasBattery(currentRomBytes);
+    exportBtn.disabled = !enabled;
+    importBtn.disabled = !enabled;
+    popover.hidden = false;
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    document.addEventListener('pointerdown', onOutside, true);
+    document.addEventListener('keydown', onKey);
+    isOpen = true;
+  };
+  const close = () => {
+    if (!isOpen) return;
+    popover.hidden = true;
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', onOutside, true);
+    document.removeEventListener('keydown', onKey);
+    isOpen = false;
+  };
+  const onOutside = (e: PointerEvent) => {
+    const t = e.target as Node;
+    if (popover.contains(t) || toggleBtn.contains(t)) return;
+    close();
+  };
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') close();
+  };
+
+  toggleBtn.addEventListener('click', () => {
+    if (isOpen) close(); else open();
+  });
+
+  exportBtn.addEventListener('click', () => {
+    close();
+    handleExport().catch((err) => console.error('Export failed:', err));
+  });
+  importBtn.addEventListener('click', () => {
+    close();
+    importInput.click();
+  });
+  importInput.addEventListener('change', () => {
+    const file = importInput.files?.[0];
+    // Reset so picking the same file again still fires 'change'.
+    importInput.value = '';
+    if (!file) return;
+    handleImport(file).catch((err) => console.error('Import failed:', err));
+  });
+}
+
+async function handleExport(): Promise<void> {
+  if (!emu || !currentRomBytes) return;
+  if (!cartHasBattery(currentRomBytes)) {
+    await showAlert('Export unavailable', 'This cart has no battery-backed save.');
+    return;
+  }
+  const bytes = emu.getSave();
+  if (!bytes || bytes.length === 0) {
+    await showAlert('Nothing to export', 'No save data has been written yet.');
+    return;
+  }
+  // Strip the .gb extension so the .sav sits next to the ROM in file managers.
+  const base = currentRomFileName
+    ? currentRomFileName.replace(/\.gbc?$/i, '')
+    : readCartTitle(currentRomBytes);
+  const blob = new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${base}.sav`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function handleImport(file: File): Promise<void> {
+  if (!emu || !currentRomBytes) return;
+  if (!cartHasBattery(currentRomBytes)) {
+    await showAlert('Import unavailable', 'This cart has no battery-backed save.');
+    return;
+  }
+
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch (err) {
+    console.error('Failed to read import file:', err);
+    await showAlert('Import failed', 'Could not read the selected file.');
+    return;
+  }
+
+  const valid = expectedSaveSizes(currentRomBytes);
+  if (!valid.includes(bytes.length)) {
+    await showAlert(
+      'Import failed',
+      `Save file size doesn't match this cart.\nGot ${bytes.length} bytes, expected ${valid.join(' or ')}.`,
+    );
+    return;
+  }
+
+  const ok = await showConfirm(
+    'Import save',
+    'Replace current save with imported file? Game will reset.',
+    { okLabel: 'Import', destructive: true },
+  );
+  if (!ok) return;
+
+  if (emu.isPoweredOn()) emu.powerOff();
+  emu.loadRom(currentRomBytes, bytes);
+  // Commit the imported save to localStorage immediately so closing the tab
+  // before any other persist trigger fires can't lose it.
+  persistCurrentSave();
+  emu.powerOn();
 }
 
 async function main(): Promise<void> {
@@ -241,8 +487,13 @@ async function main(): Promise<void> {
     fsBtn.classList.toggle('active', on);
   });
 
-  document.getElementById('power-off')?.addEventListener('click', () => {
-    if (!confirm('Power off and return to ROM picker? Your progress will be saved.')) return;
+  document.getElementById('power-off')?.addEventListener('click', async () => {
+    const ok = await showConfirm(
+      'Power off',
+      'Power off and return to ROM picker? Your progress will be saved.',
+      { okLabel: 'Power off' },
+    );
+    if (!ok) return;
     if (emu?.isPoweredOn()) {
       persistCurrentSave();
       emu.powerOff();
@@ -271,12 +522,16 @@ async function main(): Promise<void> {
 
       console.info(`Loading ROM "${title}" (${bytes.length} bytes, cart type 0x${bytes[0x0147].toString(16).padStart(2, '0')})`);
       emu.loadRom(bytes, restored);
+      currentRomBytes = bytes;
+      currentRomFileName = file.name;
       emu.powerOn();
       showPage('game');
     } catch (err) {
       console.error(`Failed to load ROM "${file.name}":`, err);
     }
   });
+
+  setupSaveMenu();
 
   // Save on tab close / mobile background. pagehide fires reliably on iOS;
   // visibilitychange covers tab-switching desktop browsers.
