@@ -151,7 +151,7 @@ public sealed partial class Cpu : ICpu
 
         if (InterruptMasterEnable && pending != InterruptType.None)
         {
-            ServicePendingInterrupt(pending);
+            ServicePendingInterrupt();
             return;
         }
 

@@ -62,20 +62,39 @@ public sealed partial class Cpu
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ServicePendingInterrupt(InterruptType pending)
+    private void ServicePendingInterrupt()
     {
-        var serviced = GetHighestPriority(pending);
-        _interrupts.Clear(serviced);
         InterruptMasterEnable = false;
 
         // 2 internal cycles before push (M1 + M2 of the 5-cycle dispatch).
         AdvanceClock(8);
 
+        // M3: high-byte push. If SP was $0000, this lands at $FFFF and
+        // mutates IE — and the *post-write* IE is what hardware uses to
+        // re-pick the vector. Mooneye's ie_push verifies this: an IE
+        // write here can cancel dispatch entirely (PC forced to $0000,
+        // IF untouched) or redirect to a different vector.
         Sp -= 2;
         WriteToBus((ushort)(Sp + 1), (byte)(Pc >> 8));
+
+        var serviced = GetHighestPriority(_interrupts.GetPending());
+
+        // M4: low-byte push happens unconditionally — even when the
+        // vector decision was cancelled the dispatch hardware still
+        // completes all 5 M-cycles. A write here landing on IE is too
+        // late to influence which vector fires.
         WriteToBus(Sp, (byte)(Pc & 0xFF));
 
-        Pc = GetInterruptVector(serviced);
+        if (serviced == InterruptType.None)
+        {
+            Pc = 0;
+        }
+        else
+        {
+            _interrupts.Clear(serviced);
+            Pc = GetInterruptVector(serviced);
+        }
+
         // M5: vector-fetch / PC-update internal cycle.
         AdvanceClock(4);
     }
