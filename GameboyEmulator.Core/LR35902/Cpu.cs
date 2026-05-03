@@ -92,34 +92,34 @@ public sealed partial class Cpu : ICpu
         UpdateInterruptTimer();
     }
     
-    private byte Read(ushort address)
+    private byte ReadFromBus(ushort address)
     {
-        Tick(4);
+        AdvanceClock(4);
         return _bus.Read(address);
     }
     
-    private ushort ReadWord(ushort address)
+    private ushort ReadWordFromBus(ushort address)
     {
-        var lo = Read(address);
-        var hi = Read((ushort)(address + 1));
+        var lo = ReadFromBus(address);
+        var hi = ReadFromBus((ushort)(address + 1));
         return (ushort)((hi << 8) | lo);
     }
 
-    private void Write(ushort address, byte value)
+    private void WriteToBus(ushort address, byte value)
     {
-        Tick(4);
+        AdvanceClock(4);
         _bus.Write(address, value);
     }
     
-    private void WriteWord(ushort address, ushort value)
+    private void WriteWordToBus(ushort address, ushort value)
     {
         var lo = (byte)(value & 0xFF);
         var hi = (byte)(value >> 8);
-        Write(address, lo);
-        Write((ushort)(address + 1), hi);
+        WriteToBus(address, lo);
+        WriteToBus((ushort)(address + 1), hi);
     }
 
-    private void Tick(int cycles)
+    private void AdvanceClock(int cycles)
     {
         _systemClock.Advance(cycles);
     }
@@ -136,14 +136,14 @@ public sealed partial class Cpu : ICpu
             {
                 IsSleeping = false;
             }
-            Tick(4);
+            AdvanceClock(4);
             return;
         }
 
         var pending = _interrupts.GetPending();
         if (IsWaitingForInterrupt && pending == InterruptType.None)
         {
-            Tick(4);
+            AdvanceClock(4);
             return;
         }
 
@@ -532,9 +532,9 @@ public sealed partial class Cpu : ICpu
         if (_haltBugPending)
         {
             _haltBugPending = false;
-            return Read(Pc);
+            return ReadFromBus(Pc);
         }
-        return Read(Pc++);
+        return ReadFromBus(Pc++);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

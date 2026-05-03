@@ -26,7 +26,7 @@ public sealed partial class Cpu
     private void LdBa() { Rb = Ra; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdBm() { Rb = Read(Rhl); }
+    private void LdBm() { Rb = ReadFromBus(Rhl); }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,7 +51,7 @@ public sealed partial class Cpu
     private void LdCa() { Rc = Ra; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdCm() { Rc = Read(Rhl); }
+    private void LdCm() { Rc = ReadFromBus(Rhl); }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -76,7 +76,7 @@ public sealed partial class Cpu
     private void LdDa() { Rd = Ra; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdDm() { Rd = Read(Rhl); }
+    private void LdDm() { Rd = ReadFromBus(Rhl); }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -101,7 +101,7 @@ public sealed partial class Cpu
     private void LdEa() { Re = Ra; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdEm() { Re = Read(Rhl); }
+    private void LdEm() { Re = ReadFromBus(Rhl); }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -126,7 +126,7 @@ public sealed partial class Cpu
     private void LdHa() { Rh = Ra; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdHm() { Rh = Read(Rhl); }
+    private void LdHm() { Rh = ReadFromBus(Rhl); }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,7 +151,7 @@ public sealed partial class Cpu
     private void LdLa() { Rl = Ra; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdLm() { Rl = Read(Rhl); }
+    private void LdLm() { Rl = ReadFromBus(Rhl); }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -176,27 +176,27 @@ public sealed partial class Cpu
     private void LdAa() { }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdAm() { Ra = Read(Rhl); }
+    private void LdAm() { Ra = ReadFromBus(Rhl); }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdMb() { Write(Rhl, Rb); }
+    private void LdMb() { WriteToBus(Rhl, Rb); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdMc() { Write(Rhl, Rc); }
+    private void LdMc() { WriteToBus(Rhl, Rc); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdMd() { Write(Rhl, Rd); }
+    private void LdMd() { WriteToBus(Rhl, Rd); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdMe() { Write(Rhl, Re); }
+    private void LdMe() { WriteToBus(Rhl, Re); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdMh() { Write(Rhl, Rh); }
+    private void LdMh() { WriteToBus(Rhl, Rh); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdMl() { Write(Rhl, Rl); }
+    private void LdMl() { WriteToBus(Rhl, Rl); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdMa() { Write(Rhl, Ra); }
+    private void LdMa() { WriteToBus(Rhl, Ra); }
 }

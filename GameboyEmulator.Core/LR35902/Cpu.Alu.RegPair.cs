@@ -5,31 +5,31 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void IncBc() { Rbc = (ushort)(Rbc + 1); Tick(4); }
+    private void IncBc() { Rbc = (ushort)(Rbc + 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void IncDe() { Rde = (ushort)(Rde + 1); Tick(4); }
+    private void IncDe() { Rde = (ushort)(Rde + 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void IncHl() { Rhl = (ushort)(Rhl + 1); Tick(4); }
+    private void IncHl() { Rhl = (ushort)(Rhl + 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void IncSp() { Sp = (ushort)(Sp + 1); Tick(4); }
+    private void IncSp() { Sp = (ushort)(Sp + 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DecBc() { Rbc = (ushort)(Rbc - 1); Tick(4); }
+    private void DecBc() { Rbc = (ushort)(Rbc - 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DecDe() { Rde = (ushort)(Rde - 1); Tick(4); }
+    private void DecDe() { Rde = (ushort)(Rde - 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DecHl() { Rhl = (ushort)(Rhl - 1); Tick(4); }
+    private void DecHl() { Rhl = (ushort)(Rhl - 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DecSp() { Sp = (ushort)(Sp - 1); Tick(4); }
+    private void DecSp() { Sp = (ushort)(Sp - 1); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AddHl(ushort value) { AddHL(value); Tick(4); }
+    private void AddHl(ushort value) { AddHL(value); AdvanceClock(4); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AddHlBc() => AddHl(Rbc);
@@ -48,6 +48,6 @@ public sealed partial class Cpu
     {
         var r8 = (sbyte)Fetch();
         Sp = AddSpSigned(r8);
-        Tick(8);
+        AdvanceClock(8);
     }
 }

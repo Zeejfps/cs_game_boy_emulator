@@ -7,49 +7,49 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RetNz()
     {
-        Tick(4);
+        AdvanceClock(4);
         if ((Flags & CpuFlags.Z) != 0)
             return;
 
-        Pc = ReadWord(Sp);
+        Pc = ReadWordFromBus(Sp);
         Sp += 2;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RetNc()
     {
-        Tick(4);
+        AdvanceClock(4);
         if ((Flags & CpuFlags.C) != 0)
             return;
 
-        Pc = ReadWord(Sp);
+        Pc = ReadWordFromBus(Sp);
         Sp += 2;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RetZ()
     {
-        Tick(4);
+        AdvanceClock(4);
         if ((Flags & CpuFlags.Z) == 0)
             return;
 
-        Pc = ReadWord(Sp);
+        Pc = ReadWordFromBus(Sp);
         Sp += 2;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RetC()
     {
-        Tick(4);
+        AdvanceClock(4);
         if ((Flags & CpuFlags.C) == 0)
             return;
 
-        Pc = ReadWord(Sp);
+        Pc = ReadWordFromBus(Sp);
         Sp += 2;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,7 +59,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) != 0)
             return;
         Pc = address;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,7 +69,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) != 0)
             return;
         Pc = address;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,7 +79,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) == 0)
             return;
         Pc = address;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -89,15 +89,15 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) == 0)
             return;
         Pc = address;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Ret()
     {
-        Pc = ReadWord(Sp);
+        Pc = ReadWordFromBus(Sp);
         Sp += 2;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -110,9 +110,9 @@ public sealed partial class Cpu
     private void Call()
     {
         var address = FetchWord();
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        WriteWord(Sp, Pc);
+        WriteWordToBus(Sp, Pc);
         Pc = address;
     }
 
@@ -120,7 +120,7 @@ public sealed partial class Cpu
     private void Jp()
     {
         Pc = FetchWord();
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -129,9 +129,9 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) != 0)
             return;
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        WriteWord(Sp, Pc);
+        WriteWordToBus(Sp, Pc);
         Pc = address;
     }
 
@@ -141,9 +141,9 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.C) != 0)
             return;
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        WriteWord(Sp, Pc);
+        WriteWordToBus(Sp, Pc);
         Pc = address;
     }
 
@@ -153,9 +153,9 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.Z) == 0)
             return;
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        WriteWord(Sp, Pc);
+        WriteWordToBus(Sp, Pc);
         Pc = address;
     }
 
@@ -165,18 +165,18 @@ public sealed partial class Cpu
         var address = FetchWord();
         if ((Flags & CpuFlags.C) == 0)
             return;
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        WriteWord(Sp, Pc);
+        WriteWordToBus(Sp, Pc);
         Pc = address;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Rst(ushort vector)
     {
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        WriteWord(Sp, Pc);
+        WriteWordToBus(Sp, Pc);
         Pc = vector;
     }
 
@@ -209,7 +209,7 @@ public sealed partial class Cpu
     {
         var offset = (sbyte)Fetch();
         Pc = (ushort)(Pc + offset);
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -219,7 +219,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) != 0)
             return;
         Pc = (ushort)(Pc + offset);
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -229,7 +229,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.Z) == 0)
             return;
         Pc = (ushort)(Pc + offset);
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -239,7 +239,7 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) != 0)
             return;
         Pc = (ushort)(Pc + offset);
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -249,6 +249,6 @@ public sealed partial class Cpu
         if ((Flags & CpuFlags.C) == 0)
             return;
         Pc = (ushort)(Pc + offset);
-        Tick(4);
+        AdvanceClock(4);
     }
 }

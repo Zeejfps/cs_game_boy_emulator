@@ -25,10 +25,10 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Reti()
     {
-        Pc = ReadWord(Sp);
+        Pc = ReadWordFromBus(Sp);
         Sp += 2;
         InterruptMasterEnable = true;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,15 +69,15 @@ public sealed partial class Cpu
         InterruptMasterEnable = false;
 
         // 2 internal cycles before push (M1 + M2 of the 5-cycle dispatch).
-        Tick(8);
+        AdvanceClock(8);
 
         Sp -= 2;
-        Write((ushort)(Sp + 1), (byte)(Pc >> 8));
-        Write(Sp, (byte)(Pc & 0xFF));
+        WriteToBus((ushort)(Sp + 1), (byte)(Pc >> 8));
+        WriteToBus(Sp, (byte)(Pc & 0xFF));
 
         Pc = GetInterruptVector(serviced);
         // M5: vector-fetch / PC-update internal cycle.
-        Tick(4);
+        AdvanceClock(4);
     }
 
     // Lowest bit wins: VBlank > LcdStat > Timer > Serial > Joypad.

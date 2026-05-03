@@ -32,7 +32,7 @@ public sealed partial class Cpu
     private void AddA() => Add(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AddM() { Ra = Add8(Ra, Read(Rhl), false); }
+    private void AddM() { Ra = Add8(Ra, ReadFromBus(Rhl), false); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AdcB() => Adc(Rb);
@@ -56,7 +56,7 @@ public sealed partial class Cpu
     private void AdcA() => Adc(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AdcM() { Ra = Add8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0); }
+    private void AdcM() { Ra = Add8(Ra, ReadFromBus(Rhl), (Flags & CpuFlags.C) != 0); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Sub(byte value) { Ra = Sub8(Ra, value, false); }
@@ -83,7 +83,7 @@ public sealed partial class Cpu
     private void SubA() => Sub(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SubM() { Ra = Sub8(Ra, Read(Rhl), false); }
+    private void SubM() { Ra = Sub8(Ra, ReadFromBus(Rhl), false); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Sbc(byte value) { Ra = Sub8(Ra, value, (Flags & CpuFlags.C) != 0); }
@@ -110,7 +110,7 @@ public sealed partial class Cpu
     private void SbcA() => Sbc(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SbcM() { Ra = Sub8(Ra, Read(Rhl), (Flags & CpuFlags.C) != 0); }
+    private void SbcM() { Ra = Sub8(Ra, ReadFromBus(Rhl), (Flags & CpuFlags.C) != 0); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Inc(byte value)
@@ -143,7 +143,7 @@ public sealed partial class Cpu
     private void IncA() { Ra = Inc(Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void IncM() { Write(Rhl, Inc(Read(Rhl))); }
+    private void IncM() { WriteToBus(Rhl, Inc(ReadFromBus(Rhl))); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private byte Dec(byte value)
@@ -176,5 +176,5 @@ public sealed partial class Cpu
     private void DecA() { Ra = Dec(Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DecM() { Write(Rhl, Dec(Read(Rhl))); }
+    private void DecM() { WriteToBus(Rhl, Dec(ReadFromBus(Rhl))); }
 }

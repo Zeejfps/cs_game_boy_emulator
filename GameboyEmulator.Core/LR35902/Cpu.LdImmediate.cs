@@ -29,6 +29,6 @@ public sealed partial class Cpu
     private void LdMn()
     {
         var value = Fetch();
-        Write(Rhl, value);
+        WriteToBus(Rhl, value);
     }
 }

@@ -42,7 +42,7 @@ public sealed partial class Cpu
     private void AndA() => And(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AndM() => And(Read(Rhl));
+    private void AndM() => And(ReadFromBus(Rhl));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void XorB() => Xor(Rb);
@@ -66,7 +66,7 @@ public sealed partial class Cpu
     private void XorA() => Xor(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void XorM() => Xor(Read(Rhl));
+    private void XorM() => Xor(ReadFromBus(Rhl));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Or(byte value)
@@ -98,7 +98,7 @@ public sealed partial class Cpu
     private void OrA() => Or(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void OrM() => Or(Read(Rhl));
+    private void OrM() => Or(ReadFromBus(Rhl));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Cp(byte value)
@@ -128,5 +128,5 @@ public sealed partial class Cpu
     private void CpA() => Cp(Ra);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void CpM() => Cp(Read(Rhl));
+    private void CpM() => Cp(ReadFromBus(Rhl));
 }

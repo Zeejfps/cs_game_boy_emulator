@@ -7,74 +7,74 @@ public sealed partial class Cpu
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PopBc()
     {
-        Rbc = ReadWord(Sp);
+        Rbc = ReadWordFromBus(Sp);
         Sp += 2;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PushBc()
     {
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        Write((ushort)(Sp + 1), Rb);
-        Write(Sp, Rc);
+        WriteToBus((ushort)(Sp + 1), Rb);
+        WriteToBus(Sp, Rc);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PopDe()
     {
-        Rde = ReadWord(Sp);
+        Rde = ReadWordFromBus(Sp);
         Sp += 2;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PushDe()
     {
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        Write((ushort)(Sp + 1), Rd);
-        Write(Sp, Re);
+        WriteToBus((ushort)(Sp + 1), Rd);
+        WriteToBus(Sp, Re);
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PopHl()
     {
-        Rhl = ReadWord(Sp);
+        Rhl = ReadWordFromBus(Sp);
         Sp += 2;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PushHl()
     {
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        Write((ushort)(Sp + 1), Rh);
-        Write(Sp, Rl);
+        WriteToBus((ushort)(Sp + 1), Rh);
+        WriteToBus(Sp, Rl);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PopAf()
     {
-        Flags = (CpuFlags)Read(Sp);
-        Ra = Read((ushort)(Sp + 1));
+        Flags = (CpuFlags)ReadFromBus(Sp);
+        Ra = ReadFromBus((ushort)(Sp + 1));
         Sp += 2;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PushAf()
     {
-        Tick(4);
+        AdvanceClock(4);
         Sp -= 2;
-        Write((ushort)(Sp + 1), Ra);
-        Write(Sp, (byte)Flags);
+        WriteToBus((ushort)(Sp + 1), Ra);
+        WriteToBus(Sp, (byte)Flags);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LdSpHl()
     {
         Sp = Rhl;
-        Tick(4);
+        AdvanceClock(4);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,6 +82,6 @@ public sealed partial class Cpu
     {
         var r8 = (sbyte)Fetch();
         Rhl = AddSpSigned(r8);
-        Tick(4);
+        AdvanceClock(4);
     }
 }

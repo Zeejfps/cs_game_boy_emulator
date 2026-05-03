@@ -5,22 +5,22 @@ namespace GameBoyEmulator.Core.LR35902;
 public sealed partial class Cpu
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdABc() { Ra = Read(Rbc); }
+    private void LdABc() { Ra = ReadFromBus(Rbc); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdADe() { Ra = Read(Rde); }
+    private void LdADe() { Ra = ReadFromBus(Rde); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdBcA() { Write(Rbc, Ra); }
+    private void LdBcA() { WriteToBus(Rbc, Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdDeA() { Write(Rde, Ra); }
+    private void LdDeA() { WriteToBus(Rde, Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LdHlIncA()
     {
         var hl = Rhl;
-        Write(hl, Ra);
+        WriteToBus(hl, Ra);
         Rhl = (ushort)(hl + 1);
     }
 
@@ -28,7 +28,7 @@ public sealed partial class Cpu
     private void LdAHlInc()
     {
         var hl = Rhl;
-        Ra = Read(hl);
+        Ra = ReadFromBus(hl);
         Rhl = (ushort)(hl + 1);
     }
 
@@ -36,7 +36,7 @@ public sealed partial class Cpu
     private void LdHlDecA()
     {
         var hl = Rhl;
-        Write(hl, Ra);
+        WriteToBus(hl, Ra);
         Rhl = (ushort)(hl - 1);
     }
 
@@ -44,7 +44,7 @@ public sealed partial class Cpu
     private void LdAHlDec()
     {
         var hl = Rhl;
-        Ra = Read(hl);
+        Ra = ReadFromBus(hl);
         Rhl = (ushort)(hl - 1);
     }
 
@@ -52,40 +52,40 @@ public sealed partial class Cpu
     private void LdA16A()
     {
         var address = FetchWord();
-        Write(address, Ra);
+        WriteToBus(address, Ra);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LdAA16()
     {
         var address = FetchWord();
-        Ra = Read(address);
+        Ra = ReadFromBus(address);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LdhA8A()
     {
         var offset = Fetch();
-        Write((ushort)(0xFF00 + offset), Ra);
+        WriteToBus((ushort)(0xFF00 + offset), Ra);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LdhAA8()
     {
         var offset = Fetch();
-        Ra = Read((ushort)(0xFF00 + offset));
+        Ra = ReadFromBus((ushort)(0xFF00 + offset));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdCA() { Write((ushort)(0xFF00 + Rc), Ra); }
+    private void LdCA() { WriteToBus((ushort)(0xFF00 + Rc), Ra); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void LdAC() { Ra = Read((ushort)(0xFF00 + Rc)); }
+    private void LdAC() { Ra = ReadFromBus((ushort)(0xFF00 + Rc)); }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void LdA16Sp()
     {
         var address = FetchWord();
-        WriteWord(address, Sp);
+        WriteWordToBus(address, Sp);
     }
 }
