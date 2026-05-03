@@ -264,33 +264,45 @@ public sealed class Mbc3 : IMbc
 
     private void WriteRtcTrailer(Span<byte> dest)
     {
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[0..], _rtcSeconds);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[4..], _rtcMinutes);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[8..], _rtcHours);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[12..], _rtcDayLow);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[16..], _rtcDayHigh);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[20..], _latchedSeconds);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[24..], _latchedMinutes);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[28..], _latchedHours);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[32..], _latchedDayLow);
-        BinaryPrimitives.WriteUInt32LittleEndian(dest[36..], _latchedDayHigh);
+        WriteUInt32Le(dest, 0, _rtcSeconds);
+        WriteUInt32Le(dest, 4, _rtcMinutes);
+        WriteUInt32Le(dest, 8, _rtcHours);
+        WriteUInt32Le(dest, 12, _rtcDayLow);
+        WriteUInt32Le(dest, 16, _rtcDayHigh);
+        WriteUInt32Le(dest, 20, _latchedSeconds);
+        WriteUInt32Le(dest, 24, _latchedMinutes);
+        WriteUInt32Le(dest, 28, _latchedHours);
+        WriteUInt32Le(dest, 32, _latchedDayLow);
+        WriteUInt32Le(dest, 36, _latchedDayHigh);
         var unix = new DateTimeOffset(_baseTimeUtc, TimeSpan.Zero).ToUnixTimeSeconds();
-        BinaryPrimitives.WriteInt64LittleEndian(dest[40..], unix);
+        WriteInt64Le(dest, 40, unix);
     }
 
     private void ReadRtcTrailer(ReadOnlySpan<byte> src)
     {
-        _rtcSeconds = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[0..]);
-        _rtcMinutes = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[4..]);
-        _rtcHours = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[8..]);
-        _rtcDayLow = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[12..]);
-        _rtcDayHigh = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[16..]);
-        _latchedSeconds = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[20..]);
-        _latchedMinutes = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[24..]);
-        _latchedHours = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[28..]);
-        _latchedDayLow = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[32..]);
-        _latchedDayHigh = (byte)BinaryPrimitives.ReadUInt32LittleEndian(src[36..]);
-        var unix = BinaryPrimitives.ReadInt64LittleEndian(src[40..]);
+        _rtcSeconds = (byte)ReadUInt32Le(src, 0);
+        _rtcMinutes = (byte)ReadUInt32Le(src, 4);
+        _rtcHours = (byte)ReadUInt32Le(src, 8);
+        _rtcDayLow = (byte)ReadUInt32Le(src, 12);
+        _rtcDayHigh = (byte)ReadUInt32Le(src, 16);
+        _latchedSeconds = (byte)ReadUInt32Le(src, 20);
+        _latchedMinutes = (byte)ReadUInt32Le(src, 24);
+        _latchedHours = (byte)ReadUInt32Le(src, 28);
+        _latchedDayLow = (byte)ReadUInt32Le(src, 32);
+        _latchedDayHigh = (byte)ReadUInt32Le(src, 36);
+        var unix = ReadInt64Le(src, 40);
         _baseTimeUtc = DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime;
     }
+
+    private static void WriteUInt32Le(Span<byte> dest, int offset, uint value)
+        => BinaryPrimitives.WriteUInt32LittleEndian(dest[offset..], value);
+
+    private static void WriteInt64Le(Span<byte> dest, int offset, long value)
+        => BinaryPrimitives.WriteInt64LittleEndian(dest[offset..], value);
+
+    private static uint ReadUInt32Le(ReadOnlySpan<byte> src, int offset)
+        => BinaryPrimitives.ReadUInt32LittleEndian(src[offset..]);
+
+    private static long ReadInt64Le(ReadOnlySpan<byte> src, int offset)
+        => BinaryPrimitives.ReadInt64LittleEndian(src[offset..]);
 }
