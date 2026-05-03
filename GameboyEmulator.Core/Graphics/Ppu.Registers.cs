@@ -27,7 +27,10 @@ public sealed partial class Ppu
                 _statSources = (StatFlags)value & StatFlags.Sources;
                 if (_isLcdEnabled)
                 {
-                    _statLine = false;
+                    // Re-evaluate the OR-of-sources line without first
+                    // forcing it low — forcing a rising edge here would fire
+                    // a spurious STAT IRQ on every STAT write and defeats
+                    // STAT IRQ blocking (Mooneye stat_irq_blocking).
                     UpdateStatLine();
                 }
                 break;
