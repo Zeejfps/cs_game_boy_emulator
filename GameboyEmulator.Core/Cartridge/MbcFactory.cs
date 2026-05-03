@@ -37,6 +37,13 @@ public sealed class MbcFactory
             0x11 => new Mbc3(rom, 0, hasBattery: false, hasRtc: false, _batteryStore, _timeProvider, title),
             0x12 => new Mbc3(rom, ReadRamSize(rom), hasBattery: false, hasRtc: false, _batteryStore, _timeProvider, title),
             0x13 => new Mbc3(rom, ReadRamSize(rom), hasBattery: true, hasRtc: false, _batteryStore, _timeProvider, title),
+            0x19 => new Mbc5(rom, 0, hasBattery: false, _batteryStore, title),
+            0x1A => new Mbc5(rom, ReadRamSize(rom), hasBattery: false, _batteryStore, title),
+            0x1B => new Mbc5(rom, ReadRamSize(rom), hasBattery: true, _batteryStore, title),
+            // 0x1C-0x1E add rumble; we don't model rumble but the MBC behaves identically.
+            0x1C => new Mbc5(rom, 0, hasBattery: false, _batteryStore, title),
+            0x1D => new Mbc5(rom, ReadRamSize(rom), hasBattery: false, _batteryStore, title),
+            0x1E => new Mbc5(rom, ReadRamSize(rom), hasBattery: true, _batteryStore, title),
             _ => throw new NotSupportedException($"Cartridge type 0x{cartType:X2} is not supported")
         };
     }
