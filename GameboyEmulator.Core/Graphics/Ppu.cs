@@ -10,7 +10,14 @@ public sealed partial class Ppu : IPpu
     
     private const int DotsPerLine    = 456;
     private const int LinesPerFrame  = 154;
-    private const int OamScanEndDot  = 80;
+    // OAM scan is logically 80 dots, but the mode register has 1 dot of read
+    // latency on real hardware: a STAT read on the exact cycle of mode 2→3
+    // transition still sees mode 2. Modeling this directly is fiddly because
+    // it interacts with our "Tick advances state, then Read" ordering — so
+    // we offset the transition by 1 dot here, which produces the same
+    // observable timing for STAT polls (Mooneye's intr_2_mode3_timing,
+    // intr_2_0_timing, intr_2_oam_ok_timing).
+    private const int OamScanEndDot  = 81;
 
     private const int MaxSpritesPerLine = 10;
 
