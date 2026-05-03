@@ -117,6 +117,11 @@ async function main(): Promise<void> {
   requestAnimationFrame(loop);
 
   window.addEventListener('keydown', (e) => {
+    if (e.key === '`' && emu) {
+      e.preventDefault();
+      console.log(emu.getDebugState());
+      return;
+    }
     const button = KEY_MAP[e.key];
     if (button === undefined || !emu) return;
     e.preventDefault();

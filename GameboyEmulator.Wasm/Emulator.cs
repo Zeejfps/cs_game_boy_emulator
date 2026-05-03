@@ -82,6 +82,9 @@ public static partial class Emulator
         => Gb().SetButton((JoypadButton)button, pressed);
 
     [JSExport]
+    public static string GetDebugState() => Gb().GetDebugState();
+
+    [JSExport]
     public static int GetFrameBufferWidth() => Ppu.ScreenWidth;
 
     [JSExport]

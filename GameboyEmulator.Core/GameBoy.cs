@@ -133,6 +133,59 @@ public sealed class GameBoy
     public void SetButton(JoypadButton button, bool pressed) => _joypad.SetButton(button, pressed);
 
     public void FlushBatteryRam() => _mmu.FlushMbc();
+
+    // One-shot CPU/PPU/interrupt snapshot for debugging in-game freezes.
+    // Reading registers via the MMU goes through the full bus path, so it'll
+    // observe whatever the game would observe — including PPU mode-restricted
+    // returns. Memory reads do NOT advance the clock (they bypass the CPU's
+    // ReadFromBus); they're a passive peek.
+    public string GetDebugState()
+    {
+        var c = _cpu;
+        var pc = c.Pc;
+        var sp = c.Sp;
+        var ie  = _mmu.Read(0xFFFF);
+        var iflag = _mmu.Read(0xFF0F);
+        var lcdc = _mmu.Read(0xFF40);
+        var stat = _mmu.Read(0xFF41);
+        var ly   = _mmu.Read(0xFF44);
+        var lyc  = _mmu.Read(0xFF45);
+        var scx  = _mmu.Read(0xFF43);
+        var scy  = _mmu.Read(0xFF42);
+        var wx   = _mmu.Read(0xFF4B);
+        var wy   = _mmu.Read(0xFF4A);
+        var div  = _mmu.Read(0xFF04);
+        var tima = _mmu.Read(0xFF05);
+        var tac  = _mmu.Read(0xFF07);
+        var hl = (ushort)((c.Rh << 8) | c.Rl);
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"PC={pc:X4} SP={sp:X4} ");
+        sb.Append($"AF={c.Ra:X2}{(byte)c.Flags:X2} BC={c.Rb:X2}{c.Rc:X2} DE={c.Rd:X2}{c.Re:X2} HL={c.Rh:X2}{c.Rl:X2}\n");
+        sb.Append($"IME={(c.InterruptMasterEnable?1:0)} IF={iflag:X2} IE={ie:X2} ");
+        sb.Append($"halted={(c.IsWaitingForInterrupt?1:0)} stop={(c.IsSleeping?1:0)}\n");
+        sb.Append($"LCDC={lcdc:X2} STAT={stat:X2} LY={ly:X2} LYC={lyc:X2} ");
+        sb.Append($"SCX={scx:X2} SCY={scy:X2} WX={wx:X2} WY={wy:X2}\n");
+        sb.Append($"DIV={div:X2} TIMA={tima:X2} TAC={tac:X2}\n");
+
+        sb.Append($"bytes@PC:");
+        for (var i = 0; i < 16; i++) sb.Append($" {_mmu.Read((ushort)(pc + i)):X2}");
+        sb.Append('\n');
+
+        sb.Append($"bytes@HL ({c.Rh:X2}{c.Rl:X2}):");
+        for (var i = 0; i < 8; i++) sb.Append($" {_mmu.Read((ushort)(hl + i)):X2}");
+        sb.Append('\n');
+
+        sb.Append($"stack@SP:");
+        for (var i = 0; i < 16; i += 2)
+        {
+            var lo = _mmu.Read((ushort)(sp + i));
+            var hi = _mmu.Read((ushort)(sp + i + 1));
+            sb.Append($" {hi:X2}{lo:X2}");
+        }
+
+        return sb.ToString();
+    }
     
     private void Clock_OnTicked()
     {
