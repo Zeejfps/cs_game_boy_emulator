@@ -43,11 +43,11 @@ public sealed partial class Cpu : ICpu
 
     private int _enableInterruptsTimer;
     private bool _haltBugPending;
-    private readonly IMemoryBus _mmu;
+    private readonly IBus _mmu;
     private readonly IBusClock _busClock;
     private readonly IInterrupts _interrupts;
 
-    public Cpu(IMemoryBus mmu, IBusClock busClock, IInterrupts interrupts)
+    public Cpu(IBus mmu, IBusClock busClock, IInterrupts interrupts)
     {
         _mmu = mmu;
         _interrupts = interrupts;

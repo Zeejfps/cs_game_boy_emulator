@@ -5,7 +5,7 @@ using GameBoyEmulator.Core.LR35902;
 
 namespace GameBoyEmulator.Core;
 
-public sealed class Mmu : IMemoryBus
+public sealed class Mmu : IBus
 {
     private const ushort InterruptFlagAddress = 0xFF0F;
     private const ushort InterruptEnableAddress = 0xFFFF;

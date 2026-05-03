@@ -13,7 +13,7 @@ namespace GameBoyEmulator.Core.Graphics;
 //
 // The controller's own source reads call _inner.Read directly, bypassing the
 // block — same as DMA being the bus master in hardware.
-public sealed class OamDmaController : IMemoryBus
+public sealed class OamDmaController : IBus
 {
     private const ushort DmaRegister = 0xFF46;
     private const ushort HramStart = 0xFF80;
@@ -21,7 +21,7 @@ public sealed class OamDmaController : IMemoryBus
     private const int TicksPerByte = 4;
     private const int SetupTicks = 4;
 
-    private readonly IMemoryBus _inner;
+    private readonly IBus _inner;
     private readonly IPpu _ppu;
 
     private bool _active;
@@ -30,7 +30,7 @@ public sealed class OamDmaController : IMemoryBus
     private int _pendingTicks;
     private int _setupTicks;
 
-    public OamDmaController(IMemoryBus inner, IPpu ppu)
+    public OamDmaController(IBus inner, IPpu ppu)
     {
         _inner = inner;
         _ppu = ppu;

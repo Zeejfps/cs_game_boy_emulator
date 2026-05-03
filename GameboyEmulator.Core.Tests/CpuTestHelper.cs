@@ -25,7 +25,7 @@ public static class CpuExtensions
     }
 }
 
-public class FakeMmu : IMemoryBus
+public class FakeMmu : IBus
 {
     private readonly byte[] _ram = new byte[64 * 1024];
     public Interrupts Interrupts { get; } = new();
