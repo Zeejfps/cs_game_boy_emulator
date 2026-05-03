@@ -83,7 +83,13 @@ public sealed class OamDmaController : IBus
             _pendingTicks -= TicksPerByte;
             if (_byteIndex < OamSize)
             {
-                var src = (ushort)((_sourcePage << 8) | _byteIndex);
+                // DMG quirk: source pages $E0-$FF read echo-of-WRAM
+                // ($C0-$DF), not OAM/IO/HRAM. Mooneye's
+                // oam_dma/sources-GS verifies this for $FE and $FF in
+                // particular — without the mask DMA from $FE would copy
+                // OAM into itself.
+                var page = _sourcePage >= 0xE0 ? (byte)(_sourcePage - 0x20) : _sourcePage;
+                var src = (ushort)((page << 8) | _byteIndex);
                 var value = _inner.Read(src);
                 _ppu.WriteOam((ushort)_byteIndex, value);
                 _byteIndex++;
