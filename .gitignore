@@ -12,3 +12,6 @@ GameboyEmulator.Core.Tests/TestRoms/**/*.gb
 
 # dmg-acid2 reference image — fetched/converted per TestRoms/dmg-acid2/README.md, not checked in.
 GameboyEmulator.Core.Tests/TestRoms/**/*.bin
+
+# BenchmarkDotNet output (per-run reports + exports).
+BenchmarkDotNet.Artifacts/
