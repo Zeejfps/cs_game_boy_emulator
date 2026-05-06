@@ -18,7 +18,7 @@ This is the third emulator I've built, working my way up in complexity:
 - PPU: pixel FIFO with background, window, and sprites; STAT line bug
 - Timer (DIV/TIMA) and joypad with interrupts
 - Cartridge: ROM-only (MBC0) — MBC1+ not yet implemented
-- APU: stub (no audio)
+- APU: first pass — stereo output via AudioWorklet (cross-origin isolation required)
 - Mobile: on-screen D-pad / A / B / Start / Select with portrait scaling
 
 ## Controls (keyboard)
@@ -30,6 +30,7 @@ This is the third emulator I've built, working my way up in complexity:
 | X | B |
 | Enter | Start |
 | Shift | Select |
+| M | Mute / unmute audio |
 
 On touch devices, on-screen controls appear automatically and the screen scales to viewport width.
 
