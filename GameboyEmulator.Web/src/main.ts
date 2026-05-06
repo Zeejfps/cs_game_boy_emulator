@@ -47,6 +47,7 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 const SAVE_PREFIX = 'gb-save:';
+const MUTE_KEY = 'gb-muted';
 
 function readCartTitle(rom: Uint8Array): string {
   // DMG cart title lives at 0x0134-0x0143, ASCII, null-terminated.
@@ -387,6 +388,11 @@ async function main(): Promise<void> {
       console.log(emu.getDebugState());
       return;
     }
+    if ((e.key === 'm' || e.key === 'M') && !e.repeat) {
+      e.preventDefault();
+      applyMute(!muted);
+      return;
+    }
     const button = KEY_MAP[e.key];
     if (button === undefined || !emu) return;
     e.preventDefault();
@@ -486,6 +492,28 @@ async function main(): Promise<void> {
     document.getElementById('page-picker')!.classList.toggle('hidden', p !== 'picker');
     document.getElementById('page-game')!.classList.toggle('hidden', p !== 'game');
   };
+
+  const muteBtn = document.getElementById('mute-toggle') as HTMLButtonElement | null;
+  const muteIconOn = muteBtn?.querySelector<SVGElement>('.icon-mute-on') ?? null;
+  const muteIconOff = muteBtn?.querySelector<SVGElement>('.icon-mute-off') ?? null;
+  // Tracked locally so the toggle works even when audio is null (no SAB /
+  // cross-origin isolation) — the user's preference still persists for later.
+  let muted = localStorage.getItem(MUTE_KEY) === '1';
+  const applyMute = (next: boolean) => {
+    muted = next;
+    audio?.setMuted(next);
+    if (muteBtn) {
+      muteBtn.setAttribute('aria-pressed', next ? 'true' : 'false');
+      muteBtn.setAttribute('aria-label', next ? 'Unmute audio' : 'Mute audio');
+    }
+    // SVG elements don't reliably honor the `hidden` attribute across browsers
+    // (display defaults differ from HTML), so flip display directly.
+    if (muteIconOn) muteIconOn.style.display = next ? 'none' : '';
+    if (muteIconOff) muteIconOff.style.display = next ? '' : 'none';
+    try { localStorage.setItem(MUTE_KEY, next ? '1' : '0'); } catch { /* storage full / blocked — ignore */ }
+  };
+  applyMute(muted);
+  muteBtn?.addEventListener('click', () => applyMute(!muted));
 
   const fsBtn = document.getElementById('fullscreen-toggle');
   fsBtn?.addEventListener('click', async () => {

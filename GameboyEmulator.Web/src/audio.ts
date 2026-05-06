@@ -25,6 +25,9 @@ export interface AudioBridge {
   readonly isRunning: boolean;
   /** Copy newly-produced frames from the emulator into the ring buffer. */
   drain(emu: Emulator): void;
+  /** Mute or unmute output without stopping the worklet. */
+  setMuted(muted: boolean): void;
+  readonly isMuted: boolean;
 }
 
 // Returns null if SharedArrayBuffer is unavailable (cross-origin isolation
@@ -57,6 +60,12 @@ export function createAudio(workletUrl: string): AudioBridge | null {
   let workletNode: AudioWorkletNode | null = null;
   let started = false;
   let starting: Promise<void> | null = null;
+  // Gain node sits between the worklet and the destination so mute can flip
+  // the output to silence without tearing down the worklet (which would lose
+  // the ring buffer and force a re-init on unmute).
+  const gainNode = ctx.createGain();
+  gainNode.connect(ctx.destination);
+  let muted = false;
 
   async function start(): Promise<void> {
     if (started) return;
@@ -73,7 +82,7 @@ export function createAudio(workletUrl: string): AudioBridge | null {
           ringFrames: RING_FRAMES,
         },
       });
-      workletNode.connect(ctx.destination);
+      workletNode.connect(gainNode);
       if (ctx.state === 'suspended') {
         await ctx.resume();
       }
@@ -109,10 +118,18 @@ export function createAudio(workletUrl: string): AudioBridge | null {
     Atomics.store(ctrl, 1, write);
   }
 
+  function setMuted(value: boolean): void {
+    muted = value;
+    // setTargetAtTime with a short time constant avoids a click on toggle.
+    gainNode.gain.setTargetAtTime(value ? 0 : 1, ctx.currentTime, 0.01);
+  }
+
   return {
     sampleRate,
     start,
     get isRunning() { return started; },
     drain,
+    setMuted,
+    get isMuted() { return muted; },
   };
 }
