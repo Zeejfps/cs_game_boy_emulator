@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -98,7 +99,37 @@ function serveWasmAssets(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [crossOriginIsolation(), serveWasmAssets()],
+  plugins: [
+    crossOriginIsolation(),
+    serveWasmAssets(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      includeAssets: ['favicon.svg', 'audio-worklet.js', 'robots.txt'],
+      manifest: {
+        name: 'Game Boy Emulator',
+        short_name: 'GB Emu',
+        description: 'A Game Boy (DMG) emulator that runs in your browser.',
+        theme_color: '#081820',
+        background_color: '#081820',
+        display: 'standalone',
+        orientation: 'any',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        // The .NET WASM runtime ships as a single large .wasm blob that
+        // exceeds Workbox's default 2 MiB precache cap.
+        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,wasm,json,dat}'],
+      },
+    }),
+  ],
   define: {
     __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
