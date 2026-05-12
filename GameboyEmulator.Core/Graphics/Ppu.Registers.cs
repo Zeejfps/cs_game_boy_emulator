@@ -45,9 +45,9 @@ public sealed partial class Ppu
                     UpdateStatLine();
                 }
                 break;
-            case BgpAddress:  _bgp = value; break;
-            case Obp0Address: _obp0 = value; break;
-            case Obp1Address: _obp1 = value; break;
+            case BgpAddress:  _bgp = value; RebuildDmgBgPalette(); break;
+            case Obp0Address: _obp0 = value; RebuildDmgObjPalette(0); break;
+            case Obp1Address: _obp1 = value; RebuildDmgObjPalette(1); break;
             case WyAddress:   _wy = value; break;
             case WxAddress:   _wx = value; break;
         }

@@ -6,7 +6,7 @@ namespace GameBoyEmulator.Core;
 
 public sealed class GameBoy
 {
-    public ReadOnlyMemory<byte> FrameBuffer => _ppu.FrameBuffer;
+    public ReadOnlyMemory<uint> FrameBuffer => _ppu.RgbFrameBuffer;
     public event Action? FrameCompleted
     {
         add => _ppu.FrameCompleted += value;

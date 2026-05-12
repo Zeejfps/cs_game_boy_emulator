@@ -25,6 +25,29 @@ public sealed partial class Ppu : IPpu
     private readonly byte[] _oam = new byte[0xA0];
     private readonly byte[] _frameBuffer = new byte[ScreenWidth * ScreenHeight];
 
+    // RGBA output, pre-resolved through the palette tables. This is what the
+    // host paints to the canvas — paletted byte[] above is retained for tests
+    // and debug, which still want to inspect "which of the 4 shades is here".
+    private readonly uint[] _rgbFrameBuffer = new uint[ScreenWidth * ScreenHeight];
+
+    // 8 palettes × 4 colors. DMG uses only palette 0 in each table; the BGP /
+    // OBP0 / OBP1 registers are pre-resolved into entries on write so the hot
+    // pixel loop reads RGBA directly. CGB will populate all 32 entries from
+    // BCPS/BCPD and OCPS/OCPD palette RAM in a later phase.
+    private readonly uint[] _bgPaletteTable = new uint[32];
+    private readonly uint[] _objPaletteTable = new uint[32];
+
+    // Classic Game Boy green tint, formerly applied at paint time by the JS
+    // frontend. Stored as 0xAABBGGRR — a uint written to little-endian memory
+    // lands as R,G,B,A in byte order, exactly what canvas ImageData expects.
+    private static readonly uint[] DmgShades =
+    {
+        0xFFD0F8E0u, // shade 0 — lightest (R=0xE0 G=0xF8 B=0xD0)
+        0xFF70C088u, // shade 1
+        0xFF566834u, // shade 2
+        0xFF201808u, // shade 3 — darkest
+    };
+
     private bool _isCgb;
 
     private LcdControl _lcdc;
@@ -119,6 +142,7 @@ public sealed partial class Ppu : IPpu
     private SpriteFifo _spriteFifo;
 
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
+    public ReadOnlyMemory<uint> RgbFrameBuffer => _rgbFrameBuffer;
     public event Action? FrameCompleted;
 
     public Ppu(IInterrupts interrupts)
@@ -129,11 +153,40 @@ public sealed partial class Ppu : IPpu
         _tilePixels0 = _vram.AsMemory(0x0000, 4096);
         _tilePixels1 = _vram.AsMemory(0x0800, 4096);
         _mode = PpuMode.HBlank;
+        // Seed palette tables to a known state so frames before any BGP/OBP
+        // write (e.g. boot ROM running) don't paint uninitialized memory.
+        RebuildDmgBgPalette();
+        RebuildDmgObjPalette(0);
+        RebuildDmgObjPalette(1);
     }
 
     public void SetCgbMode(bool isCgb)
     {
         _isCgb = isCgb;
+    }
+
+    // Translates the DMG BGP register (2 bits per shade-slot, 4 slots) into
+    // entries 0..3 of the BG palette table. Hot path then does a single
+    // lookup per pixel instead of unpacking BGP every dot.
+    private void RebuildDmgBgPalette()
+    {
+        _bgPaletteTable[0] = DmgShades[(_bgp >> 0) & 0x03];
+        _bgPaletteTable[1] = DmgShades[(_bgp >> 2) & 0x03];
+        _bgPaletteTable[2] = DmgShades[(_bgp >> 4) & 0x03];
+        _bgPaletteTable[3] = DmgShades[(_bgp >> 6) & 0x03];
+    }
+
+    // DMG OBP0 → entries 0..3 of OBJ table; OBP1 → entries 4..7.
+    // (Sprite color 0 is always transparent, but we still write it so debug
+    // tooling sees a consistent table.)
+    private void RebuildDmgObjPalette(int which)
+    {
+        var reg = which == 0 ? _obp0 : _obp1;
+        var baseIdx = which * 4;
+        _objPaletteTable[baseIdx + 0] = DmgShades[(reg >> 0) & 0x03];
+        _objPaletteTable[baseIdx + 1] = DmgShades[(reg >> 2) & 0x03];
+        _objPaletteTable[baseIdx + 2] = DmgShades[(reg >> 4) & 0x03];
+        _objPaletteTable[baseIdx + 3] = DmgShades[(reg >> 6) & 0x03];
     }
 
     public void Step(int tStates)
@@ -404,17 +457,22 @@ public sealed partial class Ppu : IPpu
         if (!_isBackgroundDrawingEnabled) bgPixel = 0;
 
         byte color;
+        uint rgb;
         if (spPixel != 0 && _isObjectDrawingEnabled && (spBgPrio == 0 || bgPixel == 0))
         {
             var palette = spPalette == 0 ? _obp0 : _obp1;
             color = (byte)((palette >> (spPixel << 1)) & 0x03);
+            rgb = _objPaletteTable[(spPalette << 2) + spPixel];
         }
         else
         {
             color = (byte)((_bgp >> (bgPixel << 1)) & 0x03);
+            rgb = _bgPaletteTable[bgPixel];
         }
 
-        _frameBuffer[_ly * ScreenWidth + _lcdX] = color;
+        var pixelIdx = _ly * ScreenWidth + _lcdX;
+        _frameBuffer[pixelIdx] = color;
+        _rgbFrameBuffer[pixelIdx] = rgb;
         _lcdX++;
 
         if (_lcdX == ScreenWidth) EnterHBlankMode();

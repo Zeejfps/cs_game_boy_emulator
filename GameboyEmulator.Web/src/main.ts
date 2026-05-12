@@ -14,15 +14,6 @@ const KEY_MAP: Record<string, JoypadButton> = {
   Shift: JoypadButton.Select,
 };
 
-// Classic DMG green palette (color IDs 0..3), packed little-endian RGBA so
-// each entry can be written as a single Uint32 into ImageData.
-const PALETTE = new Uint32Array([
-  0xffd0f8e0, // 0xE0F8D0 lightest
-  0xff70c088, // 0x88C070
-  0xff566834, // 0x346856
-  0xff201808, // 0x081820 darkest
-]);
-
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 const imageData = ctx.createImageData(canvas.width, canvas.height);
@@ -204,10 +195,9 @@ function showAlert(title: string, message: string, opts?: { okLabel?: string }):
 
 function paint(): void {
   if (!emu) return;
-  const fb = emu.getFrameBuffer();
-  for (let i = 0; i < fb.length; i++) {
-    pixels[i] = PALETTE[fb[i]];
-  }
+  // emu returns a Uint32Array view straight into the WASM heap, packed
+  // little-endian RGBA — drops into ImageData with a single memcpy.
+  pixels.set(emu.getFrameBuffer());
   ctx.putImageData(imageData, 0, 0);
 }
 
