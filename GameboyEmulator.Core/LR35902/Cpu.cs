@@ -86,6 +86,10 @@ public sealed partial class Cpu : ICpu, ISpeedController
         _enableInterruptsTimer = 0;
         _haltBugPending = false;
         _key1 = 0;
+        // Power-cycle returns the bus clock to normal speed. Without this,
+        // a CGB game that left the system in double-speed before power-off
+        // would resume with the bus running half-rate.
+        _systemClock.SetDoubleSpeed(false);
     }
 
     // Used by ROM-level test harnesses that jump straight

@@ -316,6 +316,8 @@ public class CpuBenchmark
             Accumulated += ticks;
         }
 
+        public void SetDoubleSpeed(bool doubleSpeed) { /* benchmark doesn't model speed switching */ }
+
         public void Reset() => Accumulated = 0;
     }
 }
