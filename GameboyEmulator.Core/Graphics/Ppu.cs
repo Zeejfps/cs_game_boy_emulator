@@ -50,6 +50,17 @@ public sealed partial class Ppu : IPpu
 
     private bool _isCgb;
 
+    // CGB register state. _vramBank picks which 8 KB half of VRAM the CPU
+    // sees through 0x8000-0x9FFF; PPU rendering always reads both banks. The
+    // BCPS/OCPS bytes store the auto-increment flag (bit 7) and an index
+    // (bits 0..5) into the 64-byte palette RAM. Full palette RAM lands in
+    // Phase 5 — these fields are wired now so MMU dispatch is complete.
+    private byte _vramBank;
+    private byte _bcps;
+    private byte _ocps;
+    private readonly byte[] _bgPaletteRam = new byte[64];
+    private readonly byte[] _objPaletteRam = new byte[64];
+
     private LcdControl _lcdc;
     private StatFlags _statSources; // bits 6,5,4,3 — interrupt source enables
     private byte _scy;

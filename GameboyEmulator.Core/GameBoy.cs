@@ -69,6 +69,9 @@ public sealed class GameBoy
         _apu = apu;
         _systemClock = new SystemClock(_ppu, timer, _dma, apu);
         _cpu = new Cpu(_dma, _systemClock, interrupts);
+        // KEY1 lives on the CPU but is reached via the MMU bus, and MMU is
+        // built before CPU — wire it up now that both exist.
+        _mmu.SetSpeedController(_cpu);
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }

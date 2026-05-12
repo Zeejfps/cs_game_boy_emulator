@@ -16,6 +16,14 @@ public sealed partial class Ppu
     private const ushort Obp1Address = 0xFF49;
     private const ushort WyAddress   = 0xFF4A;
     private const ushort WxAddress   = 0xFF4B;
+    // CGB-only registers — wired in Phase 3 as field-backed stubs; the BG
+    // attribute fetch and palette-RAM machinery that actually consumes these
+    // arrives in Phase 5.
+    private const ushort VbkAddress  = 0xFF4F;
+    private const ushort BcpsAddress = 0xFF68;
+    private const ushort BcpdAddress = 0xFF69;
+    private const ushort OcpsAddress = 0xFF6A;
+    private const ushort OcpdAddress = 0xFF6B;
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void WriteRegister(ushort address, byte value)
@@ -50,7 +58,24 @@ public sealed partial class Ppu
             case Obp1Address: _obp1 = value; RebuildDmgObjPalette(1); break;
             case WyAddress:   _wy = value; break;
             case WxAddress:   _wx = value; break;
+            case VbkAddress:  _vramBank = (byte)(value & 0x01); break;
+            case BcpsAddress: _bcps = (byte)(value & 0xBF); break; // bit 6 unused/reads 1
+            case BcpdAddress: WriteCgbPalette(_bgPaletteRam, ref _bcps, value); break;
+            case OcpsAddress: _ocps = (byte)(value & 0xBF); break;
+            case OcpdAddress: WriteCgbPalette(_objPaletteRam, ref _ocps, value); break;
         }
+    }
+
+    // Writes through the BCPS/OCPS auto-increment cursor into the matching 64-
+    // byte CGB palette RAM. Phase 5 will also recompute the RGBA palette table
+    // entry — for now we only persist the byte so subsequent reads echo back.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void WriteCgbPalette(byte[] paletteRam, ref byte indexReg, byte value)
+    {
+        var idx = indexReg & 0x3F;
+        paletteRam[idx] = value;
+        if ((indexReg & 0x80) != 0)
+            indexReg = (byte)(0x80 | ((idx + 1) & 0x3F));
     }
 
     public byte ReadRegister(ushort address)
@@ -68,6 +93,11 @@ public sealed partial class Ppu
             Obp1Address => _obp1,
             WyAddress   => _wy,
             WxAddress   => _wx,
+            VbkAddress  => (byte)(_vramBank | 0xFE),  // bits 1..7 read 1
+            BcpsAddress => (byte)(_bcps | 0x40),       // bit 6 reads 1
+            BcpdAddress => _bgPaletteRam[_bcps & 0x3F],
+            OcpsAddress => (byte)(_ocps | 0x40),
+            OcpdAddress => _objPaletteRam[_ocps & 0x3F],
             _ => 0xFF
         };
     }

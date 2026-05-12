@@ -12,13 +12,21 @@ public sealed class Mmu : IBus
 
     private const int BootRomSize = 0x100;
 
-    private readonly byte[] _wram = new byte[0x2000];
+    // 8 banks × 4 KB. Bank 0 is always visible at 0xC000-0xCFFF; SVBK
+    // (0xFF70) picks 1..7 for the high half 0xD000-0xDFFF (value 0 maps to 1).
+    // DMG mode never writes SVBK, so bank stays at 1 and the indexing matches
+    // pre-CGB behavior (single contiguous 8 KB).
+    private readonly byte[] _wram = new byte[0x8000];
     private readonly byte[] _hram = new byte[0x7F];
 
     private byte[]? _bootRom;
     private bool _bootRomEnabled;
 
     private bool _isCgb;
+    private byte _svbk = 1;
+    // KEY1 r/w is forwarded here. Wired post-construction by GameBoy because
+    // CPU comes up after MMU in the construction order.
+    private ISpeedController? _speedController;
 
     private IMbc _mbc;
     private readonly IPpu _ppu;
@@ -74,10 +82,10 @@ public sealed class Mmu : IBus
                 return;
             case 0xC:
             case 0xD:
-                _wram[address - 0xC000] = value;
+                _wram[WramOffset(address)] = value;
                 return;
             case 0xE:
-                _wram[address - 0xE000] = value;
+                _wram[WramOffset(address)] = value;
                 return;
             default:
                 WriteHigh(address, value);
@@ -91,7 +99,7 @@ public sealed class Mmu : IBus
         switch (address)
         {
             case < 0xFE00:
-                _wram[address - 0xE000] = value;
+                _wram[WramOffset(address)] = value;
                 return;
             case < 0xFEA0:
                 if (_ppu.Mode is PpuMode.OamScan or PpuMode.Drawing) return;
@@ -146,11 +154,33 @@ public sealed class Mmu : IBus
             case >= 0xFF40 and <= 0xFF4B:
                 _ppu.WriteRegister(address, value);
                 break;
+            case 0xFF4D:
+                if (_isCgb) _speedController?.WriteKey1(value);
+                break;
+            case 0xFF4F:
+                if (_isCgb) _ppu.WriteRegister(address, value);
+                break;
             case 0xFF50:
                 // Real hardware locks the boot ROM out permanently on any
                 // non-zero write. The boot ROM does this as its final act
                 // before jumping to 0x0100.
                 if (value != 0) _bootRomEnabled = false;
+                break;
+            // HDMA1-5 (0xFF51-0xFF55) — Phase 6 wires the real controller.
+            // We accept writes silently in CGB mode so games' init code that
+            // pokes them doesn't trap; reads return 0xFF below.
+            case >= 0xFF51 and <= 0xFF55:
+                break;
+            case >= 0xFF68 and <= 0xFF6B:
+                if (_isCgb) _ppu.WriteRegister(address, value);
+                break;
+            case 0xFF70:
+                if (_isCgb)
+                {
+                    // 0 maps to bank 1; valid range is 1..7.
+                    var bank = value & 0x07;
+                    _svbk = (byte)(bank == 0 ? 1 : bank);
+                }
                 break;
         }
     }
@@ -181,9 +211,9 @@ public sealed class Mmu : IBus
                 return _mbc.ReadExternalRam((ushort)(address - 0xA000));
             case 0xC:
             case 0xD:
-                return _wram[address - 0xC000];
+                return _wram[WramOffset(address)];
             case 0xE:
-                return _wram[address - 0xE000];
+                return _wram[WramOffset(address)];
             default:
                 return ReadHigh(address);
         }
@@ -194,7 +224,7 @@ public sealed class Mmu : IBus
     {
         return address switch
         {
-            < 0xFE00 => _wram[address - 0xE000],
+            < 0xFE00 => _wram[WramOffset(address)],
             < 0xFEA0 => _ppu.Mode is PpuMode.OamScan or PpuMode.Drawing ? (byte)0xFF : _ppu.ReadOam((ushort)(address - 0xFE00)),
             < 0xFF00 => 0xFF,
             < 0xFF80 => ReadIO(address),
@@ -218,6 +248,13 @@ public sealed class Mmu : IBus
             InterruptFlagAddress => (byte)((byte)_interrupts.ReadRequestedInterrupts() | 0xE0),
             >= 0xFF10 and <= 0xFF3F => _apu.ReadRegister(address),
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
+            0xFF4D => _isCgb && _speedController != null ? _speedController.ReadKey1() : (byte)0xFF,
+            0xFF4F => _isCgb ? _ppu.ReadRegister(address) : (byte)0xFF,
+            // HDMA1-5 — HDMA5 reads as 0xFF when no transfer is in progress,
+            // which is the only state Phase 3 models.
+            >= 0xFF51 and <= 0xFF55 => 0xFF,
+            >= 0xFF68 and <= 0xFF6B => _isCgb ? _ppu.ReadRegister(address) : (byte)0xFF,
+            0xFF70 => _isCgb ? (byte)(_svbk | 0xF8) : (byte)0xFF,
             _ => 0xFF
         };
     }
@@ -226,6 +263,7 @@ public sealed class Mmu : IBus
     {
         Array.Clear(_wram);
         Array.Clear(_hram);
+        _svbk = 1;
         // Power-cycle re-arms the boot ROM if one is loaded — matches what
         // happens when you turn a real Game Boy off and back on again.
         _bootRomEnabled = _bootRom != null;
@@ -239,6 +277,23 @@ public sealed class Mmu : IBus
     public void SetCgbMode(bool isCgb)
     {
         _isCgb = isCgb;
+    }
+
+    public void SetSpeedController(ISpeedController controller)
+    {
+        _speedController = controller;
+    }
+
+    // Maps a logical address in 0xC000-0xDFFF or 0xE000-0xFDFF (echo) into the
+    // 32 KB physical WRAM. The 0x1000 bit picks the half: low half → fixed
+    // bank 0; high half → SVBK-selected bank. Echo addresses (0xE000+) work
+    // out because the formula only looks at bits 0..12 — high bits are masked
+    // by `& 0x0FFF`.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int WramOffset(ushort address)
+    {
+        var bank = (address & 0x1000) == 0 ? 0 : _svbk;
+        return (bank << 12) | (address & 0x0FFF);
     }
 
     public void FlushMbc() => _mbc.Flush();
