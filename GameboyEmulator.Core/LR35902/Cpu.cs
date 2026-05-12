@@ -43,6 +43,7 @@ public sealed partial class Cpu : ICpu
 
     private int _enableInterruptsTimer;
     private bool _haltBugPending;
+    private bool _isCgb;
     private readonly IBus _bus;
     private readonly ISystemClock _systemClock;
     private readonly IInterrupts _interrupts;
@@ -52,6 +53,11 @@ public sealed partial class Cpu : ICpu
         _bus = bus;
         _interrupts = interrupts;
         _systemClock = systemClock;
+    }
+
+    public void SetCgbMode(bool isCgb)
+    {
+        _isCgb = isCgb;
     }
 
     public void Reset()

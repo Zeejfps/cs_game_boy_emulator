@@ -25,6 +25,8 @@ public sealed partial class Ppu : IPpu
     private readonly byte[] _oam = new byte[0xA0];
     private readonly byte[] _frameBuffer = new byte[ScreenWidth * ScreenHeight];
 
+    private bool _isCgb;
+
     private LcdControl _lcdc;
     private StatFlags _statSources; // bits 6,5,4,3 — interrupt source enables
     private byte _scy;
@@ -127,6 +129,11 @@ public sealed partial class Ppu : IPpu
         _tilePixels0 = _vram.AsMemory(0x0000, 4096);
         _tilePixels1 = _vram.AsMemory(0x0800, 4096);
         _mode = PpuMode.HBlank;
+    }
+
+    public void SetCgbMode(bool isCgb)
+    {
+        _isCgb = isCgb;
     }
 
     public void Step(int tStates)

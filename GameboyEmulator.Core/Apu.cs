@@ -49,6 +49,7 @@ public sealed class Apu : IApu
 
     private readonly byte[] _waveRam = new byte[16];
     private bool _powered;
+    private bool _isCgb;
 
     // Per-channel state. Inlined as fields to avoid allocation/dispatch overhead
     // on the hot per-T-cycle path.
@@ -140,6 +141,11 @@ public sealed class Apu : IApu
         // alpha = exp(-2*pi*60/sampleRate). Hardcoded approximation table is
         // overkill; this only runs once per construction.
         _hpfAlpha = (float)Math.Exp(-2.0 * Math.PI * 60.0 / sampleRate);
+    }
+
+    public void SetCgbMode(bool isCgb)
+    {
+        _isCgb = isCgb;
     }
 
     // ---- Bus interface ---------------------------------------------------

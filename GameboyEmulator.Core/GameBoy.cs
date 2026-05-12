@@ -87,6 +87,12 @@ public sealed class GameBoy
 
         var mbc = _mbcFactory.Create(rom);
         _mmu.SetMbc(mbc);
+
+        var isCgb = MbcFactory.IsCgbCartridge(rom);
+        _mmu.SetCgbMode(isCgb);
+        _ppu.SetCgbMode(isCgb);
+        _apu.SetCgbMode(isCgb);
+        _cpu.SetCgbMode(isCgb);
     }
 
     // Optional 256-byte DMG boot ROM. When set, PowerOn starts the CPU at

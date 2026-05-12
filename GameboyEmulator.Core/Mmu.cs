@@ -18,6 +18,8 @@ public sealed class Mmu : IBus
     private byte[]? _bootRom;
     private bool _bootRomEnabled;
 
+    private bool _isCgb;
+
     private IMbc _mbc;
     private readonly IPpu _ppu;
     private readonly IJoypad _joypad;
@@ -232,6 +234,11 @@ public sealed class Mmu : IBus
     public void SetMbc(IMbc mbc)
     {
         _mbc = mbc;
+    }
+
+    public void SetCgbMode(bool isCgb)
+    {
+        _isCgb = isCgb;
     }
 
     public void FlushMbc() => _mbc.Flush();
