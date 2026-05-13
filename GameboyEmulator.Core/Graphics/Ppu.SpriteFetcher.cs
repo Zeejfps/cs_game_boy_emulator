@@ -138,11 +138,42 @@ public sealed partial class Ppu
         var p2Byte = (paletteIdx & 0x04) != 0 ? (byte)0xFF : (byte)0x00;
         var bgPrioByte = (attr & (byte)OamAttributes.BgPriority) != 0 ? (byte)0xFF : (byte)0x00;
 
-        // Slots already holding an opaque sprite pixel (color != 0) within the
-        // currently-occupied portion of the FIFO are preserved.
+        // DMG rule: slots already holding an opaque sprite pixel are preserved
+        // — earlier-fetched sprites win on overlap. Since DMG sprites fetch in
+        // (X asc, OAM-index asc) order, "first-fetched wins" gives the correct
+        // DMG priority for free.
+        //
+        // CGB rule: lowest OAM index wins regardless of fetch order. We track
+        // each slot's source OAM index in _spriteFifo.OamIndices and overwrite
+        // when the new sprite has a lower index. Empty slots take whatever
+        // comes; new transparent pixels never overwrite opaque ones either way.
         var occupiedMask = _spriteFifo.Count == 0 ? (byte)0 : (byte)(0xFF << (8 - _spriteFifo.Count));
         var existingOpaque = (byte)((_spriteFifo.Low | _spriteFifo.High) & occupiedMask);
-        var writeMask = (byte)(pixelMask & ~existingOpaque);
+        byte writeMask;
+        var newOam = _activeSprite.OamIndex;
+        if (!_isCgb)
+        {
+            writeMask = (byte)(pixelMask & ~existingOpaque);
+        }
+        else
+        {
+            // Per-slot decision: write where (existing transparent OR
+            // newOam < existingOam) AND the new sprite covers the slot.
+            byte mask = 0;
+            for (var s = 0; s < 8; s++)
+            {
+                var slotBit = (byte)(0x80 >> s);
+                if ((pixelMask & slotBit) == 0) continue;
+                if ((existingOpaque & slotBit) == 0)
+                {
+                    mask |= slotBit;
+                    continue;
+                }
+                var existingOam = (byte)(_spriteFifo.OamIndices >> ((7 - s) * 8));
+                if (newOam < existingOam) mask |= slotBit;
+            }
+            writeMask = mask;
+        }
 
         _spriteFifo.Low        = (byte)((_spriteFifo.Low        & ~writeMask) | (newLow      & writeMask));
         _spriteFifo.High       = (byte)((_spriteFifo.High       & ~writeMask) | (newHigh     & writeMask));
@@ -150,6 +181,23 @@ public sealed partial class Ppu
         _spriteFifo.Palette1   = (byte)((_spriteFifo.Palette1   & ~writeMask) | (p1Byte      & writeMask));
         _spriteFifo.Palette2   = (byte)((_spriteFifo.Palette2   & ~writeMask) | (p2Byte      & writeMask));
         _spriteFifo.BgPriority = (byte)((_spriteFifo.BgPriority & ~writeMask) | (bgPrioByte  & writeMask));
+
+        // Record OAM index for slots we just wrote so future merges can compare.
+        if (writeMask != 0)
+        {
+            var wm = writeMask;
+            ulong oamUpdates = 0;
+            ulong clearMask = 0;
+            for (var s = 0; s < 8; s++)
+            {
+                var slotBit = (byte)(0x80 >> s);
+                if ((wm & slotBit) == 0) continue;
+                var slotShift = (7 - s) * 8;
+                oamUpdates |= (ulong)newOam << slotShift;
+                clearMask |= 0xFFUL << slotShift;
+            }
+            _spriteFifo.OamIndices = (_spriteFifo.OamIndices & ~clearMask) | oamUpdates;
+        }
         if (_spriteFifo.Count < 8) _spriteFifo.Count = 8;
     }
 
