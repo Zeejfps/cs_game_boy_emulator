@@ -6,26 +6,54 @@ namespace GameBoyEmulator.Core.Graphics;
 public sealed partial class Ppu
 {
     // Pick the next sprite whose visible column is at or before the current
-    // _lcdX. Lower X wins (sprites are sorted); X==0 / X>=168 are off-screen.
+    // _lcdX. DMG: sprites are X-sorted, so the first not-yet-triggered ready
+    // sprite wins (lower X, OAM-index breaks ties from the stable sort).
+    // CGB: sprites stay in OAM-scan order; among ready ones, lowest OAM index
+    // wins regardless of X. The _spriteTriggeredMask tracks which sprites
+    // have already fired so we don't refetch.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool TryStartSpriteFetch()
     {
         if (!_isObjectDrawingEnabled) return false;
-        while (_nextSpriteIndex < _spriteCount)
+
+        var bestSlot = -1;
+        var bestOam = 0xFF;
+        for (var i = 0; i < _spriteCount; i++)
         {
-            var s = _sprites[_nextSpriteIndex];
-            if (s.X == 0 || s.X >= 168) { _nextSpriteIndex++; continue; }
-            if (s.X > _lcdX + 8) return false;
-            _activeSprite = s;
-            _nextSpriteIndex++;
-            _fetchingSprite = true;
-            _spriteFetcherState = SpriteFetcherState.GetTile;
-            // Real hardware aborts the BG fetch in flight; the BG FIFO is left
-            // alone but the fetcher restarts at GetTile.
-            _fetcherState = BgPixelsFetcherState.GetTile;
-            return true;
+            if ((_spriteTriggeredMask & (1 << i)) != 0) continue;
+            var s = _sprites[i];
+            if (s.X == 0 || s.X >= 168)
+            {
+                // Off-screen sprites are skipped permanently so the scan
+                // doesn't keep re-evaluating them every dot.
+                _spriteTriggeredMask |= 1 << i;
+                continue;
+            }
+            if (s.X > _lcdX + 8) continue;
+            if (!_isCgb)
+            {
+                // DMG: sprites are X-sorted; first ready slot wins.
+                bestSlot = i;
+                break;
+            }
+            // CGB: scan all to find the lowest OAM index among ready sprites.
+            if (s.OamIndex < bestOam)
+            {
+                bestSlot = i;
+                bestOam = s.OamIndex;
+            }
         }
-        return false;
+
+        if (bestSlot < 0) return false;
+
+        _spriteTriggeredMask |= 1 << bestSlot;
+        _activeSprite = _sprites[bestSlot];
+        _fetchingSprite = true;
+        _spriteFetcherState = SpriteFetcherState.GetTile;
+        // Real hardware aborts the BG fetch in flight; the BG FIFO is left
+        // alone but the fetcher restarts at GetTile.
+        _fetcherState = BgPixelsFetcherState.GetTile;
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,8 +95,10 @@ public sealed partial class Ppu
             if (row < 8) tileId = (byte)(tileId & 0xFE);
             else { tileId = (byte)(tileId | 0x01); row -= 8; }
         }
-        // Sprites always use the unsigned 0x8000 base; in our VRAM layout that's offset 0.
-        return (tileId << 4) + (row << 1);
+        // Sprites always use the unsigned 0x8000 base. CGB attribute bit 3
+        // picks VRAM bank for tile data (+0x2000); DMG mode never sets it.
+        var bankBase = _isCgb && _activeSprite.Attributes.HasFlag(OamAttributes.CgbVramBank) ? 0x2000 : 0;
+        return bankBase + (tileId << 4) + (row << 1);
     }
     
     // Merge the 8 fetched sprite pixels into the sprite FIFO. Existing opaque
@@ -94,8 +124,19 @@ public sealed partial class Ppu
         var newHigh = (byte)(high << shift);
         var pixelMask = (byte)(0xFF << shift);
 
-        var paletteByte = _activeSprite.Attributes.HasFlag(OamAttributes.Palette)    ? (byte)0xFF : (byte)0x00;
-        var bgPrioByte  = _activeSprite.Attributes.HasFlag(OamAttributes.BgPriority) ? (byte)0xFF : (byte)0x00;
+        // Palette is a 3-bit field. CGB pulls bits 0..2 of the attribute byte;
+        // DMG only uses bit 4 (OBP0/OBP1) which we map to palette index 0/1 so
+        // the same lookup `_objPaletteTable[palette*4 + color]` works for both.
+        var attr = (byte)_activeSprite.Attributes;
+        int paletteIdx;
+        if (_isCgb)
+            paletteIdx = attr & 0x07;
+        else
+            paletteIdx = (attr & (byte)OamAttributes.Palette) != 0 ? 1 : 0;
+        var p0Byte = (paletteIdx & 0x01) != 0 ? (byte)0xFF : (byte)0x00;
+        var p1Byte = (paletteIdx & 0x02) != 0 ? (byte)0xFF : (byte)0x00;
+        var p2Byte = (paletteIdx & 0x04) != 0 ? (byte)0xFF : (byte)0x00;
+        var bgPrioByte = (attr & (byte)OamAttributes.BgPriority) != 0 ? (byte)0xFF : (byte)0x00;
 
         // Slots already holding an opaque sprite pixel (color != 0) within the
         // currently-occupied portion of the FIFO are preserved.
@@ -103,10 +144,12 @@ public sealed partial class Ppu
         var existingOpaque = (byte)((_spriteFifo.Low | _spriteFifo.High) & occupiedMask);
         var writeMask = (byte)(pixelMask & ~existingOpaque);
 
-        _spriteFifo.Low        = (byte)((_spriteFifo.Low        & ~writeMask) | (newLow       & writeMask));
-        _spriteFifo.High       = (byte)((_spriteFifo.High       & ~writeMask) | (newHigh      & writeMask));
-        _spriteFifo.Palette    = (byte)((_spriteFifo.Palette    & ~writeMask) | (paletteByte  & writeMask));
-        _spriteFifo.BgPriority = (byte)((_spriteFifo.BgPriority & ~writeMask) | (bgPrioByte   & writeMask));
+        _spriteFifo.Low        = (byte)((_spriteFifo.Low        & ~writeMask) | (newLow      & writeMask));
+        _spriteFifo.High       = (byte)((_spriteFifo.High       & ~writeMask) | (newHigh     & writeMask));
+        _spriteFifo.Palette0   = (byte)((_spriteFifo.Palette0   & ~writeMask) | (p0Byte      & writeMask));
+        _spriteFifo.Palette1   = (byte)((_spriteFifo.Palette1   & ~writeMask) | (p1Byte      & writeMask));
+        _spriteFifo.Palette2   = (byte)((_spriteFifo.Palette2   & ~writeMask) | (p2Byte      & writeMask));
+        _spriteFifo.BgPriority = (byte)((_spriteFifo.BgPriority & ~writeMask) | (bgPrioByte  & writeMask));
         if (_spriteFifo.Count < 8) _spriteFifo.Count = 8;
     }
 

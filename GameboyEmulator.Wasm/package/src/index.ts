@@ -85,14 +85,15 @@ export interface Emulator {
   onFrame(handler: () => void): () => void;
 
   /**
-   * Returns a live view onto the pinned frame buffer (one byte per pixel,
-   * values 0–3 are DMG color IDs after the BG palette has been applied).
+   * Returns a live view onto the pinned frame buffer (one uint per pixel,
+   * little-endian RGBA — drops directly into a canvas `ImageData` uint32
+   * view with `pixels.set(...)`).
    *
-   * The returned Uint8Array is a *transient* view into the WASM heap — do not
+   * The returned Uint32Array is a *transient* view into the WASM heap — do not
    * cache it across awaits or other heap-mutating calls. Either consume it
    * immediately (e.g. draw to a canvas) or copy it.
    */
-  getFrameBuffer(): Uint8Array;
+  getFrameBuffer(): Uint32Array;
 
   /**
    * Set a Game Boy button's pressed state. Edges drive the joypad interrupt;
@@ -191,8 +192,10 @@ export async function init(opts: InitOptions): Promise<Emulator> {
       return () => frameHandlers.delete(handler);
     },
     getFrameBuffer: () => {
+      // length is pixel count; ptr is aligned because the underlying C# array
+      // is `uint[]`, which always lands on a 4-byte boundary in the WASM heap.
       const heap = runtime.localHeapViewU8();
-      return heap.subarray(ptr, ptr + length);
+      return new Uint32Array(heap.buffer, ptr, length);
     },
     setButton: (button, pressed) => E.SetButton(button, pressed),
     getDebugState: () => E.GetDebugState(),

@@ -289,6 +289,86 @@ public class CpuInterruptTests : CpuTestBase
     }
 
     [Fact]
+    public void Stop_CgbWithKey1PrepareBit_SwitchesToDoubleSpeedWithoutSleeping()
+    {
+        ushort start = 0x0200;
+        Mmu.Write(start, 0x10);
+        Mmu.Write((ushort)(start + 1), 0x00);
+
+        Cpu.SetCgbMode(true);
+        Cpu.WriteKey1(0x01); // arm "prepare switch"
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
+
+        var cycles = StepCycles();
+
+        Assert.Equal(4, cycles);
+        Assert.False(Cpu.IsSleeping);
+        Assert.Equal((ushort)(start + 2), Cpu.Pc);
+        // Bit 7 (current speed) flipped to 1, bit 0 (prepare) cleared.
+        Assert.Equal(0x80, Cpu.ReadKey1() & 0x81);
+        Assert.True(BusClock.DoubleSpeed);
+    }
+
+    [Fact]
+    public void Stop_CgbInDoubleSpeedWithPrepareBit_SwitchesBackToNormal()
+    {
+        ushort start = 0x0200;
+        Mmu.Write(start, 0x10);
+        Mmu.Write((ushort)(start + 1), 0x00);
+
+        Cpu.SetCgbMode(true);
+        // First switch: normal → double.
+        Cpu.WriteKey1(0x01);
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
+        StepCycles();
+        Assert.True(BusClock.DoubleSpeed);
+
+        // Arm prepare again and STOP a second time → switch back to normal.
+        Cpu.WriteKey1(0x01);
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
+        StepCycles();
+
+        Assert.False(BusClock.DoubleSpeed);
+        Assert.Equal(0x00, Cpu.ReadKey1() & 0x81);
+    }
+
+    [Fact]
+    public void Stop_CgbWithoutPrepareBit_StillSleeps()
+    {
+        ushort start = 0x0200;
+        Mmu.Write(start, 0x10);
+        Mmu.Write((ushort)(start + 1), 0x00);
+
+        Cpu.SetCgbMode(true);
+        // KEY1 stays at 0 — no prepare bit. STOP should still halt.
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
+
+        StepCycles();
+
+        Assert.True(Cpu.IsSleeping);
+        Assert.False(BusClock.DoubleSpeed);
+    }
+
+    [Fact]
+    public void Reset_RevertsToNormalSpeed()
+    {
+        ushort start = 0x0200;
+        Mmu.Write(start, 0x10);
+        Mmu.Write((ushort)(start + 1), 0x00);
+
+        // Switch into double-speed.
+        Cpu.SetCgbMode(true);
+        Cpu.WriteKey1(0x01);
+        Cpu.WriteState(new CpuState { Pc = start, Sp = 0x4000 });
+        StepCycles();
+        Assert.True(BusClock.DoubleSpeed);
+
+        // Power-cycle returns the bus clock to normal.
+        Cpu.Reset();
+        Assert.False(BusClock.DoubleSpeed);
+    }
+
+    [Fact]
     public void DiClearsImeAndReturns4()
     {
         ushort start = 0x0200;

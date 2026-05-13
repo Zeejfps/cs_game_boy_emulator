@@ -6,7 +6,7 @@ namespace GameBoyEmulator.Core;
 
 public sealed class GameBoy
 {
-    public ReadOnlyMemory<byte> FrameBuffer => _ppu.FrameBuffer;
+    public ReadOnlyMemory<uint> FrameBuffer => _ppu.RgbFrameBuffer;
     public event Action? FrameCompleted
     {
         add => _ppu.FrameCompleted += value;
@@ -26,6 +26,7 @@ public sealed class GameBoy
     private readonly Joypad _joypad;
     private readonly SystemClock _systemClock;
     private readonly OamDmaController _dma;
+    private readonly HdmaController _hdma;
     private readonly MbcFactory _mbcFactory;
     private readonly double _cyclesPerTick;
 
@@ -69,6 +70,13 @@ public sealed class GameBoy
         _apu = apu;
         _systemClock = new SystemClock(_ppu, timer, _dma, apu);
         _cpu = new Cpu(_dma, _systemClock, interrupts);
+        // KEY1 lives on the CPU but is reached via the MMU bus, and MMU is
+        // built before CPU — wire it up now that both exist.
+        _mmu.SetSpeedController(_cpu);
+
+        _hdma = new HdmaController(_mmu, _ppu);
+        _mmu.SetHdmaController(_hdma);
+        _ppu.OnHBlankEntry = _hdma.OnHBlank;
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }
@@ -87,6 +95,12 @@ public sealed class GameBoy
 
         var mbc = _mbcFactory.Create(rom);
         _mmu.SetMbc(mbc);
+
+        var isCgb = MbcFactory.IsCgbCartridge(rom);
+        _mmu.SetCgbMode(isCgb);
+        _ppu.SetCgbMode(isCgb);
+        _apu.SetCgbMode(isCgb);
+        _cpu.SetCgbMode(isCgb);
     }
 
     // Optional 256-byte DMG boot ROM. When set, PowerOn starts the CPU at
@@ -144,6 +158,7 @@ public sealed class GameBoy
         _timer.Reset();
         _joypad.Reset();
         _dma.Reset();
+        _hdma.Reset();
         _cpu.Reset();
         _clock.Ticked -= Clock_OnTicked;
         IsPoweredOn = false;

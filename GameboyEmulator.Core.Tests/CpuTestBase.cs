@@ -43,4 +43,7 @@ public sealed class CountingBusClock : ISystemClock
         _accumulated = 0;
         return c;
     }
+
+    public bool DoubleSpeed { get; private set; }
+    public void SetDoubleSpeed(bool doubleSpeed) => DoubleSpeed = doubleSpeed;
 }

@@ -20,8 +20,10 @@ public static partial class Emulator
     // displays, brief stalls), so by the time the host paints, the live buffer
     // may already contain the top scanlines of frame N+1 — visible as a tear.
     // We snapshot the buffer at VBlank so the host always reads a complete frame.
-    private static readonly byte[] _frameBufferSnapshot =
-        new byte[Ppu.ScreenWidth * Ppu.ScreenHeight];
+    // uint per pixel = ARGB packed little-endian as R,G,B,A — drops straight
+    // into canvas ImageData with no per-pixel translation on the JS side.
+    private static readonly uint[] _frameBufferSnapshot =
+        new uint[Ppu.ScreenWidth * Ppu.ScreenHeight];
 
     // Stereo float scratchpad the host drains audio into between ticks.
     // Sized for ~85 ms of jitter budget at 48 kHz; an 8 kHz host or a wedged

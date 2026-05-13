@@ -463,4 +463,86 @@ public class MmuTests
         public byte ReadRegister(ushort address) => 0;
         public PpuMode Mode { get; set; } = PpuMode.HBlank;
     }
+
+    // ---- Phase 3: CGB WRAM banking + CGB-only register gating ----
+
+    [Fact]
+    public void Cgb_Wram_SvbkSelectsHighBank()
+    {
+        _mmu.SetCgbMode(true);
+
+        // Bank 1: write a sentinel through 0xD000.
+        _mmu.Write(0xFF70, 0x01);
+        _mmu.Write(0xD000, 0x11);
+
+        // Bank 2: same address → different physical byte.
+        _mmu.Write(0xFF70, 0x02);
+        _mmu.Write(0xD000, 0x22);
+
+        // Bank 1 still has the original byte.
+        _mmu.Write(0xFF70, 0x01);
+        Assert.Equal(0x11, _mmu.Read(0xD000));
+
+        // Bank 2 has its sentinel.
+        _mmu.Write(0xFF70, 0x02);
+        Assert.Equal(0x22, _mmu.Read(0xD000));
+    }
+
+    [Fact]
+    public void Cgb_Wram_SvbkValueZeroMapsToBank1()
+    {
+        _mmu.SetCgbMode(true);
+        _mmu.Write(0xFF70, 0x01);
+        _mmu.Write(0xD000, 0xAA);
+
+        // Writing 0 aliases to bank 1.
+        _mmu.Write(0xFF70, 0x00);
+        Assert.Equal(0xAA, _mmu.Read(0xD000));
+    }
+
+    [Fact]
+    public void Cgb_Wram_LowHalfIsAlwaysBank0()
+    {
+        _mmu.SetCgbMode(true);
+        _mmu.Write(0xC000, 0x77);
+
+        _mmu.Write(0xFF70, 0x05);
+        // Bank switch must not affect 0xC000-0xCFFF.
+        Assert.Equal(0x77, _mmu.Read(0xC000));
+    }
+
+    [Fact]
+    public void Dmg_Wram_IgnoresSvbkWrites()
+    {
+        _mmu.Write(0xD000, 0x55);
+
+        // Attempt to switch banks — should be ignored in DMG mode.
+        _mmu.Write(0xFF70, 0x03);
+        Assert.Equal(0x55, _mmu.Read(0xD000));
+
+        // SVBK read returns 0xFF in DMG mode.
+        Assert.Equal(0xFF, _mmu.Read(0xFF70));
+    }
+
+    [Theory]
+    [InlineData((ushort)0xFF4D)] // KEY1
+    [InlineData((ushort)0xFF4F)] // VBK
+    [InlineData((ushort)0xFF68)] // BCPS
+    [InlineData((ushort)0xFF69)] // BCPD
+    [InlineData((ushort)0xFF6A)] // OCPS
+    [InlineData((ushort)0xFF6B)] // OCPD
+    [InlineData((ushort)0xFF70)] // SVBK
+    public void Dmg_CgbRegisters_ReadAs0xFF(ushort address)
+    {
+        Assert.Equal(0xFF, _mmu.Read(address));
+    }
+
+    [Fact]
+    public void Cgb_Svbk_ReadsBackBankWithUnusedBitsSet()
+    {
+        _mmu.SetCgbMode(true);
+        _mmu.Write(0xFF70, 0x04);
+        // Bits 3..7 read 1 on real hardware.
+        Assert.Equal(0xFC, _mmu.Read(0xFF70));
+    }
 }

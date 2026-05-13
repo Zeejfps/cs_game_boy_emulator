@@ -19,9 +19,9 @@ namespace GameBoyEmulator.Core;
 //
 // Power semantics: NR52 bit 7 is the master enable. Clearing it resets all
 // channel state and all NRxx registers to 0 (wave RAM is preserved on DMG).
-// While powered off, writes to NR10..NR25 are ignored. Length-counter
-// length-load writes (NRx1) accept while off on CGB but not DMG; we model
-// strict DMG behavior.
+// While powered off, all NR10..NR25 writes are dropped on DMG. CGB is more
+// permissive: NRx1 length-load writes still update the length counter even
+// with the APU off — `_isCgb` selects the path below.
 public sealed class Apu : IApu
 {
     private const ushort Nr10 = 0xFF10, Nr11 = 0xFF11, Nr12 = 0xFF12, Nr13 = 0xFF13, Nr14 = 0xFF14;
@@ -49,6 +49,7 @@ public sealed class Apu : IApu
 
     private readonly byte[] _waveRam = new byte[16];
     private bool _powered;
+    private bool _isCgb;
 
     // Per-channel state. Inlined as fields to avoid allocation/dispatch overhead
     // on the hot per-T-cycle path.
@@ -142,19 +143,24 @@ public sealed class Apu : IApu
         _hpfAlpha = (float)Math.Exp(-2.0 * Math.PI * 60.0 / sampleRate);
     }
 
+    public void SetCgbMode(bool isCgb)
+    {
+        _isCgb = isCgb;
+    }
+
     // ---- Bus interface ---------------------------------------------------
 
     public void WriteRegister(ushort address, byte value)
     {
         if (address >= WaveRamStart && address <= WaveRamEnd)
         {
-            // CH3 active wave-RAM read quirk: on DMG, an external write while
-            // the channel is reading aliases to whichever byte the channel is
-            // currently fetching. Modeling that quirk requires knowing the
-            // exact T-cycle of the active read; without it the simple
-            // "writes only land when channel is off" approximation is closer
-            // to correct for most games.
-            if (!_ch3Enabled)
+            // DMG: writes while CH3 is active alias to whichever byte the
+            // channel is currently fetching; we approximate by dropping the
+            // write. CGB lets the write through unconditionally (real CGB
+            // hardware redirects the write to the current fetch position,
+            // but a plain "addressed slot" write is functionally indistinct
+            // for the games that exercise this path).
+            if (_isCgb || !_ch3Enabled)
                 _waveRam[address - WaveRamStart] = value;
             return;
         }
@@ -167,15 +173,18 @@ public sealed class Apu : IApu
             return;
         }
 
-        // Length-load writes (NR11/NR21/NR31/NR41) are accepted while powered
-        // off on DMG too — but only the length bits, register reads still
-        // come back zeroed. Most games don't care; matches blargg expectations.
         if (!_powered)
         {
-            if (address == Nr11) _ch1Length = 64 - (value & 0x3F);
-            else if (address == Nr21) _ch2Length = 64 - (value & 0x3F);
-            else if (address == Nr31) _ch3Length = 256 - value;
-            else if (address == Nr41) _ch4Length = 64 - (value & 0x3F);
+            // CGB still applies the length-load portion of NRx1 while the
+            // APU is off (the channel-enable / DAC / envelope bits are still
+            // ignored). DMG drops the write entirely.
+            if (_isCgb)
+            {
+                if (address == Nr11) _ch1Length = 64 - (value & 0x3F);
+                else if (address == Nr21) _ch2Length = 64 - (value & 0x3F);
+                else if (address == Nr31) _ch3Length = 256 - value;
+                else if (address == Nr41) _ch4Length = 64 - (value & 0x3F);
+            }
             return;
         }
 
@@ -208,10 +217,11 @@ public sealed class Apu : IApu
     {
         if (address >= WaveRamStart && address <= WaveRamEnd)
         {
-            // While CH3 is active, DMG reads return the byte the channel is
-            // currently fetching (same quirk as writes). Approximated as the
-            // last-fetched byte; for inactive channel, return the stored byte.
-            if (_ch3Enabled) return _waveRam[(_ch3WavePos >> 1) & 0x0F];
+            // DMG: reads while CH3 is active return the byte the channel is
+            // currently fetching. CGB returns the addressed slot directly —
+            // no aliasing, which matches the "permissive while running" rule
+            // even though real hardware still funnels through the fetch byte.
+            if (!_isCgb && _ch3Enabled) return _waveRam[(_ch3WavePos >> 1) & 0x0F];
             return _waveRam[address - WaveRamStart];
         }
 

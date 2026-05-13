@@ -64,6 +64,19 @@ public sealed partial class Cpu
         // following byte — advance PC past it without a bus access (STOP is
         // 4 T-cycles total; only the opcode fetch ticks).
         Pc++;
+
+        // CGB speed switch: if the game armed KEY1 bit 0 ("prepare switch")
+        // before STOP, the CPU flips its current-speed bit (7) and clears
+        // the prepare bit instead of actually stopping. The bus-domain clock
+        // is notified so PPU/APU start running at half rate (or back to full
+        // when switching down).
+        if (_isCgb && (_key1 & 0x01) != 0)
+        {
+            _key1 = (byte)((_key1 ^ 0x80) & 0xFE);
+            _systemClock.SetDoubleSpeed((_key1 & 0x80) != 0);
+            return;
+        }
+
         IsSleeping = true;
     }
 

@@ -16,6 +16,14 @@ public sealed partial class Ppu
     private const ushort Obp1Address = 0xFF49;
     private const ushort WyAddress   = 0xFF4A;
     private const ushort WxAddress   = 0xFF4B;
+    // CGB-only registers — wired in Phase 3 as field-backed stubs; the BG
+    // attribute fetch and palette-RAM machinery that actually consumes these
+    // arrives in Phase 5.
+    private const ushort VbkAddress  = 0xFF4F;
+    private const ushort BcpsAddress = 0xFF68;
+    private const ushort BcpdAddress = 0xFF69;
+    private const ushort OcpsAddress = 0xFF6A;
+    private const ushort OcpdAddress = 0xFF6B;
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void WriteRegister(ushort address, byte value)
@@ -45,12 +53,51 @@ public sealed partial class Ppu
                     UpdateStatLine();
                 }
                 break;
-            case BgpAddress:  _bgp = value; break;
-            case Obp0Address: _obp0 = value; break;
-            case Obp1Address: _obp1 = value; break;
+            case BgpAddress:  _bgp = value; RebuildDmgBgPalette(); break;
+            case Obp0Address: _obp0 = value; RebuildDmgObjPalette(0); break;
+            case Obp1Address: _obp1 = value; RebuildDmgObjPalette(1); break;
             case WyAddress:   _wy = value; break;
             case WxAddress:   _wx = value; break;
+            case VbkAddress:  _vramBank = (byte)(value & 0x01); break;
+            case BcpsAddress: _bcps = (byte)(value & 0xBF); break; // bit 6 unused/reads 1
+            case BcpdAddress: WriteCgbPalette(_bgPaletteRam, _bgPaletteTable, ref _bcps, value); break;
+            case OcpsAddress: _ocps = (byte)(value & 0xBF); break;
+            case OcpdAddress: WriteCgbPalette(_objPaletteRam, _objPaletteTable, ref _ocps, value); break;
         }
+    }
+
+    // Writes the byte to palette RAM at the BCPS/OCPS-selected index, re-derives
+    // the corresponding RGBA8888 entry in the palette table, and (if auto-inc
+    // is set) advances the index. The table holds final RGBA so the pixel
+    // pusher does a single lookup per pixel.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void WriteCgbPalette(byte[] paletteRam, uint[] paletteTable, ref byte indexReg, byte value)
+    {
+        var idx = indexReg & 0x3F;
+        paletteRam[idx] = value;
+        var entry = idx >> 1;
+        var lo = paletteRam[entry << 1];
+        var hi = paletteRam[(entry << 1) | 1];
+        paletteTable[entry] = Rgb555ToRgba8888((ushort)(lo | (hi << 8)));
+        if ((indexReg & 0x80) != 0)
+            indexReg = (byte)(0x80 | ((idx + 1) & 0x3F));
+    }
+
+    // CGB palette format: 15-bit RGB, 5 bits per channel, R in low bits.
+    // Pack as 0xAA_BB_GG_RR (alpha solid) so the little-endian byte order
+    // matches canvas ImageData RGBA. The (c5 << 3) | (c5 >> 2) expansion
+    // fills the low 3 bits with the high 3 of the 5-bit channel so 0x1F
+    // maps to 0xFF instead of 0xF8 — i.e. full white is actually white.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint Rgb555ToRgba8888(ushort rgb555)
+    {
+        var r5 = rgb555 & 0x1F;
+        var g5 = (rgb555 >> 5) & 0x1F;
+        var b5 = (rgb555 >> 10) & 0x1F;
+        var r8 = (uint)((r5 << 3) | (r5 >> 2));
+        var g8 = (uint)((g5 << 3) | (g5 >> 2));
+        var b8 = (uint)((b5 << 3) | (b5 >> 2));
+        return 0xFF000000u | (b8 << 16) | (g8 << 8) | r8;
     }
 
     public byte ReadRegister(ushort address)
@@ -68,6 +115,11 @@ public sealed partial class Ppu
             Obp1Address => _obp1,
             WyAddress   => _wy,
             WxAddress   => _wx,
+            VbkAddress  => (byte)(_vramBank | 0xFE),  // bits 1..7 read 1
+            BcpsAddress => (byte)(_bcps | 0x40),       // bit 6 reads 1
+            BcpdAddress => _bgPaletteRam[_bcps & 0x3F],
+            OcpsAddress => (byte)(_ocps | 0x40),
+            OcpdAddress => _objPaletteRam[_ocps & 0x3F],
             _ => 0xFF
         };
     }

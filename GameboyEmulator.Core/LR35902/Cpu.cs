@@ -2,7 +2,7 @@
 
 namespace GameBoyEmulator.Core.LR35902;
 
-public sealed partial class Cpu : ICpu
+public sealed partial class Cpu : ICpu, ISpeedController
 {
     private CpuFlags _flags;
     public CpuFlags Flags
@@ -43,6 +43,11 @@ public sealed partial class Cpu : ICpu
 
     private int _enableInterruptsTimer;
     private bool _haltBugPending;
+    private bool _isCgb;
+    // KEY1 (0xFF4D). Bit 7 = current speed (0=normal, 1=double),
+    // bit 0 = prepare-switch (set by game, cleared by STOP). Bits 1..6 read 1.
+    // STOP-based speed-switch handling arrives in Phase 4.
+    private byte _key1;
     private readonly IBus _bus;
     private readonly ISystemClock _systemClock;
     private readonly IInterrupts _interrupts;
@@ -52,6 +57,21 @@ public sealed partial class Cpu : ICpu
         _bus = bus;
         _interrupts = interrupts;
         _systemClock = systemClock;
+    }
+
+    public void SetCgbMode(bool isCgb)
+    {
+        _isCgb = isCgb;
+    }
+
+    // MMU forwards 0xFF4D r/w here. DMG-mode gating happens at the MMU
+    // dispatch — these methods assume the caller already decided to call them.
+    public byte ReadKey1() => (byte)(_key1 | 0x7E);
+
+    public void WriteKey1(byte value)
+    {
+        // Only bit 0 (prepare-switch) is writable. Bit 7 flips on STOP (Phase 4).
+        _key1 = (byte)((_key1 & 0x80) | (value & 0x01));
     }
 
     public void Reset()
@@ -65,6 +85,11 @@ public sealed partial class Cpu : ICpu
         IsSleeping = false;
         _enableInterruptsTimer = 0;
         _haltBugPending = false;
+        _key1 = 0;
+        // Power-cycle returns the bus clock to normal speed. Without this,
+        // a CGB game that left the system in double-speed before power-off
+        // would resume with the bus running half-rate.
+        _systemClock.SetDoubleSpeed(false);
     }
 
     // Used by ROM-level test harnesses that jump straight
@@ -73,16 +98,33 @@ public sealed partial class Cpu : ICpu
     {
         Pc = 0x0100;
         Sp = 0xFFFE;
-        Ra = 0x01;
-        Flags = CpuFlags.Z | CpuFlags.H | CpuFlags.C;
-        Rbc = 0x0013;
-        Rde = 0x00D8;
-        Rhl = 0x014D;
         InterruptMasterEnable = false;
         IsWaitingForInterrupt = false;
         IsSleeping = false;
         _enableInterruptsTimer = 0;
         _haltBugPending = false;
+
+        if (_isCgb)
+        {
+            // CGB boot ROM exit state. A=0x11 is the canonical "running on
+            // CGB" indicator that CGB-only games (Pokemon Crystal, Zelda
+            // Oracle, etc.) check on entry — getting it wrong drops them into
+            // the "This Game Pak is designed only for use on the Game Boy
+            // Color" lockout screen.
+            Ra = 0x11;
+            Flags = CpuFlags.Z;
+            Rbc = 0x0000;
+            Rde = 0xFF56;
+            Rhl = 0x000D;
+        }
+        else
+        {
+            Ra = 0x01;
+            Flags = CpuFlags.Z | CpuFlags.H | CpuFlags.C;
+            Rbc = 0x0013;
+            Rde = 0x00D8;
+            Rhl = 0x014D;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]

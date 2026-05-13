@@ -9,6 +9,16 @@ public sealed class MbcFactory
     private const int RamSizeAddress = 0x0149;
     private const int TitleStart = 0x0134;
     private const int TitleEnd = 0x0143;
+    private const int CgbFlagAddress = 0x0143;
+
+    // 0x80 = DMG-compatible CGB cart, 0xC0 = CGB-only cart. Bit 7 is the
+    // canonical indicator; the low 6 bits are reserved/icon flags so we
+    // mask with 0x80 rather than checking exact values.
+    public static bool IsCgbCartridge(byte[] rom)
+    {
+        if (rom.Length <= CgbFlagAddress) return false;
+        return (rom[CgbFlagAddress] & 0x80) != 0;
+    }
 
     private readonly IBatteryStore _batteryStore;
     private readonly ITimeProvider _timeProvider;
