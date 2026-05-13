@@ -26,6 +26,7 @@ public sealed class GameBoy
     private readonly Joypad _joypad;
     private readonly SystemClock _systemClock;
     private readonly OamDmaController _dma;
+    private readonly HdmaController _hdma;
     private readonly MbcFactory _mbcFactory;
     private readonly double _cyclesPerTick;
 
@@ -72,6 +73,10 @@ public sealed class GameBoy
         // KEY1 lives on the CPU but is reached via the MMU bus, and MMU is
         // built before CPU — wire it up now that both exist.
         _mmu.SetSpeedController(_cpu);
+
+        _hdma = new HdmaController(_mmu);
+        _mmu.SetHdmaController(_hdma);
+        _ppu.OnHBlankEntry = _hdma.OnHBlank;
 
         _cyclesPerTick = CpuFrequency / (double)_clock.Frequency;
     }
@@ -153,6 +158,7 @@ public sealed class GameBoy
         _timer.Reset();
         _joypad.Reset();
         _dma.Reset();
+        _hdma.Reset();
         _cpu.Reset();
         _clock.Ticked -= Clock_OnTicked;
         IsPoweredOn = false;

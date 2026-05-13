@@ -27,6 +27,9 @@ public sealed class Mmu : IBus
     // KEY1 r/w is forwarded here. Wired post-construction by GameBoy because
     // CPU comes up after MMU in the construction order.
     private ISpeedController? _speedController;
+    // HDMA1-5. Same post-construction wiring story — HdmaController takes the
+    // MMU as IBus, which means HDMA can't exist until MMU does.
+    private HdmaController? _hdma;
 
     private IMbc _mbc;
     private readonly IPpu _ppu;
@@ -166,10 +169,8 @@ public sealed class Mmu : IBus
                 // before jumping to 0x0100.
                 if (value != 0) _bootRomEnabled = false;
                 break;
-            // HDMA1-5 (0xFF51-0xFF55) — Phase 6 wires the real controller.
-            // We accept writes silently in CGB mode so games' init code that
-            // pokes them doesn't trap; reads return 0xFF below.
             case >= 0xFF51 and <= 0xFF55:
+                if (_isCgb) _hdma?.WriteRegister(address, value);
                 break;
             case >= 0xFF68 and <= 0xFF6B:
                 if (_isCgb) _ppu.WriteRegister(address, value);
@@ -250,9 +251,7 @@ public sealed class Mmu : IBus
             >= 0xFF40 and <= 0xFF4B => _ppu.ReadRegister(address),
             0xFF4D => _isCgb && _speedController != null ? _speedController.ReadKey1() : (byte)0xFF,
             0xFF4F => _isCgb ? _ppu.ReadRegister(address) : (byte)0xFF,
-            // HDMA1-5 — HDMA5 reads as 0xFF when no transfer is in progress,
-            // which is the only state Phase 3 models.
-            >= 0xFF51 and <= 0xFF55 => 0xFF,
+            >= 0xFF51 and <= 0xFF55 => _isCgb && _hdma != null ? _hdma.ReadRegister(address) : (byte)0xFF,
             >= 0xFF68 and <= 0xFF6B => _isCgb ? _ppu.ReadRegister(address) : (byte)0xFF,
             0xFF70 => _isCgb ? (byte)(_svbk | 0xF8) : (byte)0xFF,
             _ => 0xFF
@@ -282,6 +281,11 @@ public sealed class Mmu : IBus
     public void SetSpeedController(ISpeedController controller)
     {
         _speedController = controller;
+    }
+
+    public void SetHdmaController(HdmaController hdma)
+    {
+        _hdma = hdma;
     }
 
     // Maps a logical address in 0xC000-0xDFFF or 0xE000-0xFDFF (echo) into the

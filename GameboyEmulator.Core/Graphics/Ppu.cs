@@ -173,6 +173,9 @@ public sealed partial class Ppu : IPpu
     public ReadOnlyMemory<byte> FrameBuffer => _frameBuffer;
     public ReadOnlyMemory<uint> RgbFrameBuffer => _rgbFrameBuffer;
     public event Action? FrameCompleted;
+    // Fires on the Drawing → HBlank transition. CGB HDMA's H-Blank mode is
+    // wired here so the controller can transfer 16 bytes per scanline.
+    public Action? OnHBlankEntry;
 
     public Ppu(IInterrupts interrupts)
     {
@@ -331,6 +334,9 @@ public sealed partial class Ppu : IPpu
     private void EnterHBlankMode()
     {
         _mode = PpuMode.HBlank;
+        // HDMA fires before STAT — the H-Blank transfer must write VRAM
+        // before any side effect that could trigger another VRAM access.
+        OnHBlankEntry?.Invoke();
         UpdateStatLine();
     }
 
