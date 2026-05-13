@@ -480,7 +480,22 @@ public sealed partial class Ppu : IPpu
         // Trigger any sprite at this column before popping. The fetch freezes
         // the pusher; multiple sprites at the same X chain naturally because
         // _lcdX doesn't advance until the FIFO actually pops a pixel.
-        if (TryStartSpriteFetch()) return;
+        if (TryStartSpriteFetch())
+        {
+            // Background-warmup penalty (Pan Docs): each sprite encounter
+            // costs a minimum 6 dots (the sprite-fetcher's 3 ticks @ 2 dots)
+            // plus an extra `5 - ((SCX + LCD_X) % 8)` dots if positive, paid
+            // up front before the sprite fetch starts. This is the time the
+            // BG fetcher needs to re-align to a tile boundary after being
+            // restarted mid-cycle. Mooneye's intr_2_mode0_timing_sprites
+            // verifies the total. Without it, sprites on lines that toggle
+            // LCDC.1 mid-mode-3 (e.g. Pokémon Crystal warp transitions, the
+            // Mealybug m3_lcdc_obj_en_change torture) emit a few dots too
+            // early and slip past the disable.
+            var warmup = 5 - ((_scx + _lcdX) & 7);
+            if (warmup > 0) _drawingStall = warmup;
+            return;
+        }
 
         // Read BG attribute before Pop — Pop only consumes color, attribute is
         // shared across all 8 pixels of the FIFO load.
