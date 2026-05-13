@@ -141,7 +141,31 @@ public class MealybugTests
         mmu.Write(0xFF47, 0xFC);
         mmu.Write(0xFF48, 0xFF);
         mmu.Write(0xFF49, 0xFF);
+
+        SeedPostBootVram(ppu, rom);
         return new System(cpu, mmu, ppu, busClock);
+    }
+
+    // Seeds the (R) trademark tile at $8190 that the DMG boot ROM leaves in
+    // VRAM. Several Mealybug sprite tests reference tile $19 directly and
+    // never write tile data; without this, our SkipBoot path leaves them
+    // staring at zeros and they render blank.
+    //
+    // The Nintendo-logo tiles at $8010-$818F (used by the BG-only tests
+    // m3_bgp_change, m3_lcdc_bg_map_change, etc.) require running the boot
+    // ROM's decompression on the cart's $104-$133 logo bytes. Not seeded —
+    // those tests stay blocked on harness setup, separate from any PPU bug.
+    private static void SeedPostBootVram(Ppu ppu, byte[] rom)
+    {
+        // Tile $19 at VRAM offset $0190. Low plane only; the boot ROM writes
+        // an 8-byte glyph into alternating bytes and leaves the high plane 0,
+        // so sprite pixels show as color 1 (OBP0).
+        ReadOnlySpan<byte> trademark = [
+            0x3C, 0x00, 0x42, 0x00, 0xB9, 0x00, 0xA5, 0x00,
+            0xB9, 0x00, 0xA5, 0x00, 0x42, 0x00, 0x3C, 0x00,
+        ];
+        for (var i = 0; i < trademark.Length; i++)
+            ppu.WriteVram((ushort)(0x0190 + i), trademark[i]);
     }
 
     private sealed class NullBatteryStore : IBatteryStore
