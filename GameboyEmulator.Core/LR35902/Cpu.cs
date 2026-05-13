@@ -98,16 +98,33 @@ public sealed partial class Cpu : ICpu, ISpeedController
     {
         Pc = 0x0100;
         Sp = 0xFFFE;
-        Ra = 0x01;
-        Flags = CpuFlags.Z | CpuFlags.H | CpuFlags.C;
-        Rbc = 0x0013;
-        Rde = 0x00D8;
-        Rhl = 0x014D;
         InterruptMasterEnable = false;
         IsWaitingForInterrupt = false;
         IsSleeping = false;
         _enableInterruptsTimer = 0;
         _haltBugPending = false;
+
+        if (_isCgb)
+        {
+            // CGB boot ROM exit state. A=0x11 is the canonical "running on
+            // CGB" indicator that CGB-only games (Pokemon Crystal, Zelda
+            // Oracle, etc.) check on entry — getting it wrong drops them into
+            // the "This Game Pak is designed only for use on the Game Boy
+            // Color" lockout screen.
+            Ra = 0x11;
+            Flags = CpuFlags.Z;
+            Rbc = 0x0000;
+            Rde = 0xFF56;
+            Rhl = 0x000D;
+        }
+        else
+        {
+            Ra = 0x01;
+            Flags = CpuFlags.Z | CpuFlags.H | CpuFlags.C;
+            Rbc = 0x0013;
+            Rde = 0x00D8;
+            Rhl = 0x014D;
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
