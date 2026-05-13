@@ -74,7 +74,7 @@ public sealed class GameBoy
         // built before CPU — wire it up now that both exist.
         _mmu.SetSpeedController(_cpu);
 
-        _hdma = new HdmaController(_mmu);
+        _hdma = new HdmaController(_mmu, _ppu);
         _mmu.SetHdmaController(_hdma);
         _ppu.OnHBlankEntry = _hdma.OnHBlank;
 

@@ -1,3 +1,4 @@
+using GameBoyEmulator.Core.Graphics;
 using GameBoyEmulator.Core.LR35902;
 
 namespace GameBoyEmulator.Core;
@@ -15,9 +16,17 @@ namespace GameBoyEmulator.Core;
 //     bytes on each entry into PPU mode 0 until length is exhausted.
 //     Writing bit 7 = 0 to HDMA5 while a H-Blank transfer is active
 //     cancels it (length is preserved in the readable value).
+//
+// HDMA is the bus master, so destination writes go directly to the PPU's
+// VRAM rather than through the MMU — the MMU enforces CPU-side mode-3
+// VRAM lockout, which would otherwise drop the bytes from any general DMA
+// that fires while PPU is in Drawing. Source reads stay on the MMU because
+// the canonical sources (ROM/SRAM/WRAM) are never mode-gated and HDMA
+// sourcing from VRAM is undefined hardware behavior we don't try to model.
 public sealed class HdmaController
 {
     private readonly IBus _bus;
+    private readonly IPpu _ppu;
 
     private byte _srcHigh;
     private byte _srcLow;   // already masked to 0xF0 on write
@@ -26,9 +35,10 @@ public sealed class HdmaController
     private int _remaining; // bytes left in current transfer (0 when none)
     private bool _hblankActive;
 
-    public HdmaController(IBus bus)
+    public HdmaController(IBus bus, IPpu ppu)
     {
         _bus = bus;
+        _ppu = ppu;
     }
 
     public bool IsHBlankActive => _hblankActive;
@@ -117,8 +127,10 @@ public sealed class HdmaController
     private void StepOneByte()
     {
         var src = (ushort)((_srcHigh << 8) | _srcLow);
-        var dst = (ushort)(0x8000 | (_dstHigh << 8) | _dstLow);
-        _bus.Write(dst, _bus.Read(src));
+        // _dstHigh is masked to 0x1F on write so this is already a VRAM-relative
+        // offset in 0x0000-0x1FFF — exactly what Ppu.WriteVram expects.
+        var dstOffset = (ushort)((_dstHigh << 8) | _dstLow);
+        _ppu.WriteVram(dstOffset, _bus.Read(src));
         AdvancePointers();
         _remaining--;
     }
