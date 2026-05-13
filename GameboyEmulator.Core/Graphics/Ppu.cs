@@ -21,7 +21,11 @@ public sealed partial class Ppu : IPpu
 
     private const int MaxSpritesPerLine = 10;
 
-    private readonly byte[] _vram = new byte[0x2000];
+    // 2 banks × 8 KB. Bank 0 holds tile data + tile maps as on DMG; bank 1
+    // holds an alternate copy of the tile data plus CGB BG attribute bytes at
+    // the same offsets as the tile maps. _vramBank picks the bank for CPU
+    // r/w through 0x8000-0x9FFF; PPU rendering reads both banks regardless.
+    private readonly byte[] _vram = new byte[0x4000];
     private readonly byte[] _oam = new byte[0xA0];
     private readonly byte[] _frameBuffer = new byte[ScreenWidth * ScreenHeight];
 
@@ -82,9 +86,13 @@ public sealed partial class Ppu : IPpu
     private bool _isBackgroundDrawingEnabled;
     private bool _isObjectDrawingEnabled;
     private bool _isWindowDrawingEnabled;
-    private Memory<byte> _bgTileMap;
-    private Memory<byte> _windowTileMap;
-    private Memory<byte> _bgTilePixels;
+    // Latched at EnterDrawingMode: starting offsets within `_vram` (bank 0) for
+    // the BG tile map, window tile map, and tile-data window. The fetcher
+    // adds the per-tile attribute's bank bit (×0x2000) to read tile data from
+    // bank 1 in CGB mode; tile maps themselves always come from bank 0.
+    private int _bgTileMapBase;
+    private int _windowTileMapBase;
+    private int _bgTilePixelsBase;
     private byte _bgTileFlipBit;
 
     private PpuMode _mode;
@@ -117,13 +125,16 @@ public sealed partial class Ppu : IPpu
 
     private readonly IInterrupts _interrupts;
 
-    private readonly Memory<byte> _tileMap0;
-    private readonly Memory<byte> _tileMap1;
-    // BG/window tile data windows. Unified addressing: addr = (id ^ flip) << 4
-    //   unsigned: _tilePixels0 (blocks 0+1), flip 0x00
-    //   signed:   _tilePixels1 (blocks 1+2), flip 0x80 — swaps the two halves
-    private readonly Memory<byte> _tilePixels0;
-    private readonly Memory<byte> _tilePixels1;
+    // Tile map / tile data offsets within bank 0 of `_vram`. The fetcher does
+    // its own bank arithmetic so we stay in raw `_vram` indices throughout:
+    //   tile maps: 0x1800 + 1 KB / 0x1C00 + 1 KB
+    //   tile data: 0x0000 + 4 KB (unsigned) or 0x0800 + 4 KB (signed; uses
+    //              `_bgTileFlipBit = 0x80` to XOR the tile-id high bit so a
+    //              single base+xor handles both addressing modes).
+    private const int TileMap0Base = 0x1800;
+    private const int TileMap1Base = 0x1C00;
+    private const int TilePixels0Base = 0x0000;
+    private const int TilePixels1Base = 0x0800;
 
     // OAM scan state.
     private byte _scanSpriteIndex;
@@ -134,6 +145,10 @@ public sealed partial class Ppu : IPpu
     private BgPixelsFetcherState _fetcherState;
     private byte _fetcherX;
     private byte _fetcherTileId;
+    // CGB BG attribute byte for the tile currently being fetched. Bits:
+    //   0..2 palette index, 3 VRAM bank, 5 X-flip, 6 Y-flip, 7 BG-OBJ priority.
+    // DMG mode reads it as 0 because bank 1 is all zeroes (CPU never wrote there).
+    private byte _fetcherTileAttr;
     private byte _fetcherTileLow;
     private byte _fetcherTileHigh;
 
@@ -148,7 +163,10 @@ public sealed partial class Ppu : IPpu
     private Sprite _activeSprite;
     private byte _spriteFetcherTileLow;
     private byte _spriteFetcherTileHigh;
-    private byte _nextSpriteIndex;
+    // 1 bit per OAM-scanned sprite (max 10) — flips on when that sprite has
+    // either been fetched or skipped as off-screen. Replaces the DMG-only
+    // sorted-walk index so CGB's OAM-priority traversal can run.
+    private int _spriteTriggeredMask;
 
     private SpriteFifo _spriteFifo;
 
@@ -159,10 +177,6 @@ public sealed partial class Ppu : IPpu
     public Ppu(IInterrupts interrupts)
     {
         _interrupts = interrupts;
-        _tileMap0 = _vram.AsMemory(0x1800, 1024);
-        _tileMap1 = _vram.AsMemory(0x1C00, 1024);
-        _tilePixels0 = _vram.AsMemory(0x0000, 4096);
-        _tilePixels1 = _vram.AsMemory(0x0800, 4096);
         _mode = PpuMode.HBlank;
         // Seed palette tables to a known state so frames before any BGP/OBP
         // write (e.g. boot ROM running) don't paint uninitialized memory.
@@ -275,7 +289,7 @@ public sealed partial class Ppu : IPpu
         _inWindow = false;
         _windowRenderedThisLine = false;
         _spriteFifo = default;
-        _nextSpriteIndex = 0;
+        _spriteTriggeredMask = 0;
         SortSpritesByX();
         UpdateStatLine();
     }
@@ -284,17 +298,22 @@ public sealed partial class Ppu : IPpu
     private void LatchBgFetcherLcdc()
     {
         var unsignedTileData = _lcdc.HasFlag(LcdControl.UseUnsignedTileAddressing);
-        _bgTileMap     = _lcdc.HasFlag(LcdControl.BackgroundUsesTileMap1) ? _tileMap1 : _tileMap0;
-        _windowTileMap = _lcdc.HasFlag(LcdControl.WindowUsesTileMap1) ? _tileMap1 : _tileMap0;
-        _bgTilePixels  = unsignedTileData ? _tilePixels0 : _tilePixels1;
+        _bgTileMapBase     = _lcdc.HasFlag(LcdControl.BackgroundUsesTileMap1) ? TileMap1Base : TileMap0Base;
+        _windowTileMapBase = _lcdc.HasFlag(LcdControl.WindowUsesTileMap1)     ? TileMap1Base : TileMap0Base;
+        _bgTilePixelsBase  = unsignedTileData ? TilePixels0Base : TilePixels1Base;
         _bgTileFlipBit = (byte)(unsignedTileData ? 0x0 : 0x80);
     }
 
     // Stable insertion sort by X ascending; preserves OAM-index order on ties
     // so DMG priority (lower X wins, OAM-index breaks tie) falls out naturally
     // from "first sprite fetched fills the FIFO slot first."
+    //
+    // CGB hardware uses OAM-index priority unconditionally (lowest index wins),
+    // which is already the scan order from `_sprites[]`, so we skip the sort.
+    // OPRI (0xFF6C) can flip CGB back to DMG semantics; not modeled here.
     private void SortSpritesByX()
     {
+        if (_isCgb) return;
         for (var i = 1; i < _spriteCount; i++)
         {
             var sprite = _sprites[i];
@@ -457,6 +476,9 @@ public sealed partial class Ppu : IPpu
         // _lcdX doesn't advance until the FIFO actually pops a pixel.
         if (TryStartSpriteFetch()) return;
 
+        // Read BG attribute before Pop — Pop only consumes color, attribute is
+        // shared across all 8 pixels of the FIFO load.
+        var bgAttr = _bgFifo.Attribute;
         var bgPixel = _bgFifo.Pop();
 
         var spPixel = 0;
@@ -465,11 +487,43 @@ public sealed partial class Ppu : IPpu
         if (_spriteFifo.Count > 0)
             (spPixel, spPalette, spBgPrio) = _spriteFifo.Pop();
 
-        if (!_isBackgroundDrawingEnabled) bgPixel = 0;
+        // DMG: LCDC.0 = 0 hides BG entirely (forces color 0). CGB doesn't
+        // disable BG this way — LCDC.0 there is master priority, handled in
+        // the compositor (Phase 5 task 24).
+        if (!_isCgb && !_isBackgroundDrawingEnabled) bgPixel = 0;
+
+        // BG/OBJ priority. Sprite wins if:
+        //   - it's enabled, opaque, and either
+        //   - DMG: the priority bit is clear, or BG color is 0; or
+        //   - CGB: LCDC.0 (BG master priority) is off, or BG color is 0, or
+        //          neither the BG-attr priority nor the OBJ-priority bit is set.
+        var bgAttrPrio = (bgAttr & 0x80) != 0;
+        bool spriteWins;
+        if (spPixel == 0 || !_isObjectDrawingEnabled)
+        {
+            spriteWins = false;
+        }
+        else if (!_isCgb)
+        {
+            spriteWins = spBgPrio == 0 || bgPixel == 0;
+        }
+        else if (!_isBackgroundDrawingEnabled)
+        {
+            // CGB: master-priority off — sprites always over BG.
+            spriteWins = true;
+        }
+        else if (bgPixel == 0)
+        {
+            spriteWins = true;
+        }
+        else
+        {
+            spriteWins = spBgPrio == 0 && !bgAttrPrio;
+        }
 
         byte color;
         uint rgb;
-        if (spPixel != 0 && _isObjectDrawingEnabled && (spBgPrio == 0 || bgPixel == 0))
+        if (spriteWins)
         {
             var palette = spPalette == 0 ? _obp0 : _obp1;
             color = (byte)((palette >> (spPixel << 1)) & 0x03);
@@ -478,7 +532,11 @@ public sealed partial class Ppu : IPpu
         else
         {
             color = (byte)((_bgp >> (bgPixel << 1)) & 0x03);
-            rgb = _bgPaletteTable[bgPixel];
+            // CGB: bgAttr bits 0..2 pick one of 8 palettes; DMG: bgAttr is 0
+            // (bank 1 is unwritable in DMG mode), so this collapses to entries
+            // 0..3 of palette 0 — the DMG-shade slots BGP populated.
+            var bgPaletteIdx = bgAttr & 0x07;
+            rgb = _bgPaletteTable[(bgPaletteIdx << 2) | bgPixel];
         }
 
         var pixelIdx = _ly * ScreenWidth + _lcdX;
@@ -506,8 +564,8 @@ public sealed partial class Ppu : IPpu
     // Raw VRAM/OAM access. PPU-mode bus restrictions are enforced at the MMU
     // (CPU side); DMA writes go through these directly because DMA is the bus
     // master and isn't subject to those restrictions.
-    public void WriteVram(ushort address, byte value) => _vram[address] = value;
-    public byte ReadVram(ushort address) => _vram[address];
+    public void WriteVram(ushort address, byte value) => _vram[(_vramBank << 13) | address] = value;
+    public byte ReadVram(ushort address) => _vram[(_vramBank << 13) | address];
     public byte ReadOam(ushort address) => _oam[address];
     public void WriteOam(ushort address, byte value) => _oam[address] = value;
     public void WriteOam(ReadOnlySpan<byte> data) => data.CopyTo(_oam);

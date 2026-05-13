@@ -60,22 +60,44 @@ public sealed partial class Ppu
             case WxAddress:   _wx = value; break;
             case VbkAddress:  _vramBank = (byte)(value & 0x01); break;
             case BcpsAddress: _bcps = (byte)(value & 0xBF); break; // bit 6 unused/reads 1
-            case BcpdAddress: WriteCgbPalette(_bgPaletteRam, ref _bcps, value); break;
+            case BcpdAddress: WriteCgbPalette(_bgPaletteRam, _bgPaletteTable, ref _bcps, value); break;
             case OcpsAddress: _ocps = (byte)(value & 0xBF); break;
-            case OcpdAddress: WriteCgbPalette(_objPaletteRam, ref _ocps, value); break;
+            case OcpdAddress: WriteCgbPalette(_objPaletteRam, _objPaletteTable, ref _ocps, value); break;
         }
     }
 
-    // Writes through the BCPS/OCPS auto-increment cursor into the matching 64-
-    // byte CGB palette RAM. Phase 5 will also recompute the RGBA palette table
-    // entry — for now we only persist the byte so subsequent reads echo back.
+    // Writes the byte to palette RAM at the BCPS/OCPS-selected index, re-derives
+    // the corresponding RGBA8888 entry in the palette table, and (if auto-inc
+    // is set) advances the index. The table holds final RGBA so the pixel
+    // pusher does a single lookup per pixel.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void WriteCgbPalette(byte[] paletteRam, ref byte indexReg, byte value)
+    private static void WriteCgbPalette(byte[] paletteRam, uint[] paletteTable, ref byte indexReg, byte value)
     {
         var idx = indexReg & 0x3F;
         paletteRam[idx] = value;
+        var entry = idx >> 1;
+        var lo = paletteRam[entry << 1];
+        var hi = paletteRam[(entry << 1) | 1];
+        paletteTable[entry] = Rgb555ToRgba8888((ushort)(lo | (hi << 8)));
         if ((indexReg & 0x80) != 0)
             indexReg = (byte)(0x80 | ((idx + 1) & 0x3F));
+    }
+
+    // CGB palette format: 15-bit RGB, 5 bits per channel, R in low bits.
+    // Pack as 0xAA_BB_GG_RR (alpha solid) so the little-endian byte order
+    // matches canvas ImageData RGBA. The (c5 << 3) | (c5 >> 2) expansion
+    // fills the low 3 bits with the high 3 of the 5-bit channel so 0x1F
+    // maps to 0xFF instead of 0xF8 — i.e. full white is actually white.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint Rgb555ToRgba8888(ushort rgb555)
+    {
+        var r5 = rgb555 & 0x1F;
+        var g5 = (rgb555 >> 5) & 0x1F;
+        var b5 = (rgb555 >> 10) & 0x1F;
+        var r8 = (uint)((r5 << 3) | (r5 >> 2));
+        var g8 = (uint)((g5 << 3) | (g5 >> 2));
+        var b8 = (uint)((b5 << 3) | (b5 >> 2));
+        return 0xFF000000u | (b8 << 16) | (g8 << 8) | r8;
     }
 
     public byte ReadRegister(ushort address)
